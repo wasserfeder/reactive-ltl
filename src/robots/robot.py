@@ -1,0 +1,69 @@
+'''
+.. module:: robot
+   :synopsis: Module defining an abstract robot class
+
+.. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
+'''
+
+'''
+    The module defines an abstract robot class.
+    Copyright (C) 2014  Cristian Ioan Vasile <cvasile@bu.edu>
+    Hybrid and Networked Systems (HyNeSs) Laboratory, Boston University
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+'''
+
+class Robot(object):
+    '''
+    Base class for a robot.
+    '''
+    
+    def __init__(self, name, initConf=None, cspace=None, wspace=None,
+                 controlspace=None, sensingShape=None, dynamics=None):
+        self.name = name
+        
+        self.initConf = initConf # initial position
+        self.currentConf = self.initConf # current position
+        self.sensingShape = sensingShape # sensing shappe 
+        
+        self.cspace = cspace
+        self.wspace = wspace
+        self.controlspace = controlspace
+        self.dynamics = dynamics
+        
+        self.localObst = None # local obstacle symbol
+        
+    def steer(self):
+        raise NotImplementedError
+    
+    def sample(self, local=False):
+        '''
+        Generate a sample from the configuration space, either global or local.
+        '''
+        if local:
+            return self.cspace.getLocalSample(self.currentConf)
+        return self.cspace.getSample()
+    
+    def move(self, conf):
+        self.currentConf = conf
+    
+    def getSymbols(self, position, local=False):
+        return self.wspace.getSymbols(position, local)
+    
+    def isSimpleSegment(self):
+        raise NotImplementedError
+
+
+if __name__ == '__main__':
+    pass

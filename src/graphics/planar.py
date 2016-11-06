@@ -1,0 +1,355 @@
+'''
+.. module:: planar
+   :synopsis: Module defining the classes for displaying planar environments.
+
+.. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
+'''
+
+'''
+    The module defines classes for displaying planar environments.
+    Copyright (C) 2014  Cristian Ioan Vasile <cvasile@bu.edu>
+    Hybrid and Networked Systems (HyNeSs) Laboratory, Boston University
+
+    This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+'''
+
+import os
+import itertools as it
+
+import numpy as np
+from numpy import mean
+
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+
+from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
+                          BallBoundary2D, BoxBoundary2D, PolygonBoundary2D, \
+                          Point2D
+#                           expandRegion
+
+
+__all__ = []
+
+
+def drawPoint2D(viewport, point, color, style=None):
+    if style:
+        viewport.plot(point.x, point.y, color=color, **style)
+    else:
+        viewport.plot(point.x, point.y, color=color)
+
+def drawBoxRegion2D(viewport, region, style, text='', textStyle=None):
+    x = [region.ranges[0, 0], region.ranges[0, 0],
+         region.ranges[0, 1], region.ranges[0, 1]]
+    y = [region.ranges[1, 0], region.ranges[1, 1],
+         region.ranges[1, 1], region.ranges[1, 0]]
+    viewport.fill(x, y, **style)
+    if text:
+        if textStyle:
+            viewport.text(mean(x), mean(y), text, **textStyle)
+        else:
+            viewport.text(mean(x), mean(y), text)
+
+def drawBallRegion2D(viewport, region, style, text='', textStyle=None):
+    x, y = region.center
+    c = plt.Circle(region.center, region.radius, **style)
+    viewport.add_artist(c)
+    if text:
+        if textStyle:
+            viewport.text(x, y, text, **textStyle)
+        else:
+            viewport.text(x, y, text)
+
+def drawPolygonRegion2D(viewport, region, style, text='', textStyle=None):
+    x, y = zip(*region.polygon.exterior.coords)
+    viewport.fill(x, y, **style)
+    if text:
+        x, y = region.polygon.centroid.coords[0]
+        if textStyle:
+            viewport.text(x, y, text, **textStyle)
+        else:
+            viewport.text(x, y, text)
+
+def drawRegion2D(viewport, region, style, text='', textStyle=None):
+    if isinstance(region, BoxRegion2D):
+        drawBoxRegion2D(viewport, region, style, text, textStyle)
+    elif isinstance(region, BallRegion2D):
+        drawBallRegion2D(viewport, region, style, text, textStyle)
+    elif isinstance(region, PolygonRegion2D):
+        drawPolygonRegion2D(viewport, region, style, text, textStyle)
+    else:
+        raise TypeError
+
+def drawBoundary2D(viewport, boundary, style):
+    if isinstance(boundary, BoxBoundary2D):
+        x, y = zip(*((0, 0), (0, 1), (1, 1), (1, 0), (0, 0)))
+        x, y = boundary.xrange()[list(x)], boundary.yrange()[list(y)]
+        viewport.plot(x, y, **style)
+    elif isinstance(boundary, BallBoundary2D):
+        c = plt.Circle(boundary.center, boundary.radius, **style)
+        viewport.add_artist(c)
+    elif isinstance(boundary, PolygonBoundary2D):
+        x, y = zip(*boundary.polygon.exterior.coords)
+        viewport.plot(x, y, **style)
+
+def addStyle(region, style=None, withText=True, text=None, textStyle=None):
+    if style:
+        region.style = style
+        region.style['facecolor'] = style.get('facecolor', 'white')
+        region.style['edgecolor'] = style.get('edgecolor', 'black')
+    else:
+        region.style = {'facecolor': 'white', 'edgecolor':'black'}
+    
+    if withText:
+        if text:
+            region.text = text
+        else:
+            region.text = ' '.join(region.symbols)
+        if textStyle:
+            region.textStyle = textStyle
+            region.textStyle['horizontalalignment'] = \
+                                  textStyle.get('horizontalalignment', 'center')
+            region.textStyle['verticalalignment'] = \
+                                    textStyle.get('verticalalignment', 'center')
+            region.textStyle['fontsize'] = textStyle.get('fontsize', 12)
+        else:
+            region.textStyle = {'horizontalalignment' : 'center',
+                               'verticalalignment' : 'center',
+                               'fontsize' : 12}
+    else:
+        region.text = None
+        region.textStyle = None
+
+def drawRobot2D(viewport, robot, size, text='', textStyle=None):
+    x, y = robot.currentConf.coords
+    #TODO: make this general
+    sensingShape = BallBoundary2D([x, y], robot.sensingShape.radius)
+    style = {'facecolor': (0, 0, 1, 0.2), 'edgecolor': (0, 0, 1, 0.2), 'fill': True}
+    drawBoundary2D(viewport, sensingShape, style)
+    
+    style = {'facecolor': 'blue', 'edgecolor':'black'}
+    if size == 0:
+        plt.plot(x, y, 'o', color=style['facecolor'], zorder=2)
+    else:
+        c = plt.Circle(robot.currentConf.coords, size, **style)
+        viewport.add_artist(c)
+    if text:
+        if textStyle:
+            viewport.text(x, y, text, **textStyle)
+        else:
+            viewport.text(x, y, text)
+    
+
+def drawGraph(viewport, g):
+    
+    for u in g.nodes_iter():
+        plt.plot(u.x, u.y, 'o')
+    
+    for u, v in g.edges_iter():
+        x = (u.x, v.x)
+        y = (u.y, v.y)
+        plt.plot(x, y, color='black')
+
+def drawPolicy(viewport, solution):
+    for u, v in it.izip(solution, solution[1:]):
+        dx, dy = v.x - u.x, v.y - u.y
+        plt.arrow(u.x, u.y, dx, dy, hold=True, color='black',
+                  length_includes_head=True, head_width=0.08)
+
+
+class Simulate2D(object):
+    '''
+    TODO: 
+    '''
+    
+    def __init__(self, workspace, robot, expandedWorkspace=None, config=None):
+        self.workspace = workspace
+        self.expandedWorkspace = expandedWorkspace
+        self.robot = robot
+        
+        if config:
+            self.config = config
+        else:
+            self.config = dict()
+        self.__defaultConfiguration()
+    
+    def __defaultConfiguration(self):
+        self.config['x-padding'] = self.config.get('x-padding',
+                                                   self.robot.diameter/2)
+        self.config['y-padding'] = self.config.get('y-padding',
+                                                   self.robot.diameter/2)
+        self.config['grid-on'] = self.config.get('grid-on', True)
+        self.config['sim-step'] = self.config.get('sim-step', 6) # TODO: for simulation video 0.01)
+        self.config['video-file'] = self.config.get('video-file', 'video.mp4')
+        self.config['video-interval'] = self.config.get('video-interval', 2000)
+    
+    def loadConfiguration(self, filename):
+        pass
+    
+    def saveConfiguration(self, filename):
+        pass
+    
+    def loadTimeline(self, filename):
+        pass
+    
+    def reset(self):
+        pass
+    
+    def display(self, expanded=False, solution=None):
+        fig = plt.figure()
+        ax = fig.add_subplot(111, aspect='equal')
+        
+        if expanded == 'both':
+            self.render(ax, expanded=True, solution=[])
+            self.render(ax, expanded=False, solution=solution)
+        else:
+            self.render(ax, expanded, solution)
+        
+        plt.show()
+    
+    def render(self, viewport, expanded=False, solution=None, withtext=True):
+        if expanded:
+            wp = self.expandedWorkspace
+        else:
+            wp = self.workspace
+        
+        limits = wp.boundary.boundingBox()
+        plt.xlim(limits[0] + np.array([-1, 1]) * self.config['x-padding'])
+        plt.ylim(limits[1] + np.array([-1, 1]) * self.config['y-padding'])
+        
+        if self.config.get('grid-on'):
+            plt.grid()
+        
+        # draw regions
+        for r in wp.globalRegions:
+            text = None
+            if withtext:
+                text = r.text
+            drawRegion2D(viewport, r, r.style, text, r.textStyle)
+        for r in wp.localRegions:
+            text = None
+            if withtext:
+                text = r.text
+            drawRegion2D(viewport, r, r.style, text, r.textStyle)
+        
+        # draw boundary
+        drawBoundary2D(viewport, wp.boundary, wp.boundary.style)
+        
+        # draw robot
+        r = 0 if expanded else self.robot.diameter/2 
+        drawRobot2D(viewport, self.robot, size=r)
+        
+        if solution is not None:
+            drawPolicy(viewport, solution)
+        else:
+            # draw transition system
+            drawGraph(viewport, self.offline.ts.g)
+        #TODO:
+    
+    def simulate(self, loops=2, offline=True):
+        assert self.offline.checker.foundPolicy()
+        prefix, suffix = self.offline.checker.globalPolicy()
+        self.solution = (prefix, suffix[1:])
+        
+        trajectory = it.chain(prefix, *it.repeat(suffix[1:], times=loops))
+        self.path = [trajectory.next()]
+        prevConf = self.path[0]
+        stepSize = self.config['sim-step']
+        for conf in trajectory:
+            d = self.robot.wspace.dist(prevConf, conf)
+            n = int(np.ceil(d/float(stepSize)))
+            u = (conf.coords - prevConf.coords) * stepSize / d
+            print conf.coords, d, n, u
+            self.path.extend([Point2D(prevConf.coords + k*u) for k in range(n)])
+            prevConf = conf
+        self.path.append(conf)
+    
+    def play(self):
+        assert self.path is not None, 'Run simulation first!'
+        self.cstep = 0
+        prefix, suffix = self.solution
+        policy = prefix + suffix
+         
+#         fig = plt.figure()
+#         ax = fig.add_subplot(111, aspect='equal')
+#         
+#         def init_anim():
+#             self.render(ax, expanded=True, solution=[])
+#             self.render(ax, expanded=False, solution=policy)
+#             return []
+#         
+#         def run_anim(frame, *args):
+# #             logging.info('Processing frame %s!', frame)
+# #             self.draw_time_label(frame, loops_iter.next(), d_fsa.next())
+#             print frame, '/', len(self.path)
+#             self.step()
+#             plt.cla()
+#             self.render(ax, expanded=True, solution=[])
+#             self.render(ax, expanded=False, solution=policy)
+#             
+#             return []
+#          
+#         N = len(self.path)
+#         
+#         vehicle_animation = animation.FuncAnimation(fig, run_anim,
+#                             init_func=init_anim, save_count=N,
+#                             interval=self.config['video-interval'],
+#                             blit=False)
+#         filename = os.path.join('/home/cristi/Dropbox/work/workspace_linux/ReactiveLTLPlan/src', self.config['video-file'])
+# #         logging.info('Saving video to file: %s !', filename)
+#         vehicle_animation.save(filename, writer='mencoder', metadata={'artist':
+#                                                    'Cristian-Ioan Vasile'})
+        fname = '/home/cristi/Dropbox/work/workspace_linux/ReactiveLTLPlan/data_ijrr/frames/frame_{frame:04d}.png'
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111, aspect='equal')
+        
+        for frame, _ in enumerate(self.path):
+#             self.display(expanded='both', solution= policy)
+            print frame, '/', len(self.path)
+            plt.cla()
+            self.step()
+            self.render(ax, expanded=True, solution=[], withtext=False)
+            self.render(ax, expanded=False, solution=policy)
+            
+            plt.savefig(fname.format(frame=frame))
+    
+    def execute(self, loops=2):
+        self.robot.setup()
+        assert self.offline.checker.foundPolicy()
+        prefix, suffix = self.offline.checker.globalPolicy()
+        self.solution = (prefix, suffix[1:])
+        self.path = list(it.chain(prefix, *it.repeat(suffix[1:], times=loops)))
+        
+        self.cstep = -1
+        for c in self.path:
+            print 'Move to:', c.coords
+            self.step()
+    
+    def save(self):
+        # TODO:
+        pass
+    
+    def step(self, steps=1):
+        assert self.path is not None, 'Run simulation first!'
+        if self.cstep < len(self.path)-1:
+            self.cstep += 1
+            self.robot.move(self.path[self.cstep])
+    
+    def rewind(self, steps=1):
+        # TODO:
+        pass
+
+if __name__ == '__main__':
+    import doctest
+    doctest.testmod()
