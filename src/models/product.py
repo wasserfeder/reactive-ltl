@@ -1,13 +1,16 @@
 '''
 .. module:: incremental_product
-   :synopsis: # TODO:
+   :synopsis: Module implements incremental product automata maintainace and
+   incremental solution checking.
 
 .. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
 '''
 '''
-    #TODO:
-    Copyright (C) 2014  Cristian Ioan Vasile <cvasile@bu.edu>
-    Hybrid and Networked Systems (HyNeSs) Laboratory, Boston University
+    Module implements incremental product automata maintainace and incremental
+    solution checking.
+    Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
+    Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
+    Boston University
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -31,7 +34,7 @@ from models import Model, Buchi
 from lomap import Timer
 from util.scc import scc, initNodes
 
-# TODO: for PA = TS x DFA maintaining SCCs is not necessary
+
 # TODO: make SCC maintenance modular -- abstract it out of the PA implementation
 
 class IncrementalProduct(Model):
@@ -50,17 +53,16 @@ class IncrementalProduct(Model):
         self.globalSpec = globalSpec # global specification
         # construct Buchi automaton from global LTL specification
         self.buchi = Buchi()
-        if specFile:
+        if specFile: # FIXME: not implemented
             self.buchi.buchi_from_file(self.globalSpec, specFile)
         else:
             self.buchi.from_formula(self.globalSpec)
-        self.projK = {} # TS states to Buchi states map
+        self.proj_ts = {} # TS states to Buchi states map
         # initialize SCC algorithm
         self.initSCC()
     
     def addInitialState(self, node, symbols):
-        '''
-        Adds an initial node to the product automaton.
+        ''' Adds an initial node to the product automaton.
         propositions ('prop').
         Note: based on lomap.product.ts_times_buchi by
               Alphan Ulusoy <alphan@bu.edu>
@@ -73,7 +75,7 @@ class IncrementalProduct(Model):
         self.init.update(init_pa_states) # mark states as initial
         # mark final states in Buchi as final states in PA 
         self.final.update([p for p in init_pa_states if p[1] in self.buchi.final])
-        self.projK[node] = set(init_buchi_states) # update projection of PA onto K
+        self.proj_ts[node] = set(init_buchi_states) # update projection of PA onto K
         # incremental update algorithm for SCC
         self.updateSCC()
     
@@ -81,7 +83,7 @@ class IncrementalProduct(Model):
         '''
         Incrementally updates the global structure.
         TODO: refactor into a function which takes a PA edge and adds it to
-        self.g, updates the self.projK 
+        self.g, updates the self.proj_ts 
         '''
         if not E:
             return
@@ -92,7 +94,7 @@ class IncrementalProduct(Model):
         # Update projection of PA onto K
         _, states  = zip(*E)
         for nodeK, nodeB in states:
-            self.projK[nodeK] = self.projK.get(nodeK, set()) | {nodeB}
+            self.proj_ts[nodeK] = self.proj_ts.get(nodeK, set()) | {nodeB}
             
             # Mark as final if final in buchi
             if nodeB in self.buchi.final:
@@ -122,13 +124,13 @@ class IncrementalProduct(Model):
         '''
 #         if ts.g.number_of_nodes() in [32, 33]:
 #             print 'begin checker', 'forward' if forward else 'backward'
-        assert nodeS in self.projK # nodeS is in product automaton
+        assert nodeS in self.proj_ts # nodeS is in product automaton
         E = set()
         statesD = set()
 #         if ts.g.number_of_nodes() in [32, 33]:
-#             print 'check src:', nodeS.coords, self.projK.get(nodeS)
+#             print 'check src:', nodeS.coords, self.proj_ts.get(nodeS)
 #             print 'check dest:', nodeD.coords, propD
-        for nodeSBuchi in self.projK.get(nodeS):
+        for nodeSBuchi in self.proj_ts.get(nodeS):
             stateS = (nodeS, nodeSBuchi)
             # get next Buchi nodes from the Buchi source node using propositions propD
             nodesDBuchi = self.buchi.next_states(nodeSBuchi, propD)
@@ -224,7 +226,7 @@ class IncrementalProduct(Model):
             self.scc = nx.strongly_connected_components(self.g)
         else:
             for _ in E:
-                self.scc = nx.strongly_connected_components(self.g)    
+                self.scc = nx.strongly_connected_components(self.g)
     
     def _updateSCC_batch(self, E=None):
         '''
@@ -284,7 +286,7 @@ class IncrementalProduct(Model):
         
         prefix, suffix = policy
         
-#         print '[globalPolicy] prefix'
+#        K print '[globalPolicy] prefix'
 #         for x, s in prefix:
 #             print tuple(x.coords), s, ts.g.node[x]['prop']
 #         print '[globalPolicy] suffix'

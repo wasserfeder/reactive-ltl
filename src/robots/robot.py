@@ -48,8 +48,8 @@ class Robot(object):
         raise NotImplementedError
     
     def sample(self, local=False):
-        '''
-        Generate a sample from the configuration space, either global or local.
+        ''' Generate a sample in the configuration space (global) or local
+        within the sensing area..
         '''
         if local:
             return self.cspace.getLocalSample(self.currentConf)

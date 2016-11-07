@@ -199,34 +199,15 @@ class RRGPlanner(object):
     def nearest(self, p):
         '''Returns the nearest configuration in the transition system.'''
         dist = self.robot.cspace.dist
-#         print '[nearest]', p #TODO: delete this
-#         print '[nearest]'
-#         for node, data in self.ts.g.nodes_iter(data=True):
-#             print node, data
-#             print dist(p, node)
-#         print '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
-#         print
-#         print
-#         print '@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@'
-#         print
         return min(self.ts.g.nodes_iter(), key=lambda x: dist(p, x))
     
     def far(self, p):
-        '''
-        Return all states in the transition system that fall at distance d,
+        '''Return all states in the transition system that fall at distance d,
         d < self.eta[1], away from the given configuration p. If there is a
         state which is closer to the given configuration p than self.eta[0]
         then the function returns an empty list.
         '''
-#         p = p.coords
         metric = self.robot.cspace.dist
-        
-#         dd = [metric(v, p) for v in self.ts.g.nodes_iter()]
-#         print '[far]', dd, [d < self.eta[1] for d in dd]
-#         
-#         tt = list(ifilter(lambda v: metric(v, p) < self.eta[1], self.ts.g.nodes_iter()))
-#         print '[far]', tt, map(lambda v: metric(v, p) <= self.eta[0], tt), any(map(lambda v: metric(v, p) <= self.eta[0], tt))
-        
         ret, test = tee(ifilter(lambda v: metric(v, p) < self.eta[1],
                                 self.ts.g.nodes_iter()))
         if any(imap(lambda v: metric(v, p) <= self.eta[0], test)):
@@ -234,11 +215,9 @@ class RRGPlanner(object):
         return ret
     
     def near(self, p):
-        '''
-        Return all states in the transition system that fall at distance d,
+        '''Return all states in the transition system that fall at distance d,
         0 < d < self.eta[1], away from the given configuration p.
-        '''    
-#         p = p.coords
+        '''
         metric = self.robot.cspace.dist
         return ifilter(lambda v: 0 < metric(v, p) < self.eta[1],
                        self.ts.g.nodes_iter())

@@ -8,8 +8,9 @@
 
 '''
     Module implements a fully actuated robot (an integrator).
-    Copyright (C) 2014  Cristian Ioan Vasile <cvasile@bu.edu>
-    Hybrid and Networked Systems (HyNeSs) Laboratory, Boston University
+    Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
+    Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
+    Boston University
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -45,7 +46,7 @@ class FullyActuatedRobot(Robot):
         ground = 'X80Pro1' #TODO:
         self.grd_pub = rospy.Publisher('GroundCommand{}'.format(ground), Twist,
                                   queue_size=20)
-        # initilize node
+        # initialize node
         rospy.init_node('ReLTL_commander', anonymous=True)
         self.rate = rospy.Rate(0.1) # hz
         # create message object
@@ -54,7 +55,6 @@ class FullyActuatedRobot(Robot):
         self.isSetup = True
     
     def move(self, conf):
-        super(FullyActuatedRobot, self).move(conf)
         if self.isSetup:
             if rospy.is_shutdown():
                 return
@@ -66,10 +66,19 @@ class FullyActuatedRobot(Robot):
             print '[move]', self.grd_msg
             print
             self.rate.sleep()
+            conf = None # TODO: read from optitrack data
+        super(FullyActuatedRobot, self).move(conf)
+    
+    def sense(self):
+        if self.isSetup:
+            #TODO: get locally sensed events from external node
+            raise NotImplementedError
+    
+    def getSymbols(self, position, local=False):
+        return self.wspace.getSymbols(position, local)
     
     def steer(self, start, target, atol=0):
-        '''
-        Returns a position that the robot can move to from the start position
+        '''Returns a position that the robot can move to from the start position
         such that it steers closer to the given target position using the
         robot's dynamics.
         
@@ -95,9 +104,8 @@ class FullyActuatedRobot(Robot):
         return self.initConf.__class__(s + (t-s) * self.controlspace/dist)
     
     def isSimpleSegment(self, u, v):
-        '''
-        Returns True if the curve [x, y] = H([u, v]) in the workspace space does
-        not intersect other regions than the ones x and y belong to.
+        '''Returns True if the curve [x, y] = H([u, v]) in the workspace space
+        does not intersect other regions than the ones x and y belong to.
         In the definition, H is a submersion mapping the line segment [u, v] in
         the configuration space to a curve [x, v] in the workspace, where the
         trajectory is annotated with the properties of the regions it
@@ -129,10 +137,31 @@ class FullyActuatedRobot(Robot):
         # if the endpoints belong to two different regions
         return nrRegUV == 2
     
+    def collision_free(self, plan):
+        '''#TODO:
+        '''
+        if self.isSetup:
+            raise NotImplementedError
+        else:
+            aux = [self.robot.currentConf] + self.local_plan
+            for start, stop in zip(aux[:-1], aux[1:]):
+                reqs = self.wspace.intersectingRegions(start, stop, local=True)
+                if self.localObst in reqs:
+                    return False
+            return True
+    
+    def collision_free_segment(self, u, v):
+        '''TODO:
+        '''
+        if self.isSetup:
+            raise NotImplementedError
+        else:
+            pass
+    
     def __str__(self):
         return 'Fully actuated robot'
 
 
-if __name__ == '__main__':    
+if __name__ == '__main__':
     import doctest
     doctest.testmod()

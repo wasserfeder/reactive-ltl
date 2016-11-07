@@ -8,8 +8,9 @@
 
 '''
     Defined the case study presented in the IJRR journal paper.
-    Copyright (C) 2014  Cristian Ioan Vasile <cvasile@bu.edu>
-    Hybrid and Networked Systems (HyNeSs) Laboratory, Boston University
+    Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
+    Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
+    Boston University
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -26,16 +27,15 @@
 '''
 
 import numpy as np
-import networkx as nx
 
 from spaces.base import Workspace
 from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
                           expandRegion, BoxBoundary2D, BallBoundary2D, Point2D
 from robots import FullyActuatedRobot
 
-from planning import RRGPlanner
-from models import IncrementalProduct
-from graphics.planar import addStyle, Simulate2D
+from planning import RRGPlanner, LocalPlanner
+from models import IncrementalProduct, compute_potentials
+from graphics.planar import addStyle, Simulate2D, to_rgba
 from lomap import Timer
 
 
@@ -63,10 +63,11 @@ def caseStudy():
     ewspace = Workspace(boundary=eboundary)
     
     # create robot object
-    robot = FullyActuatedRobot('DrRobot', init=Point2D((2, 2)), wspace=ewspace,
+    robot = FullyActuatedRobot('Cozmo', init=Point2D((2, 2)), wspace=ewspace,
                                stepsize=0.999)
     robot.diameter = robotDiameter
     robot.sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
+    robot.localObst = 'local_obstacle'
 #     robot.origin = Point2D([0.7, -0.7])
     print 'Conf space:', robot.cspace
     
@@ -131,49 +132,20 @@ def caseStudy():
                           checker.buchi.g.number_of_edges())
     print
     
-#     print checker.buchi.g.nodes()
-#     for s in checker.buchi.g.nodes():
-#         for sym in ['r1', 'r2', 'r3', 'r4', 'o1', 'o2', 'o3', 'o4', 'o5']:
-#             print s, '-', sym, '->', checker.buchi.next_states_of_buchi(s, set([sym]))
-#     
-#     return
-#     import matplotlib.pyplot as plt
-#     checker.buchi.visualize()
-#     plt.show()
-    
-#     nx.write_adjlist(checker.buchi.g, 'buchi.test.txt')
-    
     # initialize global off-line RRG planner
-    planner = RRGPlanner(robot, checker, None, iterations=1000)
-    sim.offline = planner
+    sim.offline = RRGPlanner(robot, checker, None, iterations=1000)
     
     with Timer():
-        if planner.solve():
+        if sim.offline.solve():
             print 'Found solution!'
         else:
             print 'No solution found!'
         print
         
-    print 'Finished in', planner.iteration, 'iterations!'
-    print 'Size of TS:', planner.ts.size()
-    print 'Size of PA:', planner.checker.size()
+    print 'Finished in', sim.offline.iteration, 'iterations!'
+    print 'Size of TS:', sim.offline.ts.size()
+    print 'Size of PA:', sim.offline.checker.size()
     
-#     print 'TS'
-#     ids = dict()
-#     for k, x in enumerate(sorted(sim.offline.ts.g.nodes_iter(), key=lambda a: a.coords[0])):
-#         ids[x] = k
-    
-#     for x, d in sorted(sim.offline.ts.g.nodes_iter(data=True), key=lambda a: a[1]['order']):
-#         print d['order'], tuple(x.coords), d['prop'], [sim.offline.ts.g.node[nb]['order'] for nb in sim.offline.ts.g.neighbors(x)]
-#     
-#     print
-#     print
-#     
-#     print 'PA'
-#     for (x, s), d in sorted(sim.offline.checker.g.nodes_iter(data=True), key=lambda a: sim.offline.ts.g.node[a[0][0]]['order']):
-#         print sim.offline.ts.g.node[x]['order'], tuple(x.coords), s, [(sim.offline.ts.g.node[nb]['order'], nbs) for nb, nbs in sim.offline.checker.g.neighbors((x, s))]
-#     return
-    # TODO: display input box to define output filename
 #     # save global transition system and control policy
 #     planner.ts.save('ts.yaml')
 #     save -> planner.policy()
@@ -184,43 +156,71 @@ def caseStudy():
     
     # display workspace and global transition system
 #     sim.display()
-    sim.display(expanded='both')
-#     return
-    prefix, suffix = planner.checker.globalPolicy(sim.offline.ts)
-    sim.display(expanded='both', solution=prefix+suffix[1:])
+#     sim.display(expanded='both')
+# #     return
+    prefix, suffix = sim.offline.checker.globalPolicy(sim.offline.ts)
+#     sim.display(expanded='both', solution=prefix+suffix[1:])
 #     sim.display(expanded=True, solution=prefix)
 #     sim.display(expanded=True, solution=suffix)
     
-    # FIXME: set to global and to save animation
-    sim.simulate()
-    sim.play()
-#     sim.execute(2)
-    sim.save()
-    return
+#     # FIXME: set to global and to save animation
+#     sim.simulate()
+#     sim.play()
+# #     sim.execute(2)
+#     sim.save()
+    
     ############################################################################
     ### Execute on-line path planning algorithm ################################
     ############################################################################
     
-    # FIXME: define local specification as a priority function
-    localSpec = None
+    # define local specification as a priority function
+    localSpec = {'survivor': 0, 'fire': 1}
     print localSpec
     
-    # FIXME: initialize local on-line RRT planner
-    planner = None
-    sim.online = planner
+    # local  requests
+    F1 = (BallRegion2D(L*np.array([5.4, 3.3]), L*0.5, ['fire']), 'orange')
+    F2 = (BallRegion2D(L*np.array([2.1, 0.8]), L*0.3, ['fire']), 'orange')
+    S2 = (BallRegion2D(L*np.array([7.2, 0.8]), L*0.45, ['survivor']), 'yellow')
+    regions = [F1, F2, S2]
+    
+    # add local requests to workspace
+    for r, c in regions:
+        # add styles to region
+        addStyle(r, style={'facecolor': to_rgba(c, 0.2)}) # FIXME: hack?
+        # add region to workspace
+        sim.workspace.addRegion(r, local=True)
+        # create expanded region
+        er = expandRegion(r, robot.diameter/2)
+        # add style to the expanded region
+        addStyle(er, style={'facecolor': to_rgba(c, 0.2)}) # FIXME: hack?
+        # add expanded region to the expanded workspace
+        sim.expandedWorkspace.addRegion(er, local=True)
+    
+    sim.display(expanded='both', solution=prefix+suffix[1:])
+    
+    # compute potential for each state of PA
+    with Timer():
+        print compute_potentials(sim.offline.checker)
+    
+    # initialize local on-line RRT planner
+    sim.online = LocalPlanner(sim.offline.checker, sim.offline.ts, robot,
+                              localSpec)
     
     # define number of surveillance cycles to run
     cycles = 4
-    
     # execute controller
     cycle = 0 # number of completed cycles
     while cycle < cycles:
-        # TODO: sense
-        with Timer():
-            pass
-            # TODO: feed data to planner and get next control input
-        # TODO: enforce movement
-        # TODO: if completed cycle increment cycle
+        # update the locally sensed requests and obstacles
+        robot.sense()
+        with Timer('local planning'):
+            # feed data to planner and get next control input
+            nextConf = sim.online.execute()
+        # enforce movement
+        robot.move(nextConf)
+        # if completed cycle increment cycle
+        if sim.update():
+            cycle += 1
         # FIXME: delete this hack
         cycle = 4
     
@@ -228,9 +228,9 @@ def caseStudy():
     ### Display the local transition systems and the on-line control policy ####
     ############################################################################
     
-    # FIXME: set to local and to save animation 
-    sim.simulate()
-    sim.save()
+#     # FIXME: set to local and to save animation 
+#     sim.simulate()
+#     sim.save()
     
 
 if __name__ == '__main__':

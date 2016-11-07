@@ -41,8 +41,7 @@ __all__ = ['Point', 'State', 'Configuration',
 BasePoint = namedtuple('Point', ['coords', 'hash'])
 
 class Point(BasePoint):
-    '''
-    Representation of a point in an n-dimensional real metric space.
+    '''Representation of a point in an n-dimensional real metric space.
     The point is represented as NumPy array.
     
     .. see also:: http://docs.scipy.org/doc/numpy/reference/index.html
@@ -114,9 +113,7 @@ Configuration = Point
 
 
 class Boundary(object):
-    '''
-    Defines a boundary for a metric space.
-    '''
+    '''Defines a boundary for a metric space.'''
     def __init__(self):
         self._hash = None
         
@@ -137,9 +134,7 @@ class Boundary(object):
 
 
 class Region(Boundary):
-    '''
-    Defines a labeled region.
-    '''
+    '''Defines a labeled region.'''
     def __init__(self, symbols):
         Boundary.__init__(self)
         self.symbols = set(symbols)
@@ -157,15 +152,12 @@ class Region(Boundary):
 
 
 class RealMetricSpace(object):
-    '''
-    Defines an n-dimensional real metric space. The metric should be given as a
-    distance function.
+    '''Defines an n-dimensional real metric space. The metric should be given as
+    a distance function.
     '''
      
     def __init__(self, dimension=2, boundary=None, metric=euclidean):
-        '''
-        Constructor 
-        '''
+        '''Constructor'''
         # set boundary (may be undefined)
         self.boundary = boundary
         # set dimension
@@ -176,8 +168,7 @@ class RealMetricSpace(object):
         self.norm = lambda x: self.metric(x.coords, 0)
     
     def getDimensions(self):
-        '''
-        Returns the dimensions of the configuration space.
+        '''Returns the dimensions of the configuration space.
          
         Examples:
         ---------
@@ -197,9 +188,8 @@ class RealMetricSpace(object):
 
 
 class Workspace(RealMetricSpace):
-    '''
-    Defines an n-dimensional real metric space with labeled regions. The metric 
-    should be given as a distance function.
+    '''Defines an n-dimensional real metric space with labeled regions. The
+    metric should be given as a distance function.
     '''
     
     def __init__(self, dimension=2, boundary=None, metric=euclidean,

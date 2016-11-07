@@ -23,5 +23,4 @@ Package defining planning algorithms.
 '''
 
 from planning.ltlrrg import RRGPlanner
-# TODO: add this
-# from planning.localrrt import LocalPlanner
+from planning.localrrt import LocalPlanner

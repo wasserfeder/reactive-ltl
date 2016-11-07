@@ -4,6 +4,7 @@
 
 .. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
 '''
+from matplotlib.colors import ColorConverter
 
 '''
     The module defines classes for displaying planar environments.
@@ -32,6 +33,7 @@ from numpy import mean
 
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
+from matplotlib.colors import ColorConverter
 
 from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
                           BallBoundary2D, BoxBoundary2D, PolygonBoundary2D, \
@@ -40,6 +42,9 @@ from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
 
 
 __all__ = []
+
+colconv = ColorConverter()
+to_rgba = colconv.to_rgba
 
 
 def drawPoint2D(viewport, point, color, style=None):
@@ -189,7 +194,7 @@ class Simulate2D(object):
         self.config['y-padding'] = self.config.get('y-padding',
                                                    self.robot.diameter/2)
         self.config['grid-on'] = self.config.get('grid-on', True)
-        self.config['sim-step'] = self.config.get('sim-step', 6) # TODO: for simulation video 0.01)
+        self.config['sim-step'] = self.config.get('sim-step', 0.1) # TODO: for simulation video 0.01)
         self.config['video-file'] = self.config.get('video-file', 'video.mp4')
         self.config['video-interval'] = self.config.get('video-interval', 2000)
     
@@ -348,6 +353,9 @@ class Simulate2D(object):
     
     def rewind(self, steps=1):
         # TODO:
+        pass
+    
+    def update(self):
         pass
 
 if __name__ == '__main__':
