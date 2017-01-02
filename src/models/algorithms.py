@@ -177,7 +177,7 @@ def compute_potentials(pa):
     pa.g.add_node('v')
     pa.g.add_edges_from([('v', p) for p in pa.init])
     # create strongly connected components of the product automaton w/ 'v'
-    scc = nx.strongly_connected_components(pa.g)
+    scc = list(nx.strongly_connected_components(pa.g))
     dag = nx.condensation(pa.g, scc)
     # get strongly connected component which contains 'v'
     for k, sc in enumerate(scc[::-1]):

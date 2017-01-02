@@ -29,6 +29,8 @@ import networkx as nx
 import lomap
 from lomap import Ts, Timer
 
+from spaces import Point2D
+
 
 def get_actual_potential(x, B, pa):
     '''Compute potential of a TS node x with Buchi set B from product
@@ -80,13 +82,15 @@ class LocalPlanner(object):
     robot.
     '''
     
-    def __init__(self, pa, ts, robot, local_spec, eta=1):
+    def __init__(self, pa, ts, robot, local_spec, eta=0.1):
         '''Constructor'''
         self.pa = pa
         self.ts = ts
         self.robot = robot
         self.priority = local_spec
         self.lts = None
+        
+        self.PointCls = Point2D
         
         self.local_plan = None
         self.tracking_req = None
@@ -102,6 +106,9 @@ class LocalPlanner(object):
         # set max steer step size eta and sensing radius
         self.eta = eta
 #         self.sensing_radius = sensing_radius
+
+        self.durations = []
+        self.sizes = []
 
 #     def update_local_info(self):
 #         '''Sets information about locally sensed requests and obstacles.'''
@@ -125,15 +132,17 @@ class LocalPlanner(object):
     def execute(self, requests, obstacles):
         '''Plan locally.'''
         # update local information
-        self.requests = []
-        for r in requests:
-            name = next(iter(r.symbols))
-            self.requests.append(Request(r, name, self.priority[name]))
+        self.requests = requests
         self.obstacles = obstacles
         # update local plan
-        with Timer() as local_planning_timer:
+        local_planning_timer = Timer('Generate Local Plan')
+        with local_planning_timer:
+            nr_nodes = -1
             if not self.check_local_plan():
+                print 'Local check: False'
                 self.local_plan, nr_nodes = self.generate_local_plan()
+            else:
+                print 'Local check: False'
         # update meta data
         self.durations.append(local_planning_timer.duration)
         self.sizes.append(nr_nodes)
@@ -152,6 +161,9 @@ class LocalPlanner(object):
             return False
         requests = self.requests
         
+        print '[check local plan]', self.local_plan
+        print '[check local plan]', self.requests
+        
         # check if target is needs to be modified
         if requests:
             highest_priority_req = min(requests, key=lambda req: req.priority)
@@ -160,21 +172,21 @@ class LocalPlanner(object):
                 self.tracking_req = highest_priority_req
                 return False
         # there is a target, but it disappeared
-        if self.tracking_req not in requests:
+        if self.tracking_req and self.tracking_req not in requests:
             if requests:
                 self.tracking_req = highest_priority_req # switch target
             else:
                 self.tracking_req = None # reset target
             return False
-#         # target moved
+#         # target moved # TODO: is this necessary
 #         if robot.local_target_request == robot.current_position:
 #     #         if __verbose__:
 #     #             print 'Target moved!!!'
 #             robot.local_target_request = None # reset target
 #             return False
-                
+        
         # 2. check that path is collision free
-        return self.robot.collision_free(self.local_plan)
+        return self.robot.collision_free(self.local_plan, self.obstacles)
 
     def free_movement(self, current_state=None):
         '''Assumes that it can find a solution from the current position to the
@@ -193,7 +205,7 @@ class LocalPlanner(object):
             _, pa_next_states = zip(*self.pa.g.out_edges_iter(pa_states))
             next_states, _ = zip(*pa_next_states)
             
-            B = set(self.buchi.g.nodes())
+            B = set(self.pa.buchi.g.nodes())
             final_state = min(next_states,
                               key=lambda x: get_actual_potential(x, B, self.pa))
             
@@ -203,16 +215,18 @@ class LocalPlanner(object):
         else: # local state
             final_state = self.global_target_state
             # check if it can be connected
+            #TODO: change this to correct call
             if not self.env.is_simple_segment(current_state, final_state):
                 return []
-        current_state = np.array(current_state)
-        final_state = np.array(final_state)
+        # generate straight path to the node
+        current_state = np.array(current_state.coords)
+        final_state = np.array(final_state.coords)
         dist = norm(final_state - current_state)
         u = final_state - current_state
-        points = map(lambda a: tuple(current_state + a * u),
-                     np.arange(0, 1, self.eta/dist))
-        # generate straight path to the node
-        return points[1:] + [tuple(final_state)]
+        points = [self.PointCls(current_state + a * u)
+                        for a in np.arange(0, 1, self.eta/dist)][1:]
+        points.append(self.PointCls(final_state))
+        return points
 
     def test(self, state):
         ''' Test if target was hit and can be connected to global ts.
@@ -243,9 +257,12 @@ class LocalPlanner(object):
         
         # 0. no local requests => move towards global state of minimum potential
         if not local_requests and not local_obstacles:
+            print '[generate_local_plan]', local_requests
             local_plan = self.free_movement()
             if local_plan:
                 return local_plan, -1
+        
+        print '[generate_local_plan]', self.tracking_req
         
         target = self.tracking_req
         
@@ -262,22 +279,23 @@ class LocalPlanner(object):
         # test if solution was found
         while not self.test(dest_state):
             # 3. generate sample
-            random_sample = env.sample(robot.current_position, robot.sensing_radius)
+            random_sample = self.robot.sample(local=True)
             # 4. get nearest neighbor in local ts
-            source_state = nearest(lts, random_sample)
+            source_state = nearest(self.lts, random_sample)
             # 5. steer robot towards random sample
-            dest_state = robot.steer(source_state, random_sample)
+            dest_state = self.robot.steer(source_state, random_sample)
             # 6. label new sample
             dest_global_prop, dest_local_prop = env.label(dest_state)
             
-            if env.is_simple_segment(source_state, dest_state):
+            if self.robot.is_simple_segment(source_state, dest_state):
                 # 7. compute Buchi states for new sample
                 source_data = lts.g.node[source_state]
                 B = monitor(source_data['buchi_states'], robot.buchi,
                             source_data['global_prop'], dest_global_prop)
                 Bp = monitor(B, robot.buchi, dest_global_prop)
                 if B and Bp:
-                    if env.collision_free(source_state, dest_state, robot, local_obstacles):
+                    if self.robot.collision_free_segment(source_state,
+                                                  dest_state, local_obstacles):
                         # 8. update local transition system
                         hit = False
                         if target:

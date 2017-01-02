@@ -215,6 +215,13 @@ class BallBoundary2D(Boundary):
     def boundingBox(self):
         return array([self.center - self.radius, self.center + self.radius]).T
     
+    def sample(self):
+        r = uniform(size=3)
+        rad = self.radius * (r[0] + r[1])
+        theta = 2 * np.pi * r[2]
+        p = np.array([rad*np.cos(theta), rad*np.sin(theta)])
+        return Point2D(self.center + p)
+    
     def intersects(self, src, dest=None):
         '''
         It dest is None then it returns true if src is inside the region,
@@ -244,12 +251,6 @@ class BallBoundary2D(Boundary):
             lambd = min(max(lambd, 0), 1)
             dist = euclidean(w - lambd*u, 0)
             return dist <= self.radius
-        print
-        print self.center
-        print src
-        print euclidean(self.center, src)
-        print euclidean(self.center, src) <= self.radius
-        print
         return euclidean(self.center, src) <= self.radius
     
     def contains(self, src, dest):

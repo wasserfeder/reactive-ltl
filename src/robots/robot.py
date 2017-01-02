@@ -52,7 +52,8 @@ class Robot(object):
         within the sensing area..
         '''
         if local:
-            return self.cspace.getLocalSample(self.currentConf)
+#             return self.cspace.getLocalSample(self.currentConf)
+            return self.sensor.sensingShape.sample()
         return self.cspace.getSample()
     
 #     def sense(self):

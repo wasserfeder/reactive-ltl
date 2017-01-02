@@ -219,55 +219,56 @@ class Workspace(RealMetricSpace):
     def getSample(self):
         return self.boundary.sample() 
  
-    def getSymbols(self, position=None, local=False):
+    def getSymbols(self, position=None): #, local=False):
         '''Returns the set of global symbols of all global regions that overlap
         the given position. If position is None, it returns all symbols from all
         global regions.
         '''
         if not position:
-            if local:
-                return self.localSymbols
+#             if local:
+#                 return self.localSymbols
             return self.globalSymbols
         
-        if local:
-            regions = self.localRegions
-        else:
-            regions = self.globalRegions
-        
+#         if local:
+#             regions = self.localRegions
+#         else:
+#             regions = self.globalRegions
+        regions = self.globalRegions
         regions = (region.symbols for region in regions
                                                  if region.intersects(position))
         return set(itertools.chain.from_iterable(regions))
      
-    def addRegion(self, region, local=False):
+    def addRegion(self, region): #, local=False):
         '''Adds a region of interest to the workspace.'''
         if not isinstance(region, Region):
             raise TypeError('Expected Region variable!')
-        if local:
-            self.localRegions.append(region)
-            self.localSymbols |= region.symbols
-        else:
-            self.globalRegions.add(region)
-            self.globalSymbols |= region.symbols
+#         if local:
+#             self.localRegions.append(region)
+#             self.localSymbols |= region.symbols
+#         else:
+        self.globalRegions.add(region)
+        self.globalSymbols |= region.symbols
      
-    def removeRegion(self, region, local=False, update=False):
+    def removeRegion(self, region, # local=False,
+                     update=False):
         '''Removes a region of interest from the workspace.'''
         if not isinstance(region, Region):
             raise TypeError('Expected Region variable!')
-        if local:
-            self.localRegions.remove(region)
-            if update:
-                symbols = (region.symbols for region in self.localRegions)
-                self.localSymbols = set(itertools.chain.from_iterable(symbols))
-        else:
-            self.globalRegions.discard(region)
-            if update:
-                symbols = (region.symbols for region in self.globalRegions)
-                self.globalSymbols = set(itertools.chain.from_iterable(symbols))
+#         if local:
+#             self.localRegions.remove(region)
+#             if update:
+#                 symbols = (region.symbols for region in self.localRegions)
+#                 self.localSymbols = set(itertools.chain.from_iterable(symbols))
+#         else:
+        self.globalRegions.discard(region)
+        if update:
+            symbols = (region.symbols for region in self.globalRegions)
+            self.globalSymbols = set(itertools.chain.from_iterable(symbols))
      
-    def intersectingRegions(self, src, dest=None, local=False):
+    def intersectingRegions(self, src, dest=None): #, local=False):
         '''Returns the regions which intersect the point or line.'''
-        if local:
-            return [r for r in self.localRegions if r.intersects(src, dest)]
+#         if local:
+#             return [r for r in self.localRegions if r.intersects(src, dest)]
         return [r for r in self.globalRegions if r.intersects(src, dest)]
     
     def __str__(self): #TODO:

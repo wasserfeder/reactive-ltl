@@ -158,17 +158,17 @@ def drawRobot2D(viewport, robot, size, text='', textStyle=None):
 def drawGraph(viewport, g):
     
     for u in g.nodes_iter():
-        plt.plot(u.x, u.y, 'o')
+        plt.plot(u.x, u.y, 'o', color='blue')
     
     for u, v in g.edges_iter():
         x = (u.x, v.x)
         y = (u.y, v.y)
         plt.plot(x, y, color='black')
 
-def drawPolicy(viewport, solution):
+def drawPolicy(viewport, solution, color='black'):
     for u, v in it.izip(solution, solution[1:]):
         dx, dy = v.x - u.x, v.y - u.y
-        plt.arrow(u.x, u.y, dx, dy, hold=True, color='black',
+        plt.arrow(u.x, u.y, dx, dy, hold=True, color=color,
                   length_includes_head=True, head_width=0.08)
 
 
@@ -213,19 +213,21 @@ class Simulate2D(object):
     def reset(self):
         pass
     
-    def display(self, expanded=False, solution=None):
+    def display(self, expanded=False, solution=None, localinfo=None):
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect='equal')
         
         if expanded == 'both':
-            self.render(ax, expanded=True, solution=[])
-            self.render(ax, expanded=False, solution=solution)
+            self.render(ax, expanded=True, solution=[], localinfo=localinfo)
+            self.render(ax, expanded=False, solution=solution,
+                        localinfo=localinfo)
         else:
-            self.render(ax, expanded, solution)
+            self.render(ax, expanded, solution, localinfo=localinfo)
         
         plt.show()
     
-    def render(self, viewport, expanded=False, solution=None, withtext=True):
+    def render(self, viewport, expanded=False, solution=None, withtext=True,
+               localinfo=None):
         if expanded:
             wp = self.expandedWorkspace
         else:
@@ -251,11 +253,11 @@ class Simulate2D(object):
             if withtext:
                 text = r.text
             drawRegion2D(viewport, r, r.style, text, r.textStyle)
-        for r in wp.localRegions:
-            text = None
-            if withtext:
-                text = r.text
-            drawRegion2D(viewport, r, r.style, text, r.textStyle)
+#         for r in wp.localRegions:
+#             text = None
+#             if withtext:
+#                 text = r.text
+#             drawRegion2D(viewport, r, r.style, text, r.textStyle)
         
         # draw boundary
         drawBoundary2D(viewport, wp.boundary, wp.boundary.style)
@@ -270,7 +272,28 @@ class Simulate2D(object):
             if self.offline is not None:
                 # draw transition system
                 drawGraph(viewport, self.offline.ts.g)
-        #TODO:
+        
+        # draw local regions/plans/data
+        if self.online is not None:
+            for req in self.robot.sensor.requests:
+                r = req.region
+                text = None
+                if withtext:
+                    text = req.region.text
+                if req in self.online.requests: #FIXME: remove hack
+                    r.style['facecolor'] = r.style['facecolor'][:3] + (0.2,)
+                else:
+                    r.style['facecolor'] = r.style['facecolor'][:3] + (0.5,)
+                    
+                drawRegion2D(viewport, r, r.style, text, r.textStyle)
+            
+            if localinfo == 'tree' and self.online.lts:
+                drawGraph(viewport, self.online.lts.g)
+            elif localinfo == 'trajectory':
+                drawPolicy(viewport, self.trajectory)
+            elif localinfo == 'plan':
+                local_plan = [self.robot.currentConf] + self.online.local_plan
+                drawPolicy(viewport, local_plan, 'blue')
     
     def simulate(self, loops=2, offline=True):
         assert self.offline.checker.foundPolicy()

@@ -33,7 +33,7 @@ from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
                           expandRegion, BoxBoundary2D, BallBoundary2D, Point2D
 from robots import FullyActuatedRobot, SimulatedSensor
 
-from planning import RRGPlanner, LocalPlanner
+from planning import RRGPlanner, LocalPlanner, Request
 from models import IncrementalProduct, compute_potentials
 from graphics.planar import addStyle, Simulate2D, to_rgba
 from lomap import Timer
@@ -111,14 +111,22 @@ def caseStudy():
     F2 = (BallRegion2D(L*np.array([2.1, 0.8]), L*0.3, ['fire']), 'orange')
     S2 = (BallRegion2D(L*np.array([7.2, 0.8]), L*0.45, ['survivor']), 'yellow')
     requests = [F1, F2, S2]
+    # define local specification as a priority function
+    localSpec = {'survivor': 0, 'fire': 1}
+    print 'Local specification:', localSpec
     # local obstacles
     obstacles = []
     
     # add style to local requests
     for r, c in requests:
         # add styles to region
-        addStyle(r, style={'facecolor': to_rgba(c, 0.2)}) # FIXME: hack?
-    requests,_ = zip(*requests)
+        addStyle(r, style={'facecolor': to_rgba(c, 0.5)}) # FIXME: hack?
+    # create request objects
+    reqs = []
+    for r, _ in requests:
+        name = next(iter(r.symbols))
+        reqs.append(Request(r, name, localSpec[name]))
+    requests = reqs
     
     sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
     robot.sensor = SimulatedSensor(robot, sensingShape, requests, obstacles)
@@ -195,10 +203,6 @@ def caseStudy():
     ### Execute on-line path planning algorithm ################################
     ############################################################################
     
-    # define local specification as a priority function
-    localSpec = {'survivor': 0, 'fire': 1}
-    print localSpec
-    
     sim.display(expanded='both', solution=prefix+suffix[1:])
     
     # compute potential for each state of PA
@@ -210,7 +214,7 @@ def caseStudy():
                               localSpec)
     
     # define number of surveillance cycles to run
-    cycles = 4
+    cycles = 1
     # execute controller
     cycle = 0 # number of completed cycles
     while cycle < cycles:
@@ -219,13 +223,20 @@ def caseStudy():
         with Timer('local planning'):
             # feed data to planner and get next control input
             nextConf = sim.online.execute(requests, obstacles)
+        
+        print 'local tree'
+        sim.display(expanded=True, localinfo='tree')
+        print 'local plan'
+        sim.display(expanded=True, localinfo='plan')
+        
         # enforce movement
         robot.move(nextConf)
+        
+        sim.display(expanded=True)
+        
         # if completed cycle increment cycle
         if sim.update():
             cycle += 1
-        # FIXME: delete this hack
-        cycle = 4
     
     ############################################################################
     ### Display the local transition systems and the on-line control policy ####

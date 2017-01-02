@@ -61,7 +61,7 @@ class SimulatedSensor(Sensor):
         '''
         self.sensingShape.center = np.array(self.robot.currentConf.coords)
         requests = [r for r in self.requests
-                            if self.sensingShape.intersects(r.center)]
+                      if self.sensingShape.intersects(r.region.center)]
         
         obstacles = [o for o in self.obstacles
             if (self.robot.cspace.dist(self.robot.sensingShape.center, o.center)

@@ -76,8 +76,8 @@ class FullyActuatedRobot(Robot):
 #             #TODO: get locally sensed events from external node
 #             raise NotImplementedError
     
-    def getSymbols(self, position, local=False):
-        return self.wspace.getSymbols(position, local)
+    def getSymbols(self, position): #, local=False):
+        return self.wspace.getSymbols(position) #, local)
     
     def steer(self, start, target, atol=0):
         '''Returns a position that the robot can move to from the start position
@@ -139,18 +139,19 @@ class FullyActuatedRobot(Robot):
         # if the endpoints belong to two different regions
         return nrRegUV == 2
     
-    def collision_free(self, plan):
+    def collision_free(self, plan, local_obstacles):
         '''#TODO:
         '''
         if self.isSetup:
             raise NotImplementedError
-        else:
-            aux = [self.robot.currentConf] + self.local_plan
+        elif local_obstacles:
+            aux = [self.currentConf] + plan
             for start, stop in zip(aux[:-1], aux[1:]):
-                reqs = self.wspace.intersectingRegions(start, stop, local=True)
-                if self.localObst in reqs:
+                if any([obs.intersects(start, stop)
+                                         for obs in local_obstacles]):
                     return False
             return True
+        return True
     
     def collision_free_segment(self, u, v):
         '''TODO:
@@ -159,6 +160,7 @@ class FullyActuatedRobot(Robot):
             raise NotImplementedError
         else:
             pass
+        raise NotImplementedError
     
     def __str__(self):
         return 'Fully actuated robot'
