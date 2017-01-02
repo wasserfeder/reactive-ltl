@@ -138,7 +138,7 @@ def addStyle(region, style=None, withText=True, text=None, textStyle=None):
 def drawRobot2D(viewport, robot, size, text='', textStyle=None):
     x, y = robot.currentConf.coords
     #TODO: make this general
-    sensingShape = BallBoundary2D([x, y], robot.sensingShape.radius)
+    sensingShape = BallBoundary2D([x, y], robot.sensor.sensingShape.radius)
     style = {'facecolor': (0, 0, 1, 0.2), 'edgecolor': (0, 0, 1, 0.2), 'fill': True}
     drawBoundary2D(viewport, sensingShape, style)
     
@@ -187,6 +187,9 @@ class Simulate2D(object):
         else:
             self.config = dict()
         self.__defaultConfiguration()
+        
+        self.offline = None
+        self.online = None
     
     def __defaultConfiguration(self):
         self.config['x-padding'] = self.config.get('x-padding',
@@ -235,6 +238,13 @@ class Simulate2D(object):
         if self.config.get('grid-on'):
             plt.grid()
         
+        if self.config.get('background', None):
+            img = plt.imread(self.config['background'])
+            img = np.flipud(img)
+            plt.imshow(img, origin='lower', extent=limits.flatten(), zorder=0,
+#                        alpha=0.5
+                       )
+        
         # draw regions
         for r in wp.globalRegions:
             text = None
@@ -257,8 +267,9 @@ class Simulate2D(object):
         if solution is not None:
             drawPolicy(viewport, solution)
         else:
-            # draw transition system
-            drawGraph(viewport, self.offline.ts.g)
+            if self.offline is not None:
+                # draw transition system
+                drawGraph(viewport, self.offline.ts.g)
         #TODO:
     
     def simulate(self, loops=2, offline=True):

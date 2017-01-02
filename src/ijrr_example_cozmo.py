@@ -31,7 +31,7 @@ import numpy as np
 from spaces.base import Workspace
 from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
                           expandRegion, BoxBoundary2D, BallBoundary2D, Point2D
-from robots import FullyActuatedRobot, SimulatedSensor
+from robots import FullyActuatedRobot
 
 from planning import RRGPlanner, LocalPlanner
 from models import IncrementalProduct, compute_potentials
@@ -45,12 +45,12 @@ def caseStudy():
     ############################################################################
     
     # define robot diameter (used to compute the expanded workspace)
-    robotDiameter = 0.36
+    robotDiameter = 0.15
     
     L = 0.6
     
     # define boundary
-    boundary = BoxBoundary2D(L*np.array([[0, 8], [0, 6]]))
+    boundary = BoxBoundary2D(np.array([[0, 4.8], [0, 3.6]]))
     # define boundary style
     boundary.style = {'color' : 'black'}
     # create expanded region
@@ -66,13 +66,14 @@ def caseStudy():
     robot = FullyActuatedRobot('Cozmo', init=Point2D((2, 2)), wspace=ewspace,
                                stepsize=0.999)
     robot.diameter = robotDiameter
-#     robot.sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
+    robot.sensingShape = BallBoundary2D([0, 0], robot.diameter*4)
     robot.localObst = 'local_obstacle'
 #     robot.origin = Point2D([0.7, -0.7])
     print 'Conf space:', robot.cspace
     
     # create simulation object
-    sim = Simulate2D(wspace, robot, ewspace)
+    sim = Simulate2D(wspace, robot, ewspace,
+                     config={'background': '../data_ijrr/imMap.png'})
     
     # regions of interest
     R1 = (BoxRegion2D(L*np.array([[0.75, 1.25], [0.75, 1]]), ['r1']), 'blue')
@@ -82,11 +83,8 @@ def caseStudy():
                       [1.5, 4.25], [2.0, 4.25]]), ['r4']), 'magenta')
     # global obstacles
     O1 = (BallRegion2D(L*np.array([4, 2.5]), L*0.6, ['o1']), 'gray')
-    O2 = (PolygonRegion2D(L*np.array([[0.75, 2], [1.75, 2.5], [0.75, 3]]),
-                          ['o2']),
-          'gray')
-    O3 = (PolygonRegion2D(L*np.array([[3.5, 4.5], [4, 5], [4.5, 4.5]]), ['o3']),
-          'gray')
+    O2 = (PolygonRegion2D(L*np.array([[0.75, 2], [1.75, 2.5], [0.75, 3]]), ['o2']), 'gray')
+    O3 = (PolygonRegion2D(L*np.array([[3.5, 4.5], [4, 5], [4.5, 4.5]]), ['o3']), 'gray')
     O4 = (BoxRegion2D(L*np.array([[2.75, 3.25], [0.75, 1]]), ['o4']), 'gray')
 #     O4 = (BallRegion2D(L*np.array([3, 0.875], 0.5, ['o4']), 'gray')
     
@@ -106,28 +104,12 @@ def caseStudy():
         # add expanded region to the expanded workspace
         sim.expandedWorkspace.addRegion(er)
     
-    # local  requests
-    F1 = (BallRegion2D(L*np.array([5.4, 3.3]), L*0.5, ['fire']), 'orange')
-    F2 = (BallRegion2D(L*np.array([2.1, 0.8]), L*0.3, ['fire']), 'orange')
-    S2 = (BallRegion2D(L*np.array([7.2, 0.8]), L*0.45, ['survivor']), 'yellow')
-    requests = [F1, F2, S2]
-    # local obstacles
-    obstacles = []
-    
-    # add style to local requests
-    for r, c in requests:
-        # add styles to region
-        addStyle(r, style={'facecolor': to_rgba(c, 0.2)}) # FIXME: hack?
-    requests,_ = zip(*requests)
-    
-    sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
-    robot.sensor = SimulatedSensor(robot, sensingShape, requests, obstacles)
-    
     # display workspace
     sim.display()
      
     # display expanded workspace
     sim.display(expanded=True)
+    return
     
     ############################################################################
     ### Generate global transition system and off-line control policy ##########
@@ -135,17 +117,16 @@ def caseStudy():
     
 #     globalSpec = '[] ( <> r1 )' + \
 #                  '&&' + \
-#                  '[] ( r1 -> ( ( <> ( r2 || r3 ) ) ' +\
-#                          '&& ( ! o1 U ( r2 || r3 ) ) ) )' +\
+#                  '[] ( r1 -> ( ( <> ( r2 || r3 ) ) && ( ! o1 U ( r2 || r3 ) ) ) )' +\
 #                  '&&' + \
 #                  '[] ( r2 -> ( ( <> r4 ) && ( ! r3 U r1 ) ) )' + \
 #                  '&& ' + \
 #                  '[] ( ! ( o2 || o3 || o4 ) )'
 #     globalSpec = '[] ( <> o2 && <> o4 )'
 #     globalSpec = '[] ( <> o2 && ! o4 )'
-#     globalSpec = '[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4) )'
-    globalSpec = ('[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4)'
-                  + ' && !(o1 || o2 || o3 || o4 || o5))')
+#     globalSpec = '[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4) )' # && !(o1 || o2 || o3 || o4 || o5))'
+    globalSpec = ('[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4) '
+                  + '&& !(o1 || o2 || o3 || o4 || o5))')
     print globalSpec
     
     # initialize incremental product automaton
@@ -199,6 +180,25 @@ def caseStudy():
     localSpec = {'survivor': 0, 'fire': 1}
     print localSpec
     
+    # local  requests
+    F1 = (BallRegion2D(L*np.array([5.4, 3.3]), L*0.5, ['fire']), 'orange')
+    F2 = (BallRegion2D(L*np.array([2.1, 0.8]), L*0.3, ['fire']), 'orange')
+    S2 = (BallRegion2D(L*np.array([7.2, 0.8]), L*0.45, ['survivor']), 'yellow')
+    regions = [F1, F2, S2]
+    
+    # add local requests to workspace
+    for r, c in regions:
+        # add styles to region
+        addStyle(r, style={'facecolor': to_rgba(c, 0.2)}) # FIXME: hack?
+        # add region to workspace
+        sim.workspace.addRegion(r, local=True)
+        # create expanded region
+        er = expandRegion(r, robot.diameter/2)
+        # add style to the expanded region
+        addStyle(er, style={'facecolor': to_rgba(c, 0.2)}) # FIXME: hack?
+        # add expanded region to the expanded workspace
+        sim.expandedWorkspace.addRegion(er, local=True)
+    
     sim.display(expanded='both', solution=prefix+suffix[1:])
     
     # compute potential for each state of PA
@@ -215,10 +215,10 @@ def caseStudy():
     cycle = 0 # number of completed cycles
     while cycle < cycles:
         # update the locally sensed requests and obstacles
-        requests, obstacles = robot.sensor.sense()
+        robot.sense()
         with Timer('local planning'):
             # feed data to planner and get next control input
-            nextConf = sim.online.execute(requests, obstacles)
+            nextConf = sim.online.execute()
         # enforce movement
         robot.move(nextConf)
         # if completed cycle increment cycle

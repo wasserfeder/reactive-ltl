@@ -19,3 +19,4 @@
 
 from robot import Robot
 from fullyActuatedRobot import FullyActuatedRobot
+from sensors import Sensor, SimulatedSensor

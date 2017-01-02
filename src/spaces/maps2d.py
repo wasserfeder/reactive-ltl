@@ -231,14 +231,26 @@ class BallBoundary2D(Boundary):
             return \ d <= radius
         
         '''
+        if isinstance(src, Point):
+            src = src.coords
+        
         if dest:
-            w = self.center - src.coords
-            u = (dest.coords - src.coords)
+            if isinstance(dest, Point):
+                dest = dest.coords
+            
+            w = self.center - src
+            u = dest - src
             lambd = dot(w, u)/sqeuclidean(u, 0)
             lambd = min(max(lambd, 0), 1)
             dist = euclidean(w - lambd*u, 0)
             return dist <= self.radius
-        return euclidean(self.center, src.coords) <= self.radius
+        print
+        print self.center
+        print src
+        print euclidean(self.center, src)
+        print euclidean(self.center, src) <= self.radius
+        print
+        return euclidean(self.center, src) <= self.radius
     
     def contains(self, src, dest):
         '''

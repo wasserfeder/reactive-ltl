@@ -28,8 +28,9 @@
 
 from robot import Robot
 
-import rospy
-from geometry_msgs.msg import Twist
+if False:
+    import rospy
+    from geometry_msgs.msg import Twist
 
 
 class FullyActuatedRobot(Robot):
@@ -69,10 +70,11 @@ class FullyActuatedRobot(Robot):
             conf = None # TODO: read from optitrack data
         super(FullyActuatedRobot, self).move(conf)
     
-    def sense(self):
-        if self.isSetup:
-            #TODO: get locally sensed events from external node
-            raise NotImplementedError
+#     def sense(self):
+#         self.S
+#         if self.isSetup:
+#             #TODO: get locally sensed events from external node
+#             raise NotImplementedError
     
     def getSymbols(self, position, local=False):
         return self.wspace.getSymbols(position, local)

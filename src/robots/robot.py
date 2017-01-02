@@ -30,12 +30,12 @@ class Robot(object):
     '''
     
     def __init__(self, name, initConf=None, cspace=None, wspace=None,
-                 controlspace=None, sensingShape=None, dynamics=None):
+                 controlspace=None, sensor=None, dynamics=None):
         self.name = name
         
         self.initConf = initConf # initial position
         self.currentConf = self.initConf # current position
-        self.sensingShape = sensingShape # sensing shappe 
+        self.sensor = sensor # set sensor
         
         self.cspace = cspace
         self.wspace = wspace
@@ -54,6 +54,9 @@ class Robot(object):
         if local:
             return self.cspace.getLocalSample(self.currentConf)
         return self.cspace.getSample()
+    
+#     def sense(self):
+#         raise NotImplementedError
     
     def move(self, conf):
         self.currentConf = conf
