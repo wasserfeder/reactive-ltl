@@ -217,7 +217,10 @@ class BallBoundary2D(Boundary):
     
     def sample(self):
         r = uniform(size=3)
-        rad = self.radius * (r[0] + r[1])
+        rr = r[0] + r[1]
+        if rr > 1:
+            rr = 2 - rr
+        rad = self.radius * rr
         theta = 2 * np.pi * r[2]
         p = np.array([rad*np.cos(theta), rad*np.sin(theta)])
         return Point2D(self.center + p)

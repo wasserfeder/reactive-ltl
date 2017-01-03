@@ -209,9 +209,15 @@ def caseStudy():
     with Timer():
         print compute_potentials(sim.offline.checker)
     
+    # FIXME: HACK
+    robot.controlspace = 0.1
+    
     # initialize local on-line RRT planner
     sim.online = LocalPlanner(sim.offline.checker, sim.offline.ts, robot,
                               localSpec)
+    
+    # TODO: debug code, delete after use
+    sim.online.sim = sim
     
     # define number of surveillance cycles to run
     cycles = 1
@@ -224,16 +230,13 @@ def caseStudy():
             # feed data to planner and get next control input
             nextConf = sim.online.execute(requests, obstacles)
         
-        print 'local tree'
-        sim.display(expanded=True, localinfo='tree')
+#         print 'local tree'
+#         sim.display(expanded=True, localinfo='tree')
         print 'local plan'
         sim.display(expanded=True, localinfo='plan')
         
         # enforce movement
         robot.move(nextConf)
-        
-        sim.display(expanded=True)
-        
         # if completed cycle increment cycle
         if sim.update():
             cycle += 1

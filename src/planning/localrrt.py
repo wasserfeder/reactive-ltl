@@ -63,15 +63,15 @@ def monitor(start, buchi, start_prop, stop_prop=None):
     
     stop = set()
     for buchi_state in start:
-        stop |= set(buchi.next_states_of_buchi(buchi_state, start_prop))
+        stop |= set(buchi.next_states(buchi_state, start_prop))
     return stop
 
 def nearest(lts, random_sample):
     '''
     Returns nearest node in lts to the random sample. Uses linear search.
     '''
-    random_sample = np.array(random_sample)
-    return min(lts.g.nodes_iter(), key=lambda x: norm(np.array(x) - random_sample))
+    random_sample = random_sample.coords
+    return min(lts.g.nodes_iter(), key=lambda x: norm(x.coords - random_sample))
 
 
 Request = namedtuple('Request', ('region', 'name', 'priority'))
@@ -215,8 +215,7 @@ class LocalPlanner(object):
         else: # local state
             final_state = self.global_target_state
             # check if it can be connected
-            #TODO: change this to correct call
-            if not self.env.is_simple_segment(current_state, final_state):
+            if not self.robot.isSimpleSegment(current_state, final_state):
                 return []
         # generate straight path to the node
         current_state = np.array(current_state.coords)
@@ -244,8 +243,9 @@ class LocalPlanner(object):
                 return False
         
         # test if the node can be connected to the global ts
-        return (self.robot.is_simple_segment(state, self.global_target_state)
-         and self.robot.collision_free_segment(state, self.global_target_state))
+        return (self.robot.isSimpleSegment(state, self.global_target_state)
+         and self.robot.collision_free_segment(state, self.global_target_state,
+                                               self.obstacles))
 
     def generate_local_plan(self):
         # NOTE: Assumes that it is called either because there is no local
@@ -280,38 +280,52 @@ class LocalPlanner(object):
         while not self.test(dest_state):
             # 3. generate sample
             random_sample = self.robot.sample(local=True)
+            print '[generate_local_plan] random_sample:', random_sample
+            
             # 4. get nearest neighbor in local ts
             source_state = nearest(self.lts, random_sample)
             # 5. steer robot towards random sample
             dest_state = self.robot.steer(source_state, random_sample)
             # 6. label new sample
-            dest_global_prop, dest_local_prop = env.label(dest_state)
+            dest_global_prop = self.robot.getSymbols(dest_state)
+            dest_local_prop = self.robot.getSymbols(dest_state, local=True)
             
-            if self.robot.is_simple_segment(source_state, dest_state):
+            if self.robot.isSimpleSegment(source_state, dest_state):
                 # 7. compute Buchi states for new sample
-                source_data = lts.g.node[source_state]
-                B = monitor(source_data['buchi_states'], robot.buchi,
+                source_data = self.lts.g.node[source_state]
+                B = monitor(source_data['buchi_states'], self.pa.buchi,
                             source_data['global_prop'], dest_global_prop)
-                Bp = monitor(B, robot.buchi, dest_global_prop)
+                Bp = monitor(B, self.pa.buchi, dest_global_prop)
                 if B and Bp:
                     if self.robot.collision_free_segment(source_state,
                                                   dest_state, local_obstacles):
                         # 8. update local transition system
                         hit = False
                         if target:
-                            hit = (target[0] in dest_local_prop) or source_data['hit']
+                            hit = ((target.name in dest_local_prop)
+                                                        or source_data['hit'])
                         
-                        lts.g.add_node(dest_state, global_prop=dest_global_prop,
-                                       buchi_states=B, hit=hit)
-                        lts.g.add_edge(source_state, dest_state)
+                        self.lts.g.add_node(dest_state,
+                                            global_prop=dest_global_prop,
+                                            buchi_states=B, hit=hit)
+                        self.lts.g.add_edge(source_state, dest_state)
             
-            if dest_state not in lts.g:
+            if dest_state not in self.lts.g:
                 dest_state = None
+            
+            if dest_state:
+                print '[generate_local_plan] local tree'
+                print '[generate_local_plan] hit', hit
+                print '[generate_local_plan] dest_local_prop', dest_local_prop
+                print '[generate_local_plan] target.name', target.name
+                print '[generate_local_plan] test', self.test(dest_state)
+                self.sim.display(expanded=True, localinfo='tree')
         
         # 11. return local plan
-        return (nx.shortest_path(lts.g,robot.current_position, dest_state)[1:]
-                                + robot.free_movement(dest_state),
-                                lts.g.number_of_nodes())
+        plan_to_leaf = nx.shortest_path(self.lts.g, self.robot.currentConf,
+                                        dest_state)[1:]
+        return (plan_to_leaf + self.free_movement(dest_state),
+                self.lts.g.number_of_nodes())
 
 
 class Environment(object):

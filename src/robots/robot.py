@@ -56,16 +56,13 @@ class Robot(object):
             return self.sensor.sensingShape.sample()
         return self.cspace.getSample()
     
-#     def sense(self):
-#         raise NotImplementedError
-    
     def move(self, conf):
         self.currentConf = conf
     
     def getSymbols(self, position, local=False):
-        return self.wspace.getSymbols(position, local)
+        raise NotImplementedError
     
-    def isSimpleSegment(self):
+    def isSimpleSegment(self, u, v):
         raise NotImplementedError
 
 
