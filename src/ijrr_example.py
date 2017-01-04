@@ -120,7 +120,7 @@ def caseStudy():
     # add style to local requests
     for r, c in requests:
         # add styles to region
-        addStyle(r, style={'facecolor': to_rgba(c, 0.5)}) # FIXME: hack?
+        addStyle(r, style={'facecolor': to_rgba(c, 0.5)}) #FIMXE: HACK
     # create request objects
     reqs = []
     for r, _ in requests:
@@ -128,8 +128,12 @@ def caseStudy():
         reqs.append(Request(r, name, localSpec[name]))
     requests = reqs
     
+    # set the robot's sensor
     sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
     robot.sensor = SimulatedSensor(robot, sensingShape, requests, obstacles)
+    
+    # resets requests in each surveillance cycle
+    sim.makeRequestsRecurrent()
     
     # display workspace
     sim.display()
@@ -209,6 +213,10 @@ def caseStudy():
     with Timer():
         print compute_potentials(sim.offline.checker)
     
+#     print 'PA final states:', sim.offline.checker.final
+#     for u, d in sim.offline.checker.g.nodes_iter(data=True):
+#         print 'node:', u, 'data:', d
+    
     # FIXME: HACK
     robot.controlspace = 0.1
     
@@ -230,8 +238,6 @@ def caseStudy():
             # feed data to planner and get next control input
             nextConf = sim.online.execute(requests, obstacles)
         
-#         print 'local tree'
-#         sim.display(expanded=True, localinfo='tree')
         print 'local plan'
         sim.display(expanded=True, localinfo='plan')
         

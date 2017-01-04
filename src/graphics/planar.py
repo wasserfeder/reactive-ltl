@@ -181,6 +181,7 @@ class Simulate2D(object):
         self.workspace = workspace
         self.expandedWorkspace = expandedWorkspace
         self.robot = robot
+        self.requests = tuple()
         
         if config:
             self.config = config
@@ -212,6 +213,11 @@ class Simulate2D(object):
     
     def reset(self):
         pass
+    
+    def makeRequestsRecurrent(self):
+        '''TODO:
+        '''
+        self.requests = self.robot.sensor.requests
     
     def display(self, expanded=False, solution=None, localinfo=None):
         fig = plt.figure()
@@ -259,7 +265,7 @@ class Simulate2D(object):
 #                 text = r.text
 #             drawRegion2D(viewport, r, r.style, text, r.textStyle)
         
-        # draw boundary
+        # draw boundaryself.robot.sensor.requests
         drawBoundary2D(viewport, wp.boundary, wp.boundary.style)
         
         # draw robot
@@ -294,6 +300,15 @@ class Simulate2D(object):
             elif localinfo == 'plan':
                 local_plan = [self.robot.currentConf] + self.online.local_plan
                 drawPolicy(viewport, local_plan, 'blue')
+    
+    def update(self):
+        '''TODO:
+        '''
+        conf = self.robot.currentConf
+        self.robot.sensor.requests = [r for r in self.robot.sensor.requests
+                                       if not r.region.intersects(conf)]
+    
+    #--------------------------------------------------------------------------
     
     def simulate(self, loops=2, offline=True):
         assert self.offline.checker.foundPolicy()
@@ -387,9 +402,6 @@ class Simulate2D(object):
     
     def rewind(self, steps=1):
         # TODO:
-        pass
-    
-    def update(self):
         pass
 
 if __name__ == '__main__':
