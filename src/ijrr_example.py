@@ -66,9 +66,7 @@ def caseStudy():
     robot = FullyActuatedRobot('Cozmo', init=Point2D((2, 2)), wspace=ewspace,
                                stepsize=0.999)
     robot.diameter = robotDiameter
-#     robot.sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
     robot.localObst = 'local_obstacle'
-#     robot.origin = Point2D([0.7, -0.7])
     print 'Conf space:', robot.cspace
     
     # create simulation object
@@ -123,9 +121,9 @@ def caseStudy():
         addStyle(r, style={'facecolor': to_rgba(c, 0.5)}) #FIMXE: HACK
     # create request objects
     reqs = []
-    for r, _ in requests:
-        name = next(iter(r.symbols))
-        reqs.append(Request(r, name, localSpec[name]))
+#     for r, _ in requests:
+#         name = next(iter(r.symbols))
+#         reqs.append(Request(r, name, localSpec[name]))
     requests = reqs
     
     # set the robot's sensor
@@ -166,6 +164,19 @@ def caseStudy():
                           checker.buchi.g.number_of_edges())
     print
     
+    # TODO: delete
+    print checker.buchi
+    pset = set(checker.buchi.props.itervalues())
+    pset.add(0)
+    for u, v, d in checker.buchi.g.edges(data=True):
+        print u, v, d
+        d['input'] &= pset
+        if not d['input']:
+            checker.buchi.g.remove_edge(u, v)
+    print checker.buchi
+    for u, v, d in checker.buchi.g.edges(data=True):
+        print u, v, d
+    
     # initialize global off-line RRG planner
     sim.offline = RRGPlanner(robot, checker, None, iterations=1000)
     
@@ -175,7 +186,15 @@ def caseStudy():
         else:
             print 'No solution found!'
         print
-        
+    
+    print '\n\n\n\n\n\n'
+    for p in sorted(sim.offline.checker.g.nodes()):
+        print ((round(p[0].x, 2), round(p[0].y, 2)), p[1]), ':',
+        for q in sim.offline.checker.g.neighbors(p):
+            print ((round(q[0].x, 2), round(q[0].y, 2)), q[1]),
+        print
+    print '\n\n\n\n\n\n'
+    
     print 'Finished in', sim.offline.iteration, 'iterations!'
     print 'Size of TS:', sim.offline.ts.size()
     print 'Size of PA:', sim.offline.checker.size()

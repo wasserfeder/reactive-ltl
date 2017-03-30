@@ -17,16 +17,12 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import time
-import os.path
 from collections import namedtuple
 
 import numpy as np
-from numpy.random import uniform
 from numpy.linalg import norm
 import networkx as nx
 
-import lomap
 from lomap import Ts, Timer
 
 from spaces import Point2D
@@ -63,7 +59,7 @@ def monitor(start, buchi, start_prop, stop_prop=None):
     
     stop = set()
     for buchi_state in start:
-        stop |= set(buchi.next_states(buchi_state, start_prop))
+        stop |= set(buchi.next_states(buchi_state, stop_prop))
     return stop
 
 def nearest(lts, random_sample):
@@ -98,7 +94,7 @@ class LocalPlanner(object):
         self.obstacles = []
         
         self.trajectory = [self.robot.currentConf]
-        self.buchi_states = [set(pa.proj_ts[self.robot.initConf])]
+        self.buchi_states = [set([s for _, s in self.pa.init])]
         self.potential = [get_actual_potential(self.robot.initConf,
                                                self.buchi_states[0], self.pa)]
         self.global_target_state = self.robot.initConf
@@ -131,6 +127,7 @@ class LocalPlanner(object):
 
     def execute(self, requests, obstacles):
         '''Plan locally.'''
+        assert not requests and not obstacles # TODO: delete after debug
         # update local information
         self.requests = requests
         self.obstacles = obstacles
@@ -142,7 +139,7 @@ class LocalPlanner(object):
                 print 'Local check: False'
                 self.local_plan, nr_nodes = self.generate_local_plan()
             else:
-                print 'Local check: False'
+                print 'Local check: True'
         # update meta data
         self.durations.append(local_planning_timer.duration)
         self.sizes.append(nr_nodes)
@@ -160,8 +157,11 @@ class LocalPlanner(object):
         '''
         requests = self.requests
         
-        print '[check local plan]', self.local_plan
-        print '[check local plan]', self.requests
+#         if self.local_plan: # TODO: uncomment
+#             print '[check local plan]', [(p.x, p.y) for p in self.local_plan]
+#         else:
+#             print '[check local plan]', self.local_plan
+#         print '[check local plan]', self.requests
         
         # check if target is needs to be modified
         if requests:
@@ -197,7 +197,6 @@ class LocalPlanner(object):
         prop = self.robot.getSymbols(new_conf)
         prev_prop = self.robot.getSymbols(self.robot.currentConf)
         B = monitor(self.buchi_states[-1], self.pa.buchi, prev_prop, prop)
-        
         self.trajectory.append(new_conf)
         self.buchi_states.append(B)
         
@@ -207,11 +206,22 @@ class LocalPlanner(object):
     def min_potetial_global_state(self, state):
         '''#TODO:
         '''
+#         print 'buchi:', self.buchi_states
+#         print 'buchi prev:', self.buchi_states[-1]
+        
         pa_states = [(state, buchi_state)
                                     for buchi_state in self.buchi_states[-1]]
+        
+#         print 'pa states:', pa_states
+        
         _, pa_next_states = zip(*self.pa.g.out_edges_iter(pa_states))
         opt_pa_next_state = min(pa_next_states,
                            key=lambda x: self.pa.g.node[x]['potential'])
+        
+#         print 'next pa states:',
+#         for p in pa_next_states:
+#             print p, '->', self.pa.g.node[p]['potential']
+            
         if (self.potential[-1] == 0 and
             self.pa.g.node[opt_pa_next_state]['potential'] == 0):
             pa_next_states.remove(opt_pa_next_state)
@@ -281,10 +291,17 @@ class LocalPlanner(object):
             final_state = self.min_potetial_global_state(current_state)
             self.global_target_state = final_state
         else: # local state
+            assert False # TODO: remote after debug
+            
             final_state = self.global_target_state
             # check if it can be connected
             if not self.robot.isSimpleSegment(current_state, final_state):
                 return []
+        
+        # TODO: remove after debug
+        final_state = np.array(final_state.coords)
+        return [self.PointCls(final_state)]
+        
         # generate straight path to the node
         current_state = np.array(current_state.coords)
         final_state = np.array(final_state.coords)
@@ -324,12 +341,14 @@ class LocalPlanner(object):
         local_requests, local_obstacles = self.requests, self.obstacles
         
         # 0. no local requests => move towards global state of minimum potential
-        print '[generate_local_plan] local reqs:', local_requests
+#         print '[generate_local_plan] local reqs:', local_requests
         if not local_requests and not local_obstacles:
-            print '[generate_local_plan]', local_requests
+#             print '[generate_local_plan]', local_requests
             local_plan = self.free_movement()
             if local_plan:
                 return local_plan, -1
+        
+        assert False # TODO: delete after debug
         
         print '[generate_local_plan]', self.tracking_req
         
@@ -395,221 +414,3 @@ class LocalPlanner(object):
                                         dest_state)[1:]
         return (plan_to_leaf + self.free_movement(dest_state),
                 self.lts.g.number_of_nodes())
-
-
-class Environment(object):
-    boundary_color = (0, 0, 0)
-    
-    def __init__(self, filename):
-        self.global_regions = {} # NOTE: list of (LowerLeft, UpperRight) tuples
-        self.obstacles = []  # NOTE: list of (LowerLeft, UpperRight) tuples
-        self.requests = [] # NOTE: list of (Name, Position) tuples
-        self.requests_trajectories = []
-    
-    def get_requests(self, position, radius, prior):
-        # square
-        requests = filter(lambda r: (position[0]-radius <= r[1][0] <= position[0]+radius) and
-                                    (position[1]-radius <= r[1][1] <= position[1]+radius), self.requests)
-        obstacles = []
-        for obstacle in self.obstacles:
-            if max(position[0]-radius, obstacle[0][0]) <= min(position[0]+radius, obstacle[1][0]) and \
-               max(position[1]-radius, obstacle[0][1]) <= min(position[1]+radius, obstacle[1][1]):
-                obstacles.append(obstacle)
-        
-        # order local requests based on their priority
-        requests.sort(key=lambda r: prior[r[0]])
-        
-        return requests, obstacles
-    
-    def update_requests(self, robot):
-#         # 1. remove local target request if it was serviced
-#         position = np.array(position)
-#         target_position = np.array(target_request[1])
-#         if norm(position - target_position) <= self.local_requests[target_request[0]][0]:
-#             self.requests.remove(target_request)
-        
-        robot_position, target_request = robot.current_position, robot.local_target_request
-        robot_position = np.array(robot_position)
-        
-#         if __verbose__:
-#             print '[UPDATE]', target_request, robot_position
-#             print '[UPDATE]', self.requests_trajectories
-        deactivated = False
-        self.requests = []
-        for req in self.requests_trajectories:
-            label, position, active, traj = req
-            
-            # 1. remove local target request if it was serviced
-            if target_request == (label, position):
-                target_position = np.array(target_request[1])
-                if norm(robot_position - target_position) <= self.local_requests[target_request[0]][0]:
-                    active = False
-                    req[2] = False
-                    deactivated = True
-#                     if __verbose__:
-#                         print '[UPDATE] deactivate', target_request
-                    
-                # update robot local target
-                robot.local_target_request = (label, traj[(traj.index(position)+1) % len(traj)])
-            
-            # 2. update requests positions
-            req[1] = traj[(traj.index(position)+1) % len(traj)]
-            
-            if active:
-                self.requests.append(tuple(req[:2]))
-        
-        return deactivated     
-        
-    def sample(self, position, radius):
-        x = uniform(max(self.boundary[0][0], position[0]-radius), min(self.boundary[1][0], position[0]+radius), 1)
-        y = uniform(max(self.boundary[0][1], position[1]-radius), min(self.boundary[1][1], position[1]+radius), 1)
-        return (float(x), float(y))
-#         return tuple(np.array(position) + uniform(-radius, radius, 2))
-
-
-class Robot(object): # NOTE: does also buchi tracking and maintains trajectory
-    
-    def __init__(self, ts, buchi, pa, env, eta=1, sensing_radius=2.5):
-        self.ts = ts
-        self.buchi = buchi
-        self.pa = pa
-        self.env = env
-        
-        # assume deterministic transition system
-        assert len(self.ts.init.keys()) == 1
-        
-        self.initial_position = self.ts.init.keys()[0]
-        self.current_position = self.initial_position
-        
-        # initialize trajectory and buchi tracking
-        self.trajectory = [self.current_position]
-        self.buchi_states = [set(pa.proj_ts[self.initial_position])]
-        self.potential = [get_actual_potential(self.initial_position, self.buchi_states[0], self.pa)]
-        self.global_target_state = self.initial_position
-#         self.local_target_requests = []
-        self.local_target_request = None
-        
-        # set max steer step size eta and sensing radius
-        self.eta = eta
-        self.sensing_radius = sensing_radius
-    
-    def in_sensing_range(self, position):
-        return -self.sensing_radius <= position[0] - self.current_position[0] <= self.sensing_radius and \
-               -self.sensing_radius <= position[1] - self.current_position[1] <= self.sensing_radius
-    
-
-
-def lin_space(x1, x2, step):
-    x1 = np.array(x1)
-    x2 = np.array(x2)
-    dist = norm(x2 - x1)
-    u = x2 - x1
-    return map(lambda a: tuple(x1 + a * u), np.arange(0, 1, step/dist))
-
-def run_experiment():
-    '''
-    LTL local control
-    '''    
-    
-    # 4. compute potential for each state of PA
-    with lomap.Timer():
-        compute_potentials(pa)
-           
-    # 5. initialize environment
-    env = Environment('environment.txt')
-    
-    # 6. initialize plan, robot and trajectory
-    local_plan = []
-    robot = Robot(ts, buchi, pa, env)
-    
-    prev_info = set([])
-
-#     # add on-line requests and their trajectories
-#     env.requests.append(('survivor', (8, 8)))
-#     env.requests.append(('survivor', (1.5, 4.7)))
-#     env.requests.append(('fire', (1.5, 6.2)))
-    
-#     env.requests_trajectories.append(['survivor', (8, 8), True, [(8, 8), (4, 5), (9, 5)], 0.05])
-#     env.requests_trajectories.append(['survivor', (1.5, 4.7), True, [(1.5, 4.7), (-4, 5), (-8. -6.5), (-1, 7)], 0.07])
-#     env.requests_trajectories.append(['fire', (1.5, 6.2), True, [(1.5, 6.2), (-5, 7.5), (-7.5, 0), (-5.5, 4.5)], 0.03])
-    
-    
-    # 7. define priorities of local requests (local specification)
-    prior = {'survivor':0, 'fire':1}
-    
-    plan_durations = []
-    cycle_duration = []
-    cycle = 0
-    no_cycles = 100
-    plan_nr_nodes = []
-    cycle_info = []
-#     no_hit = 0
-#     detected = set()
-    
-    # Real-time algorithm start
-    runtime = 100
-    for _ in range(runtime):
-        # 8. get sensor data
-        info = env.get_requests(robot.current_position, robot.sensing_radius, prior)
-        
-        with Timer() as local_planning_timer:
-            if not check_local_plan(info, prev_info, local_plan, env, robot, prior):
-                # 9. plan locally
-#                 if __verbose__:
-#                     print 'Computing local plan'
-                local_plan, nr_nodes = generate_local_plan(env, info, robot)
-        
-        plan_durations.append(local_planning_timer.duration)
-        plan_nr_nodes.append(nr_nodes)
-        
-          
-        # 10. move to next point
-        robot.move(local_plan.pop(0))
-        
-        # 11. Update local requests
-        env.update_requests(robot)
-        
-        #HACK: add on-line requests back to the list of active requests
-        if (robot.current_position == (-7, 0)):
-            for req in env.requests_trajectories:
-                env.requests.append(tuple(req[:2]))
-                req[2] = True
-            
-            cycle_duration.append(plan_durations)
-            print 'Cycle:', cycle, 'Cycle duration:', sum(plan_durations)#, (no_hit, len(detected))
-#             print 'Cycle:', cycle
-#             cycle_info.append((no_hit, len(detected)))
-
-#             detected = set()
-#             no_hit = 0
-            plan_durations = []
-            cycle += 1
-            
-            if __reset_traj__:
-                robot.trajectory = [robot.trajectory[-1]]
-            
-            if cycle > no_cycles: break
-        
-        prev_info = info
-        
-#         if __verbose__:
-#             print env.requests
-#             for req in env.requests_trajectories:
-#                 print req[:3]
-#             
-#             
-#             print
-#             print
-    
-#     year, mon, day, hour, mi, sec, _, _, _ = time.gmtime()
-#     log_timestamp = '{Y}-{M}-{D}.{h}-{m}-{s}'.format(Y=year, M=mon, D=day, h=hour, m=mi, s=sec)
-#     with open('results.' + log_timestamp + '.txt', 'w') as fout:
-#         print>>fout, cycle_duration
-#         print>>fout, plan_nr_nodes
-#         print>>fout, [sum(d) for d in cycle_duration[1:]]
-#         print>>fout, np.mean(np.array([sum(d) for d in cycle_duration[1:]]))
-#         print>>fout, np.mean([n for n in plan_nr_nodes if n>=0])
-
-if __name__ == '__main__':
-    run_experiment()
-    

@@ -4,8 +4,6 @@
 
 .. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
 '''
-from matplotlib.colors import ColorConverter
-
 '''
     The module defines classes for displaying planar environments.
     Copyright (C) 2014  Cristian Ioan Vasile <cvasile@bu.edu>
