@@ -127,7 +127,6 @@ class LocalPlanner(object):
 
     def execute(self, requests, obstacles):
         '''Plan locally.'''
-        assert not requests and not obstacles # TODO: delete after debug
         # update local information
         self.requests = requests
         self.obstacles = obstacles
@@ -157,11 +156,11 @@ class LocalPlanner(object):
         '''
         requests = self.requests
         
-#         if self.local_plan: # TODO: uncomment
-#             print '[check local plan]', [(p.x, p.y) for p in self.local_plan]
-#         else:
-#             print '[check local plan]', self.local_plan
-#         print '[check local plan]', self.requests
+        if self.local_plan: # TODO: uncomment
+            print '[check local plan]', [(p.x, p.y) for p in self.local_plan]
+        else:
+            print '[check local plan]', self.local_plan
+        print '[check local plan]', self.requests
         
         # check if target is needs to be modified
         if requests:
@@ -291,16 +290,14 @@ class LocalPlanner(object):
             final_state = self.min_potetial_global_state(current_state)
             self.global_target_state = final_state
         else: # local state
-            assert False # TODO: remote after debug
-            
             final_state = self.global_target_state
             # check if it can be connected
             if not self.robot.isSimpleSegment(current_state, final_state):
                 return []
         
-        # TODO: remove after debug
-        final_state = np.array(final_state.coords)
-        return [self.PointCls(final_state)]
+#         # TODO: remove after debug
+#         final_state = np.array(final_state.coords)
+#         return [self.PointCls(final_state)]
         
         # generate straight path to the node
         current_state = np.array(current_state.coords)
@@ -347,8 +344,6 @@ class LocalPlanner(object):
             local_plan = self.free_movement()
             if local_plan:
                 return local_plan, -1
-        
-        assert False # TODO: delete after debug
         
         print '[generate_local_plan]', self.tracking_req
         

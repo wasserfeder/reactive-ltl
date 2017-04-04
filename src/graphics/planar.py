@@ -305,6 +305,10 @@ class Simulate2D(object):
         conf = self.robot.currentConf
         self.robot.sensor.requests = [r for r in self.robot.sensor.requests
                                        if not r.region.intersects(conf)]
+        
+        return (self.online.trajectory[-1] in self.online.ts.g
+                and self.online.potential[-1] == 0)
+        
     
     #--------------------------------------------------------------------------
     

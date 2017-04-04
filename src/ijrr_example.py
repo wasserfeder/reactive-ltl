@@ -121,9 +121,9 @@ def caseStudy():
         addStyle(r, style={'facecolor': to_rgba(c, 0.5)}) #FIMXE: HACK
     # create request objects
     reqs = []
-#     for r, _ in requests:
-#         name = next(iter(r.symbols))
-#         reqs.append(Request(r, name, localSpec[name]))
+    for r, _ in requests:
+        name = next(iter(r.symbols))
+        reqs.append(Request(r, name, localSpec[name]))
     requests = reqs
     
     # set the robot's sensor
@@ -249,7 +249,7 @@ def caseStudy():
     # define number of surveillance cycles to run
     cycles = 1
     # execute controller
-    cycle = 0 # number of completed cycles
+    cycle = -1 # number of completed cycles, -1 accounts for the prefix 
     while cycle < cycles:
         # update the locally sensed requests and obstacles
         requests, obstacles = robot.sensor.sense()
