@@ -376,10 +376,18 @@ class LocalPlanner(object):
             if self.robot.isSimpleSegment(source_state, dest_state):
                 # 7. compute Buchi states for new sample
                 source_data = self.lts.g.node[source_state]
+                
+#                 # TODO: delete after debug 
+#                 print '[generate_local_plan] buchi states:',
+#                 print source_data['buchi_states'],
+#                 print source_data['global_prop'], dest_global_prop
+                
                 B = monitor(source_data['buchi_states'], self.pa.buchi,
                             source_data['global_prop'], dest_global_prop)
-                Bp = monitor(B, self.pa.buchi, dest_global_prop)
-                if B and Bp:
+                # FIXME: I don't remember what this optimization was for,
+                # but it works without it
+#                 Bp = monitor(B, self.pa.buchi, dest_global_prop) 
+                if B: # and Bp:
                     if self.robot.collision_free_segment(source_state,
                                                   dest_state, local_obstacles):
                         # 8. update local transition system
@@ -396,7 +404,7 @@ class LocalPlanner(object):
             if dest_state not in self.lts.g:
                 dest_state = None
             
-            if dest_state:
+            if dest_state and False:
                 print '[generate_local_plan] local tree'
                 print '[generate_local_plan] hit', hit
                 print '[generate_local_plan] dest_local_prop', dest_local_prop

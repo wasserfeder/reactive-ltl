@@ -165,17 +165,17 @@ def caseStudy():
     print
     
     # TODO: delete
-    print checker.buchi
-    pset = set(checker.buchi.props.itervalues())
-    pset.add(0)
-    for u, v, d in checker.buchi.g.edges(data=True):
-        print u, v, d
-        d['input'] &= pset
-        if not d['input']:
-            checker.buchi.g.remove_edge(u, v)
-    print checker.buchi
-    for u, v, d in checker.buchi.g.edges(data=True):
-        print u, v, d
+#     print checker.buchi
+#     pset = set(checker.buchi.props.itervalues())
+#     pset.add(0)
+#     for u, v, d in checker.buchi.g.edges(data=True):
+#         print u, v, d
+#         d['input'] &= pset
+#         if not d['input']:
+#             checker.buchi.g.remove_edge(u, v)
+#     print checker.buchi
+#     for u, v, d in checker.buchi.g.edges(data=True):
+#         print u, v, d
     
     # initialize global off-line RRG planner
     sim.offline = RRGPlanner(robot, checker, None, iterations=1000)
@@ -187,13 +187,13 @@ def caseStudy():
             print 'No solution found!'
         print
     
-    print '\n\n\n\n\n\n'
-    for p in sorted(sim.offline.checker.g.nodes()):
-        print ((round(p[0].x, 2), round(p[0].y, 2)), p[1]), ':',
-        for q in sim.offline.checker.g.neighbors(p):
-            print ((round(q[0].x, 2), round(q[0].y, 2)), q[1]),
-        print
-    print '\n\n\n\n\n\n'
+#     print '\n\n\n\n\n\n'
+#     for p in sorted(sim.offline.checker.g.nodes()):
+#         print ((round(p[0].x, 2), round(p[0].y, 2)), p[1]), ':',
+#         for q in sim.offline.checker.g.neighbors(p):
+#             print ((round(q[0].x, 2), round(q[0].y, 2)), q[1]),
+#         print
+#     print '\n\n\n\n\n\n'
     
     print 'Finished in', sim.offline.iteration, 'iterations!'
     print 'Size of TS:', sim.offline.ts.size()
@@ -247,7 +247,7 @@ def caseStudy():
     sim.online.sim = sim
     
     # define number of surveillance cycles to run
-    cycles = 1
+    cycles = 4
     # execute controller
     cycle = -1 # number of completed cycles, -1 accounts for the prefix 
     while cycle < cycles:
@@ -258,7 +258,7 @@ def caseStudy():
             nextConf = sim.online.execute(requests, obstacles)
         
         print 'local plan'
-        sim.display(expanded=True, localinfo='plan')
+#         sim.display(expanded=True, localinfo='plan')
         
         # enforce movement
         robot.move(nextConf)
