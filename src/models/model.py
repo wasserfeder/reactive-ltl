@@ -6,9 +6,10 @@ Base class for finite abstraction models.
 '''
 '''
     Abstract class describing a graphical model.
-    Copyright (C) 2014  Alphan Ulusoy <alphan@bu.edu>
-                        Cristian Ioan Vasile <cvasile@bu.edu>
-    Hybrid and Networked Systems (HyNeSs) Laboratory, Boston University
+    Copyright (C) 2014-2016  Alphan Ulusoy <alphan@bu.edu>
+                             Cristian Ioan Vasile <cvasile@bu.edu>
+    Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
+    Boston University
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

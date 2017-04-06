@@ -1,7 +1,16 @@
 '''
-    Local RRT
-    Copyright (C) 2013  Cristian Ioan Vasile <cvasile@bu.edu>
-    Hybrid and Networked Systems (HyNeSs) Laboratory, Boston University
+.. module:: localrrt
+   :synopsis: Local planner generating a random tree within the sensing area of
+   the robot.
+
+.. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
+'''
+
+'''
+    Local planner generating a random tree within the sensing area of the robot.
+    Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
+    Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
+    Boston University
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

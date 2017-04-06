@@ -24,7 +24,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import itertools as it
 from collections import deque
 
 import networkx as nx
@@ -236,9 +235,3 @@ def has_empty_language(model, trivial=False):
     This function is intended to be used on product automata.
     '''
     return len(self_reachable_final_states(model, trivial)) == 0
-
-def product():
-    pass
-
-if __name__ == '__main__':
-    pass

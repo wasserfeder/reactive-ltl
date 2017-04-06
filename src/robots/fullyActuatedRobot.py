@@ -70,12 +70,6 @@ class FullyActuatedRobot(Robot):
             conf = None # TODO: read from optitrack data
         super(FullyActuatedRobot, self).move(conf)
     
-#     def sense(self):
-#         self.S
-#         if self.isSetup:
-#             #TODO: get locally sensed events from external node
-#             raise NotImplementedError
-    
     def getSymbols(self, position, local=False):
         if local:
             return set([r.name for r in self.sensor.requests
@@ -88,18 +82,6 @@ class FullyActuatedRobot(Robot):
         robot's dynamics.
         
         Note: It simulates the movement.
-        
-        Examples: TODO: modify
-        ---------
-        >>> from spaces.maps2d import Point2D
-        >>> robot = FullyActuatedRobot(stepsize=1.0)
-        >>> p = robot.steer(Point2D(1, 2), Point2D(5, 5))
-        >>> (round(p.x, 1), round(p.y, 1))
-        (1.4, 2.3)
-        >>> robot.limit = 6
-        >>> p = robot.steer(Point2D(1, 2), Point2D(5, 5))
-        >>> (int(p.x), int(p.y))
-        (5, 5)
         '''
         s = start.coords
         t = target.coords
@@ -123,11 +105,6 @@ class FullyActuatedRobot(Robot):
         nrRegUV = len(self.cspace.intersectingRegions(u, v))
         regU = self.cspace.intersectingRegions(u)
         regV = self.cspace.intersectingRegions(v)
-#         print '[simple] regU:', regU
-#         print '[simple] regV:', regV
-#         print '[simple] regUV:', self.cspace.intersectingRegions(u, v)
-#         print '[simple] nrRegUV:', nrRegUV
-#         print
         
         # if both endpoints of the segment are in the free space
         if (not regU) and (not regV):
@@ -167,8 +144,3 @@ class FullyActuatedRobot(Robot):
     
     def __str__(self):
         return 'Fully actuated robot'
-
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()

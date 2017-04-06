@@ -9,8 +9,9 @@
 '''
     The module defines classes for defining n-dimensional metric spaces
     (workspace, configuration space, control space).
-    Copyright (C) 2014  Cristian Ioan Vasile <cvasile@bu.edu>
-    Hybrid and Networked Systems (HyNeSs) Laboratory, Boston University
+    Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
+    Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
+    Boston University
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

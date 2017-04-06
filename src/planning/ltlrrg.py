@@ -11,8 +11,9 @@
     The module implements the RRG based path planner with LTL constraints.
     The algorithm represents the (off-line) global component of the proposed
     framework.
-    Copyright (C) 2014  Cristian Ioan Vasile <cvasile@bu.edu>
-    Hybrid and Networked Systems (HyNeSs) Laboratory, Boston University
+    Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
+    Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
+    Boston University
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by

@@ -7,8 +7,9 @@
 
 '''
     The module defines an abstract robot class.
-    Copyright (C) 2014  Cristian Ioan Vasile <cvasile@bu.edu>
-    Hybrid and Networked Systems (HyNeSs) Laboratory, Boston University
+    Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
+    Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
+    Boston University
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -25,9 +26,7 @@
 '''
 
 class Robot(object):
-    '''
-    Base class for a robot.
-    '''
+    '''Base class for a robot.'''
     
     def __init__(self, name, initConf=None, cspace=None, wspace=None,
                  controlspace=None, sensor=None, dynamics=None):
@@ -49,10 +48,9 @@ class Robot(object):
     
     def sample(self, local=False):
         ''' Generate a sample in the configuration space (global) or local
-        within the sensing area..
+        within the sensing area.
         '''
         if local:
-#             return self.cspace.getLocalSample(self.currentConf)
             return self.sensor.sensingShape.sample()
         return self.cspace.getSample()
     
@@ -64,7 +62,3 @@ class Robot(object):
     
     def isSimpleSegment(self, u, v):
         raise NotImplementedError
-
-
-if __name__ == '__main__':
-    pass

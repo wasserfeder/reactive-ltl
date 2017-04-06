@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 '''
 .. module:: ijrr_example
-   :synopsis: Defined the case study presented in the IJRR journal paper.
+   :synopsis: Defines the case study presented in the IJRR journal paper.
 
 .. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
 '''
 
 '''
-    Defined the case study presented in the IJRR journal paper.
+    Defines the case study presented in the IJRR journal paper.
     Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
     Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
     Boston University
@@ -73,7 +73,7 @@ def caseStudy():
     sim = Simulate2D(wspace, robot, ewspace)
     
     # regions of interest
-    R1 = (BoxRegion2D(L*np.array([[0.75, 1.25], [0.75, 1]]), ['r1']), 'blue')
+    R1 = (BoxRegion2D(L*np.array([[0.75, 1.25], [0.75, 1]]), ['r1']), 'brown')
     R2 = (BallRegion2D(L*np.array([6.5, 2]), L*0.5, ['r2']), 'green')
     R3 = (BoxRegion2D(L*np.array([[6.25, 6.75], [4.5, 5]]), ['r3']), 'red')
     R4 = (PolygonRegion2D(L*np.array([[2.0, 4.75], [1.5, 5.25], [1, 4.75],
@@ -86,7 +86,6 @@ def caseStudy():
     O3 = (PolygonRegion2D(L*np.array([[3.5, 4.5], [4, 5], [4.5, 4.5]]), ['o3']),
           'gray')
     O4 = (BoxRegion2D(L*np.array([[2.75, 3.25], [0.75, 1]]), ['o4']), 'gray')
-#     O4 = (BallRegion2D(L*np.array([3, 0.875], 0.5, ['o4']), 'gray')
     
     # add all regions
     regions = [R1, R2, R3, R4, O1, O2, O3, O4]

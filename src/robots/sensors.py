@@ -7,8 +7,9 @@
 
 '''
     The module defines a robot sensors.
-    Copyright (C) 2016  Cristian Ioan Vasile <cvasile@bu.edu>
-    Hybrid and Networked Systems (HyNeSs) Laboratory, Boston University
+    Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
+    Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
+    Boston University
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -27,9 +28,7 @@ import numpy as np
 
 
 class Sensor(object):
-    '''
-    classdocs
-    '''
+    '''Base class for sensors.'''
 
     def __init__(self, robot, sensingShape):
         '''
@@ -39,13 +38,12 @@ class Sensor(object):
         self.sensingShape = sensingShape # sensing shape
     
     def sense(self):
+        '''Sensing method that returns requests and local obstacles.'''
         raise NotImplementedError
 
 
 class SimulatedSensor(Sensor):
-    '''
-    classdocs
-    '''
+    '''Simulated ideal sensor.'''
     
     def __init__(self, robot, sensingShape, requests, obstacles):
         '''
@@ -57,8 +55,7 @@ class SimulatedSensor(Sensor):
         self.obstacles = obstacles
     
     def sense(self):
-        '''TODO:
-        '''
+        '''Sensing method that returns requests and local obstacles.'''
         self.sensingShape.center = np.array(self.robot.currentConf.coords)
         requests = [r for r in self.requests
                       if self.sensingShape.intersects(r.region.center)]
