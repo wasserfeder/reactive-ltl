@@ -30,23 +30,21 @@ import itertools as it
 
 import networkx as nx
 
-# always use safe load
-from yaml import safe_load as load, dump, YAMLObject
+# TODO: always use safe load
+from yaml import load, dump #, safe_load as load
 try: # try using the libyaml if installed
     from yaml import CLoader as Loader, CDumper as Dumper
 except ImportError: # else use default PyYAML loader and dumper
     from yaml import Loader, Dumper
 
 
-class Model(YAMLObject):
-    '''
-    Base class for finite abstraction system models.
-    '''
+class Model(object):
+    '''Base class for finite abstraction system models.'''
+    
+    yaml_tag = u'!Model'
 
     def __init__(self, name='Unnamed system model'):
-        '''
-        Empty Model object constructor
-        '''
+        '''Empty Model object constructor.'''
         self.name = name
         self.init = set()
         self.final = set()
@@ -54,33 +52,28 @@ class Model(YAMLObject):
         self.cnt = it.count()
     
     def size(self):
-        '''
-        Returns the number of states and transitions of the model.
-        '''
+        '''Returns the number of states and transitions of the model.'''
         nedges = sum(it.imap(len, self.g.adj.itervalues()))
         return self.g.number_of_nodes(), nedges
-        
-    def addState(self, key, propositions=None, init=False, final=False, **kwargs):
-        '''TODO:
-        Adds a state to the model.
-        Adds an initial state to the model.
-        Adds a final state to the model.
+    
+    def add_state(self, key, propositions=None, init=False, final=False,
+                  **kwargs):
+        '''Adds a state to the model, and marks it as initial and final as
+        specified.
         
         Note
         ----
         If there is more than one initial state then the model is
         non-deterministic.
         '''
-        # create custom label
-        label = kwargs.get('label', '\n'.join([str(key), str(propositions)]))
-        self.g.add_node(key, prop=propositions, label=label,
+        self.g.add_node(key, prop=propositions,
                         order=self.cnt.next(), **kwargs)
         if init:
             self.init.add(key)
         if final:
             self.final.add(key)
     
-    def addStates(self, states):
+    def add_states(self, states):
         '''
         Adds the given states to the model.
         
@@ -88,34 +81,59 @@ class Model(YAMLObject):
         (key, kwargs), where kwargs are keyword arguments, which must include
         the propositions parameter.
         '''
-        [self.addState(key, **kwargs) for key, kwargs in states]
+        [self.add_state(key, **kwargs) for key, kwargs in states]
     
-    def addTransitions(self, transitions):
-        '''
-        Adds the given transitions to the model.
-        '''
+    def add_transitions(self, transitions):
+        '''Adds the given transitions to the model.'''
         self.g.add_edges_from(transitions)
     
     def visualize(self):
-        '''
-        Visualizes a model.
-        # TODO: improve matplotlib visualization feature
-        '''
+        '''Visualizes a model.'''
         #nx.view_pygraphviz(self.g)
         #nx.view_pygraphviz(self.g, 'weight')
         nx.draw_networkx(self.g)
     
     @classmethod
     def load(cls, filename):
-        '''
-        TODO: create representer and constructor; test
-        '''
+        '''Load model from file in YAML format.'''
         with open(filename, 'r') as fin:
             return load(fin, Loader=Loader)
     
     def save(self, filename):
-        '''
-        TODO: create representer and constructor; test
-        '''
+        '''Save the model to file in YAML format.'''
         with open(filename, 'w') as fout:
             dump(self, fout, Dumper=Dumper)
+
+
+def model_representer(dumper, model):
+    '''YAML representer for a model object.
+    Note: it uses the object's yaml_tag attribute as its YAML tag.
+    '''
+    return dumper.represent_mapping(tag=model.yaml_tag, mapping={
+        'name'  : model.name,
+        'init'  : list(model.init),
+        'final' : list(model.final),
+        'graph' : {
+            'nodes' : dict(model.g.nodes(data=True)),
+            'edges' : model.g.edges(data=True)
+            }
+        })
+
+def model_constructor(loader, node, ModelClass):
+    '''Model constructor from YAML document.
+    Note: Creates an object of class ModelClass.
+    '''
+    data = loader.construct_mapping(node, deep=True)
+    name = data.get('name', 'Unnamed')
+    
+    model = ModelClass(name)
+    model.init = set(data.get('init', []))
+    model.final = set(data.get('final', []))
+    model.g.add_nodes_from(data['graph'].get('nodes', dict()).iteritems())
+    model.g.add_edges_from(data['graph'].get('edges', []))
+    
+    if model.g.number_of_nodes():
+        max_order = max([d['order'] for _, d in model.g.nodes_iter(data=True)])
+    else:
+        max_order = -1
+    model.cnt = it.count(start=max_order + 1)

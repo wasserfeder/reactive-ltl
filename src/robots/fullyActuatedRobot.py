@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 '''
 .. module:: fullyActuatedRobot
    :synopsis: Module implements a fully actuated robot (an integrator).
@@ -28,10 +27,6 @@
 
 from robot import Robot
 
-if False:
-    import rospy
-    from geometry_msgs.msg import Twist
-
 
 class FullyActuatedRobot(Robot):
     '''
@@ -43,34 +38,11 @@ class FullyActuatedRobot(Robot):
         self.isSetup = False
         self.origin = None
     
-    def setup(self):
-        ground = 'X80Pro1' #TODO:
-        self.grd_pub = rospy.Publisher('GroundCommand{}'.format(ground), Twist,
-                                  queue_size=20)
-        # initialize node
-        rospy.init_node('ReLTL_commander', anonymous=True)
-        self.rate = rospy.Rate(0.1) # hz
-        # create message object
-        self.grd_msg = Twist()
-        # mark as set up
-        self.isSetup = True
-    
-    def move(self, conf):
-        if self.isSetup:
-            if rospy.is_shutdown():
-                return
-            print '[move]', conf.y, -conf.x, self.origin
-            self.grd_msg.linear.x, self.grd_msg.linear.y = self.origin.y + conf.y, self.origin.x + conf.x
-            self.grd_msg.linear.z = 0
-            self.grd_msg.angular.x, self.grd_msg.angular.y, self.grd_msg.angular.z = 0, 0, 0
-            self.grd_pub.publish(self.grd_msg)
-            print '[move]', self.grd_msg
-            print
-            self.rate.sleep()
-            conf = None # TODO: read from optitrack data
-        super(FullyActuatedRobot, self).move(conf)
-    
     def getSymbols(self, position, local=False):
+        '''Returns the symbols satisfied at the given position.
+        If `local` is False global symbols are returned, otherwise local ones
+        are computed.
+        '''
         if local:
             return set([r.name for r in self.sensor.requests
                             if r.region.intersects(position)])
@@ -110,21 +82,21 @@ class FullyActuatedRobot(Robot):
         if (not regU) and (not regV):
             return nrRegUV == 0
         # if one endpoint is in the free space
-        if (not regU) or (not regV): # FIXME: assumes convex regions
+        if (not regU) or (not regV): # NOTE: assumes convex regions
             return nrRegUV == 1
         # if both endpoints are in the same region
         if regU[0] == regV[0]:
-            # and regU.contains(u, v): # TODO: uncomment for non-convex regions
+            # NOTE: experimental for non-convex regions
+            # and regU.contains(u, v):
             return nrRegUV == 1
         # if the endpoints belong to two different regions
         return nrRegUV == 2
     
     def collision_free(self, plan, local_obstacles):
-        '''#TODO:
+        '''Checks if the plan is obstacle free with respect to the locally
+        detected ones.
         '''
-        if self.isSetup:
-            raise NotImplementedError
-        elif local_obstacles:
+        if local_obstacles:
             aux = [self.currentConf] + plan
             for start, stop in zip(aux[:-1], aux[1:]):
                 if any([obs.intersects(start, stop)
@@ -134,11 +106,8 @@ class FullyActuatedRobot(Robot):
         return True
     
     def collision_free_segment(self, u, v, local_obstacles):
-        '''TODO:
-        '''
-        if self.isSetup:
-            raise NotImplementedError
-        elif local_obstacles:
+        '''Checks if a line segment is obstacle free.'''
+        if local_obstacles:
             return not any([obs.intersects(u, v) for obs in local_obstacles])
         return True
     

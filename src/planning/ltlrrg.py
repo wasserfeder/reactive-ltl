@@ -29,9 +29,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from collections import deque
 from itertools import ifilter, imap, tee
-
 
 from models import TS
 
@@ -58,20 +56,16 @@ class RRGPlanner(object):
         symbols = self.robot.getSymbols(robot.initConf)
         
         # initialize transition system
-        self.ts = TS(nnAlgorithm=nn)
-        self.ts.addState(robot.initConf, symbols, init=True)
+        self.ts = TS(nnAlgorithm=nn, name='global transition system')
+        self.ts.add_state(robot.initConf, symbols, init=True)
         
         # initialize checker
         self.checker = checker
         self.checker.addInitialState(robot.initConf, symbols)
         
-        # TODO: initialize properly from mission parameters
-#        self.eta = [0, float('inf')]
-#        self.eta = [0.75, 2]
-#        self.eta = [0.75, 1.8] # for dim 20
-#         self.eta = [0.5, 1.25] # for dim 10
-#         self.eta = [0.25, 0.7] # for dim 2
-        self.eta = [0.5, 1.0] # for dim 2
+        # initialize bounds for far and nearest checks
+        # should be set based on specific problem
+        self.eta = [0.5, 1.0]
 
     def solve(self):
         '''Try to solve the problem.'''
@@ -82,15 +76,8 @@ class RRGPlanner(object):
     
     def iterate(self):
         '''Execute one step of the off-line global planner.'''
-#         import numpy #TODO: delete
-        
         if not self.checker.foundPolicy():
-            # update eta parameter # TODO: test
-#            new_eta = (self.parent.world.getArea()/(2*pi*self.ts.g.number_of_nodes()))
-#            self.eta = min(new_eta, self.eta)
-#             print 'Eta:', self.eta
-            
-            # First phase - Forward
+            ### First phase - Forward
             # initialize update sets
             Q, Delta, E = dict(), set(), set()
             # sample new configuration
@@ -100,28 +87,10 @@ class RRGPlanner(object):
             newConf = self.robot.steer(nearestState, randomConf)
             # set propositions
             newProp = self.robot.getSymbols(newConf)
-#             if self.ts.g.number_of_nodes() == 32:
-#                 lfar = list(self.far(newConf))
-#                 if lfar:
-#                     dfar = min([self.robot.cspace.dist(newConf, x) for x in lfar])
-#                 else:
-#                     dfar = float('inf')
-#                 dts = min([self.robot.cspace.dist(newConf, x) for x in self.ts.g.nodes_iter()])
-#                 if self.ts.g.number_of_edges() > 0:
-#                     pts = min(map(lambda e: self.robot.cspace.dist(e[0], e[1]), self.ts.g.edges_iter()))
-#                 else:
-#                     pts = float('inf')
-#                 print '-------->', newConf.coords, pts, dts, dfar, lfar
-            
             k=0
             for state in self.far(newConf):
                 k += 1
-#                 # steer towards the random configuration
-#                 newConf = self.robot.steer(state, randomConf)
-#                 # set propositions
-#                 newProp = self.robot.getSymbols(newConf)
                 # check if the new state satisfies the global specification
-#                 print 'simple', state.coords, newConf.coords, self.robot.isSimpleSegment(state, newConf)
                 if self.robot.isSimpleSegment(state, newConf):
                     Ep = self.checker.check(self.ts, state, newConf, newProp,
                                             forward=True)
@@ -131,33 +100,16 @@ class RRGPlanner(object):
                         Delta.add((state, newConf))
                         E.update(Ep)
             
-            self.ts.addStates(Q.iteritems())
-            self.ts.addTransitions(Delta)
+            self.ts.add_states(Q.iteritems())
+            self.ts.add_transitions(Delta)
             self.checker.update(E)
-#             
-#             if self.ts.g.number_of_nodes() == 33:
-#                 print Q
-#                 print self.iteration
-#                 print 'begin forward'
-#                 print k
-#                 print 'Delta:', Delta
-#                 print 'E:', E
-#                 print 'Q:', Q
-#                 print
-#                 print '-------->', 'newconf:', newConf.coords, 'min-ts-dist:', pts, 'min-newconf-2-ts-dist:', dts, 'min-newconf-2-far-dist:', dfar, 'far(newconf):', lfar
-#                 print 
-#                 print 'end forward'
             
-            
-            # Second phase - Backward
+            ### Second phase - Backward
             Delta = set()
             E = set()
             for newState, _ in Q.iteritems(): # for all newly added states
                 for state in self.near(newState):
                     st = self.robot.steer(newState, state, atol=1e-8)
-#                     if self.ts.g.number_of_nodes() == 33:
-#                         print 'backward-steer:', 'newState:', newState.coords, 'stateTS:', state.coords, 'steerState:', st.coords, 'eq:', state == st, 'simple:', self.robot.isSimpleSegment(newState, state)
-#                         print 'backward-steer:', 'coords-eq:', state.coords == st.coords, 'coords-diff:', state.coords - st.coords, 'state-eq', state == st
                     # if the robot can steer from a new state to another state
                     if (state == st) and \
                                     self.robot.isSimpleSegment(newState, state):
@@ -170,28 +122,16 @@ class RRGPlanner(object):
                             Delta.add((newState, state))
                             E.update(Ep)
             
-#             if self.ts.g.number_of_nodes() == 33:
-#                 print 'Delta:', Delta
-#                 print E
-            
-            self.ts.addTransitions(Delta)
+            self.ts.add_transitions(Delta)
             self.checker.update(E)
             
-#             print 'Size of PA:', self.checker.size()
-#             print 'PA'
-#             for u, d in self.checker.g.nodes_iter(data=True):
-#                 print (u[0].coords, u[1]), d
-#             for u, v in self.checker.g.edges_iter():
-#                 print [(u[0].coords, u[1]), (v[0].coords, v[1])]
-#             print 'Size of TS:', self.ts.size()
-#             print 'TS'
-#             for u, d in self.ts.g.nodes_iter(data=True):
-#                 print u.coords, d
-#             for u, v in self.ts.g.edges_iter():
-#                 print (u.coords, v.coords)
-#             print
-            
-            assert all([self.checker.buchi.g.has_edge(u[1], v[1]) for u, v in self.checker.g.edges_iter()]), '{} {}'.format(self.iteration, [((u[0].coords, u[1]), (v[0].coords, v[1])) for u, v in self.checker.g.edges_iter() if not self.checker.buchi.g.has_edge(u[1], v[1])])
+            # uncomment assertion for debugging
+#             assert all([self.checker.buchi.g.has_edge(u[1], v[1])
+#                         for u, v in self.checker.g.edges_iter()]), \
+#                         '{} {}'.format(self.iteration,
+#                     [((u[0].coords, u[1]), (v[0].coords, v[1]))
+#                         for u, v in self.checker.g.edges_iter()
+#                             if not self.checker.buchi.g.has_edge(u[1], v[1])])
             
             return self.checker.foundPolicy()
         
@@ -222,7 +162,3 @@ class RRGPlanner(object):
         metric = self.robot.cspace.dist
         return ifilter(lambda v: 0 < metric(v, p) < self.eta[1],
                        self.ts.g.nodes_iter())
-
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()

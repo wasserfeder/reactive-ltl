@@ -29,3 +29,18 @@ from maps2d import *
 from maps3d import *
 from maps2hd import *
 from maps_nd import *
+
+# register yaml representers
+try: # try using the libyaml if installed
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError: # else use default PyYAML loader and dumper
+    from yaml import Loader, Dumper
+
+def p2d_representer(dumper, p):
+    return dumper.represent_mapping(tag=u'!Point2D',
+                                    mapping={'x': float(p.x), 'y': float(p.y)})
+Dumper.add_representer(Point2D, p2d_representer)
+def p2d_constructor(loader, node):
+    data = loader.construct_mapping(node)
+    return Point2D([data['x'], data['y']])
+Loader.add_constructor(u'!Point2D', p2d_constructor)

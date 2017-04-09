@@ -55,6 +55,7 @@ class Robot(object):
         return self.cspace.getSample()
     
     def move(self, conf):
+        '''Moves the robot to the given configuration.'''
         self.currentConf = conf
     
     def getSymbols(self, position, local=False):

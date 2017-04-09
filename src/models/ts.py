@@ -28,21 +28,18 @@ import collections
 
 from model import Model
 
-# TODO: add nearest neighbor search if possible
+
 class TS(Model):
-    '''
-    Weighted Transition System.
-    '''
+    '''Weighted Transition System.'''
+    yaml_tag = u'!TS'
     
-    def __init__(self, nnAlgorithm):
-        '''
-        Constructor
-        '''
-        Model.__init__(self)
+    def __init__(self, nnAlgorithm, name='Unnamed transition system'):
+        '''Constructor'''
+        Model.__init__(self, name)
         
 #         self.nn = nnAlgorithm(self)
     
-    def statesWithProp(self, prop):
+    def states_with_prop(self, prop):
         '''
         Returns the states from the model with a given proposition set.
         
@@ -56,7 +53,8 @@ class TS(Model):
                 for state, data in self.g.nodes_iter(data=True)
                     if prop <= data.get('prop', set())))
     
-#     def addState(self, key, propositions=None, **kwargs):
+    # TODO: add nearest neighbor search if possible
+#     def add_state(self, key, propositions=None, **kwargs):
 #         '''
 #         Adds a state to the transition system.
 #         '''
@@ -70,10 +68,10 @@ if __name__ == '__main__':
         def add(self, key):pass
 
     ts = TS(NNTest)
-    ts.addState(0, propositions=set(['a', 'b']))
-    ts.addState(1, propositions=set(['a', 'c']), init=True)
-    ts.addStates([(2, {'propositions' : set(['a', 'b', 'c'])}),
+    ts.add_state(0, propositions=set(['a', 'b']))
+    ts.add_state(1, propositions=set(['a', 'c']), init=True)
+    ts.add_states([(2, {'propositions' : set(['a', 'b', 'c'])}),
                   (3, {'propositions' : set()})])
-    ts.addState(4, propositions=set(), final=True)
+    ts.add_state(4, propositions=set(), final=True)
     print ts.init, ts.final
     

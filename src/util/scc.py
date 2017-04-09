@@ -1,12 +1,12 @@
 '''
 .. module:: scc
-   :synopsis: TODO:
+   :synopsis: Incremental stringly connected components computation.
 
 .. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
 '''
 
 '''
-    TODO:
+    Incremental stringly connected components computation.
     Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
     Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
     Boston University
@@ -93,12 +93,13 @@ def reorderVertexGuidedSearch(G, sccG, v, w, order, F, B, key):
         if sccG.node[x]['out'] and (minVal > key[x]):
             t, minVal = x, key[x]
         
-    F_l = filter(lambda x: key[x] < minVal, F)
-    B_g = filter(lambda y: key[y] > minVal, B)
+    F_l = [x for x in F if key[x] < minVal]
+    B_g = [y for y in B if key[y] > minVal]
         
     X = set(F_l + [t] + B_g)
     Y = set([(u, x) for u, x in sccG.out_edges_iter(F_l) if u != x and x in X]) \
-        | set([(y, z) for y, z in sccG.in_edges_iter(B_g) if y != z and y in X]) | set([(f_v, f_w)])
+        | set([(y, z) for y, z in sccG.in_edges_iter(B_g) if y != z and y in X]) \
+        | set([(f_v, f_w)])
         
     subSccG = nx.DiGraph()
     subSccG.add_nodes_from(X)
@@ -116,18 +117,20 @@ def reorderVertexGuidedSearch(G, sccG, v, w, order, F, B, key):
         unite(G, sccG, canonical, newSCC)
 
     # reorder
-    F_l = filter(lambda x: x in F_l, order)
-    B_g = filter(lambda x: x in B_g, order)
+    F_l = [x for x in order if x in F_l]
+    B_g = [x for x in order if x in B_g]
     
     if t == f_v:
-        order = filter(lambda x: (key[x] <= minVal) and (x not in F_l), order) + F_l \
-            + filter(lambda x: (key[x] > minVal) and (x not in F_l), order)
+        order = ([x for x in order if (key[x] <= minVal) and (x not in F_l)]
+                 + F_l
+                 + [x for x in order if (key[x] > minVal) and (x not in F_l)])
     else:
-        order = filter(lambda x: (key[x] < minVal) and (x not in F_l) and (x not in B_g), order) \
-            + B_g + F_l + [t] \
-            + filter(lambda x: (key[x] > minVal) and (x not in F_l) and (x not in B_g), order)
-    order = filter(lambda x: x not in newSCC, order)
-    
+        order = ([x for x in order
+                     if (key[x] < minVal) and (x not in F_l) and (x not in B_g)]
+                 + B_g + F_l + [t]
+                 + [x for x in order
+                    if (key[x] > minVal) and (x not in F_l) and (x not in B_g)])
+    order = [x for x in order if x not in newSCC]
     return order
 
 #-------------------------------------------------------------------------------
@@ -246,7 +249,5 @@ def scc(G, E, sccG, order):
         
         if key[f_v] > key[f_w]:
             F, B = softThresholdSearch(sccG, key, f_v, f_w)
-            
             order = reorderVertexGuidedSearch(G, sccG, v, w, order, F, B, key)
-
     return order

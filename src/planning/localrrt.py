@@ -48,7 +48,7 @@ def get_actual_potential(x, B, pa):
     return pa.g.node[pa_state]['potential']
 
 def monitor(start, buchi, start_prop, stop_prop=None):
-    '''
+    '''Half-monitor for violation of LTL specification.
     start -- is the vector of Buchi states corresponding to the start
              configuration from the local transition system
     buchi -- Buchi automaton corresponding to the specification LTL formula
@@ -110,29 +110,9 @@ class LocalPlanner(object):
         
         # set max steer step size eta and sensing radius
         self.eta = eta
-#         self.sensing_radius = sensing_radius
 
         self.durations = []
         self.sizes = []
-
-#     def update_local_info(self):
-#         '''Sets information about locally sensed requests and obstacles.'''
-#         self.requests, self.obstacles = self.sense(
-#                                                 self.robot.cspace.localRegions)
-#     
-#         requests, obstacles = [], []
-#         for reg in self.robot.cspace.localRegions:
-#             if self.robot.localObst in reg.symbols:
-#                 if (self.robot.cspace.dist(self.robot.currentConf, reg.center)
-#                                 < self.robot.sensingShape.radius + reg.radius):
-#                     obstacles.append(reg)
-#             else:
-#                 # test if it is within sensing area
-#                 if self.robot.sensingShape.intersects(reg.center):
-#                     name = next(iter(reg.symbols))
-#                     requests.append(Request(reg, self.priority[name]))
-#         self.requests = requests
-#         self.obstacles = obstacles
 
     def execute(self, requests, obstacles):
         '''Plan locally.'''
@@ -156,21 +136,16 @@ class LocalPlanner(object):
         return self.local_plan.pop(0)
 
     def check_local_plan(self):
-        '''
-        NOTE: Assumes the path is satisfying w.r.t. the global spec.
-        It does not check collision w/ global regions.
+        '''Checks if the local plan is still satisfying with respect to the
+        local specification.
+        
+        NOTE: Assumes the path is satisfying w.r.t. the global specificcation.
+        It does not check collision with global regions.
         NOTE: Sets/Resets the local target request
         1. Checks if the target needs to be modified
         2. Checks if the local plan is collision free
         '''
         requests = self.requests
-        
-        if self.local_plan: # TODO: uncomment
-            print '[check local plan]', [(p.x, p.y) for p in self.local_plan]
-        else:
-            print '[check local plan]', self.local_plan
-        print '[check local plan]', self.requests
-        
         # check if target is needs to be modified
         if requests:
             highest_priority_req = min(requests, key=lambda req: req.priority)
@@ -185,21 +160,14 @@ class LocalPlanner(object):
             else:
                 self.tracking_req = None # reset target
             return False
-#         # target moved # TODO: is this necessary
-#         if robot.local_target_request == robot.current_position:
-#     #         if __verbose__:
-#     #             print 'Target moved!!!'
-#             robot.local_target_request = None # reset target
-#             return False
-        
-        if not self.local_plan: # no plan
+        # no plan
+        if not self.local_plan:
             return False
-        
         # 2. check that path is collision free
         return self.robot.collision_free(self.local_plan, self.obstacles)
 
     def update(self):
-        '''#TODO:
+        '''Updates the information for the next configuration in the local plan.
         '''
         new_conf = self.local_plan[0]
         prop = self.robot.getSymbols(new_conf)
@@ -211,25 +179,13 @@ class LocalPlanner(object):
         if new_conf in self.ts.g:
             self.potential.append(get_actual_potential(new_conf, B, self.pa))
 
-    def min_potetial_global_state(self, state):
-        '''#TODO:
-        '''
-#         print 'buchi:', self.buchi_states
-#         print 'buchi prev:', self.buchi_states[-1]
-        
+    def min_potential_global_state(self, state):
+        '''Computes the minimum potential global state to connect to.'''
         pa_states = [(state, buchi_state)
                                     for buchi_state in self.buchi_states[-1]]
-        
-#         print 'pa states:', pa_states
-        
         _, pa_next_states = zip(*self.pa.g.out_edges_iter(pa_states))
         opt_pa_next_state = min(pa_next_states,
                            key=lambda x: self.pa.g.node[x]['potential'])
-        
-#         print 'next pa states:',
-#         for p in pa_next_states:
-#             print p, '->', self.pa.g.node[p]['potential']
-            
         if (self.potential[-1] == 0 and
             self.pa.g.node[opt_pa_next_state]['potential'] == 0):
             pa_next_states.remove(opt_pa_next_state)
@@ -238,24 +194,6 @@ class LocalPlanner(object):
             assert self.pa.g.node[opt_pa_next_state]['potential'] > 0
         opt_next_state, _ = opt_pa_next_state
         return opt_next_state
-        
-#         buchi_states = self.buchi_states[-1]
-#         prop = self.ts.g.node[state]['prop']
-#         opt_next_state = None
-#         min_potential = float('Inf')
-#         for next_state in self.ts.g.neighbors_iter(state):
-#             B = monitor(buchi_states, self.pa.buchi, prop)
-#             potential = get_actual_potential(next_state, B, self.pa)
-#             
-#             print '[min_potential_global_state] B', B
-#             print '[min_potential_global_state]', 'n_state', next_state,
-#             print 'potential', potential
-#             
-#             if potential < min_potential:
-#                 min_potential = potential
-#                 opt_next_state = next_state
-#         
-#         return opt_next_state
 
     def free_movement(self, current_state=None):
         '''Assumes that it can find a solution from the current position to the
@@ -268,45 +206,14 @@ class LocalPlanner(object):
             current_state = self.robot.currentConf
         
         # if global state => switch to next global state
-        if current_state in self.ts.g: # TODO: make this distance based
-#             pa_states = [(current_state, buchi_state)
-#                          for buchi_state in self.buchi_states[-1]]
-#             _, pa_next_states = zip(*self.pa.g.out_edges_iter(pa_states))
-#             next_states, _ = zip(*pa_next_states)
-#             
-#             print
-#             print '[free_movement] current state:', current_state
-#             print '[free_movement] buchi states:', self.buchi_states[-1]
-#             for p in pa_next_states:
-#                 print '[free_movement] pa next states:', p,
-#                 print 'potential', self.pa.g.node[p]['potential']
-# #             print '[free_movement] pa next states:', pa_next_states
-#             
-#             
-#             B = set(self.pa.buchi.g.nodes())
-#             final_state = min(next_states,
-#                               key=lambda x: get_actual_potential(x, B, self.pa))
-#             
-#             print '[free_movement] final_state:', final_state
-#             print '[free_movement] min_potential_state:', \
-#                                 self.min_potetial_global_state(current_state)
-#             print
-#             
-#             final_state = self.min_potetial_global_state(current_state)
-#             
-#             assert get_actual_potential(final_state, B, self.pa) < float('Inf')
-            
-            final_state = self.min_potetial_global_state(current_state)
+        if current_state in self.ts.g:
+            final_state = self.min_potential_global_state(current_state)
             self.global_target_state = final_state
         else: # local state
             final_state = self.global_target_state
             # check if it can be connected
             if not self.robot.isSimpleSegment(current_state, final_state):
                 return []
-        
-#         # TODO: remove after debug
-#         final_state = np.array(final_state.coords)
-#         return [self.PointCls(final_state)]
         
         # generate straight path to the node
         current_state = np.array(current_state.coords)
@@ -339,22 +246,20 @@ class LocalPlanner(object):
                                                self.obstacles))
 
     def generate_local_plan(self):
-        # NOTE: Assumes that it is called either because there is no local
-        # policy or there are new events => re-planning is needed
-        #NOTE: exclude current position as next target position
-        #NOTE: free movement if there are no local requests
+        '''Generates the local plan from the current configuration.
+        NOTE: Assumes that it is called either because there is no local
+        policy or there are new events => re-planning is needed
+        NOTE: exclude current position as next target position
+        NOTE: free movement if there are no local requests
+        '''
         
         local_requests, local_obstacles = self.requests, self.obstacles
         
         # 0. no local requests => move towards global state of minimum potential
-#         print '[generate_local_plan] local reqs:', local_requests
         if not local_requests and not local_obstacles:
-#             print '[generate_local_plan]', local_requests
             local_plan = self.free_movement()
             if local_plan:
                 return local_plan, -1
-        
-        print '[generate_local_plan]', self.tracking_req
         
         target = self.tracking_req
         
@@ -372,8 +277,6 @@ class LocalPlanner(object):
         while not self.test(dest_state):
             # 3. generate sample
             random_sample = self.robot.sample(local=True)
-            print '[generate_local_plan] random_sample:', random_sample
-            
             # 4. get nearest neighbor in local ts
             source_state = nearest(self.lts, random_sample)
             # 5. steer robot towards random sample
@@ -385,18 +288,9 @@ class LocalPlanner(object):
             if self.robot.isSimpleSegment(source_state, dest_state):
                 # 7. compute Buchi states for new sample
                 source_data = self.lts.g.node[source_state]
-                
-#                 # TODO: delete after debug 
-#                 print '[generate_local_plan] buchi states:',
-#                 print source_data['buchi_states'],
-#                 print source_data['global_prop'], dest_global_prop
-                
                 B = monitor(source_data['buchi_states'], self.pa.buchi,
                             source_data['global_prop'], dest_global_prop)
-                # FIXME: I don't remember what this optimization was for,
-                # but it works without it
-#                 Bp = monitor(B, self.pa.buchi, dest_global_prop) 
-                if B: # and Bp:
+                if B:
                     if self.robot.collision_free_segment(source_state,
                                                   dest_state, local_obstacles):
                         # 8. update local transition system
@@ -413,7 +307,8 @@ class LocalPlanner(object):
             if dest_state not in self.lts.g:
                 dest_state = None
             
-            if dest_state and False:
+            # uncomment for debugging
+            if dest_state:
                 print '[generate_local_plan] local tree'
                 print '[generate_local_plan] hit', hit
                 print '[generate_local_plan] dest_local_prop', dest_local_prop

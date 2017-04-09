@@ -253,18 +253,13 @@ class Simulate2D(object):
                        )
         
         # draw regions
-        for r in wp.globalRegions:
+        for r in wp.regions:
             text = None
             if withtext:
                 text = r.text
             drawRegion2D(viewport, r, r.style, text, r.textStyle)
-#         for r in wp.localRegions:
-#             text = None
-#             if withtext:
-#                 text = r.text
-#             drawRegion2D(viewport, r, r.style, text, r.textStyle)
         
-        # draw boundaryself.robot.sensor.requests
+        # draw boundary
         drawBoundary2D(viewport, wp.boundary, wp.boundary.style)
         
         # draw robot
@@ -289,7 +284,13 @@ class Simulate2D(object):
                     r.style['facecolor'] = r.style['facecolor'][:3] + (0.2,)
                 else:
                     r.style['facecolor'] = r.style['facecolor'][:3] + (0.5,)
-                    
+                
+                drawRegion2D(viewport, r, r.style, text, r.textStyle)
+            
+            for r in self.robot.sensor.obstacles:
+                text = None
+                if withtext:
+                    text = r.text
                 drawRegion2D(viewport, r, r.style, text, r.textStyle)
             
             if localinfo == 'tree' and self.online.lts:

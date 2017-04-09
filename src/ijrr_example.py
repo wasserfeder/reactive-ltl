@@ -26,6 +26,9 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import os, sys
+import logging
+
 import numpy as np
 
 from spaces.base import Workspace
@@ -41,16 +44,37 @@ from lomap import Timer
 
 def caseStudy():
     ############################################################################
+    ### Output and debug options ###############################################
+    ############################################################################
+    outputdir = ('/home/cristi/Dropbox/work/workspace_linux/ReactiveLTLPlan/data_ijrr/'
+                 + 'example1')
+    if not os.path.isdir(outputdir):
+        os.makedirs(outputdir)
+    
+    # configure logging
+    fs, dfs = '%(asctime)s %(levelname)s %(message)s', '%m/%d/%Y %I:%M:%S %p'
+    loglevel = logging.DEBUG
+    logfile = os.path.join(outputdir, 'ijrr_example_1.log')
+    verbose = True
+    logging.basicConfig(filename=logfile, level=loglevel, format=fs,
+                        datefmt=dfs)
+    if verbose:
+        root = logging.getLogger()
+        ch = logging.StreamHandler(sys.stdout)
+        ch.setLevel(loglevel)
+        ch.setFormatter(logging.Formatter(fs, dfs))
+        root.addHandler(ch)
+    
+    
+    ############################################################################
     ### Define case study setup (robot parameters, workspace, etc.) ############
     ############################################################################
     
     # define robot diameter (used to compute the expanded workspace)
     robotDiameter = 0.36
     
-    L = 0.6
-    
     # define boundary
-    boundary = BoxBoundary2D(L*np.array([[0, 8], [0, 6]]))
+    boundary = BoxBoundary2D([[0, 4.8], [0, 3.6]])
     # define boundary style
     boundary.style = {'color' : 'black'}
     # create expanded region
@@ -67,25 +91,24 @@ def caseStudy():
                                stepsize=0.999)
     robot.diameter = robotDiameter
     robot.localObst = 'local_obstacle'
-    print 'Conf space:', robot.cspace
+    
+    logging.info('Conf space: %s', robot.cspace)
     
     # create simulation object
     sim = Simulate2D(wspace, robot, ewspace)
     
     # regions of interest
-    R1 = (BoxRegion2D(L*np.array([[0.75, 1.25], [0.75, 1]]), ['r1']), 'brown')
-    R2 = (BallRegion2D(L*np.array([6.5, 2]), L*0.5, ['r2']), 'green')
-    R3 = (BoxRegion2D(L*np.array([[6.25, 6.75], [4.5, 5]]), ['r3']), 'red')
-    R4 = (PolygonRegion2D(L*np.array([[2.0, 4.75], [1.5, 5.25], [1, 4.75],
-                      [1.5, 4.25], [2.0, 4.25]]), ['r4']), 'magenta')
+    R1 = (BoxRegion2D([[0.45, 0.75], [0.45, 0.6]], ['r1']), 'brown')
+    R2 = (BallRegion2D([3.9, 1.2], 0.3, ['r2']), 'green')
+    R3 = (BoxRegion2D([[3.75, 4.05], [2.7, 3]], ['r3']), 'red')
+    R4 = (PolygonRegion2D([[1.2 , 2.85], [0.9 , 3.15], [0.6 , 2.85],
+                           [0.9 , 2.55], [1.2 , 2.55]], ['r4']), 'magenta')
     # global obstacles
-    O1 = (BallRegion2D(L*np.array([4, 2.5]), L*0.6, ['o1']), 'gray')
-    O2 = (PolygonRegion2D(L*np.array([[0.75, 2], [1.75, 2.5], [0.75, 3]]),
-                          ['o2']),
+    O1 = (BallRegion2D([2.4, 1.5], 0.36, ['o1']), 'gray')
+    O2 = (PolygonRegion2D([[0.45, 1.2], [1.05, 1.5], [0.45, 1.8]], ['o2']),
           'gray')
-    O3 = (PolygonRegion2D(L*np.array([[3.5, 4.5], [4, 5], [4.5, 4.5]]), ['o3']),
-          'gray')
-    O4 = (BoxRegion2D(L*np.array([[2.75, 3.25], [0.75, 1]]), ['o4']), 'gray')
+    O3 = (PolygonRegion2D([[2.1, 2.7], [2.4, 3], [2.7, 2.7]], ['o3']), 'gray')
+    O4 = (BoxRegion2D([[1.65, 1.95], [0.45, 0.6]], ['o4']), 'gray')
     
     # add all regions
     regions = [R1, R2, R3, R4, O1, O2, O3, O4]
@@ -93,37 +116,42 @@ def caseStudy():
     # add regions to workspace
     for r, c in regions:
         # add styles to region
-        addStyle(r, style={'facecolor':c})
+        addStyle(r, style={'facecolor': c})
         # add region to workspace
         sim.workspace.addRegion(r)
         # create expanded region
         er = expandRegion(r, robot.diameter/2)
         # add style to the expanded region
-        addStyle(er, style={'facecolor':c})
+        addStyle(er, style={'facecolor': c})
         # add expanded region to the expanded workspace
         sim.expandedWorkspace.addRegion(er)
     
     # local  requests
-    F1 = (BallRegion2D(L*np.array([5.4, 3.3]), L*0.5, ['fire']), 'orange')
-    F2 = (BallRegion2D(L*np.array([2.1, 0.8]), L*0.3, ['fire']), 'orange')
-    S2 = (BallRegion2D(L*np.array([7.2, 0.8]), L*0.45, ['survivor']), 'yellow')
+    F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']), 'orange')
+    F2 = (BallRegion2D([1.26, 0.48], 0.18, ['fire']), 'orange')
+    S2 = (BallRegion2D([4.32, 0.48], 0.27, ['survivor']), 'yellow')
     requests = [F1, F2, S2]
     # define local specification as a priority function
     localSpec = {'survivor': 0, 'fire': 1}
-    print 'Local specification:', localSpec
+    logging.info('Local specification: %s', localSpec)
     # local obstacles
-    obstacles = []
+    obstacles = [(BoxRegion2D([[3, 3.5], [2, 2.5]], ['LO']), 'gray')]
     
     # add style to local requests
     for r, c in requests:
         # add styles to region
         addStyle(r, style={'facecolor': to_rgba(c, 0.5)}) #FIMXE: HACK
+    # add style to local requests
+    for r, c in obstacles:
+        # add styles to region
+        addStyle(r, style={'facecolor': to_rgba(c, 0.8)}) #FIMXE: HACK
     # create request objects
     reqs = []
     for r, _ in requests:
         name = next(iter(r.symbols))
         reqs.append(Request(r, name, localSpec[name]))
     requests = reqs
+    obstacles = [o for o, _ in obstacles]
     
     # set the robot's sensor
     sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
@@ -142,78 +170,40 @@ def caseStudy():
     ### Generate global transition system and off-line control policy ##########
     ############################################################################
     
-#     globalSpec = '[] ( <> r1 )' + \
-#                  '&&' + \
-#                  '[] ( r1 -> ( ( <> ( r2 || r3 ) ) ' +\
-#                          '&& ( ! o1 U ( r2 || r3 ) ) ) )' +\
-#                  '&&' + \
-#                  '[] ( r2 -> ( ( <> r4 ) && ( ! r3 U r1 ) ) )' + \
-#                  '&& ' + \
-#                  '[] ( ! ( o2 || o3 || o4 ) )'
-#     globalSpec = '[] ( <> o2 && <> o4 )'
-#     globalSpec = '[] ( <> o2 && ! o4 )'
-#     globalSpec = '[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4) )'
     globalSpec = ('[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4)'
                   + ' && !(o1 || o2 || o3 || o4 || o5))')
-    print globalSpec
+    logging.info('Global specification: %s', globalSpec)
     
     # initialize incremental product automaton
     checker = IncrementalProduct(globalSpec) #, specFile='ijrr_globalSpec.txt')
-    print 'Buchi size:', (checker.buchi.g.number_of_nodes(),
-                          checker.buchi.g.number_of_edges())
-    print
-    
-    # TODO: delete
-#     print checker.buchi
-#     pset = set(checker.buchi.props.itervalues())
-#     pset.add(0)
-#     for u, v, d in checker.buchi.g.edges(data=True):
-#         print u, v, d
-#         d['input'] &= pset
-#         if not d['input']:
-#             checker.buchi.g.remove_edge(u, v)
-#     print checker.buchi
-#     for u, v, d in checker.buchi.g.edges(data=True):
-#         print u, v, d
+    logging.info('Buchi size: (%d, %d)', checker.buchi.g.number_of_nodes(),
+                                         checker.buchi.g.number_of_edges())
     
     # initialize global off-line RRG planner
     sim.offline = RRGPlanner(robot, checker, None, iterations=1000)
+    sim.offline.eta = [0.5, 1.0] # good bounds for the planar case study
     
     with Timer():
         if sim.offline.solve():
-            print 'Found solution!'
+            logging.info('Found solution!')
         else:
-            print 'No solution found!'
-        print
+            logging.info('No solution found!')
+            return
     
-#     print '\n\n\n\n\n\n'
-#     for p in sorted(sim.offline.checker.g.nodes()):
-#         print ((round(p[0].x, 2), round(p[0].y, 2)), p[1]), ':',
-#         for q in sim.offline.checker.g.neighbors(p):
-#             print ((round(q[0].x, 2), round(q[0].y, 2)), q[1]),
-#         print
-#     print '\n\n\n\n\n\n'
+    logging.info('Finished in %d iterations!', sim.offline.iteration)
+    logging.info('Size of TS: %s', sim.offline.ts.size())
+    logging.info('Size of PA: %s', sim.offline.checker.size())
     
-    print 'Finished in', sim.offline.iteration, 'iterations!'
-    print 'Size of TS:', sim.offline.ts.size()
-    print 'Size of PA:', sim.offline.checker.size()
-    
-#     # save global transition system and control policy
-#     planner.ts.save('ts.yaml')
-#     save -> planner.policy()
+    # save global transition system and control policy
+    sim.offline.ts.save(os.path.join(outputdir, 'ts.yaml'))
     
     ############################################################################
     ### Display the global transition system and the off-line control policy ###
     ############################################################################
     
     # display workspace and global transition system
-#     sim.display()
-#     sim.display(expanded='both')
-# #     return
     prefix, suffix = sim.offline.checker.globalPolicy(sim.offline.ts)
-#     sim.display(expanded='both', solution=prefix+suffix[1:])
-#     sim.display(expanded=True, solution=prefix)
-#     sim.display(expanded=True, solution=suffix)
+    sim.display(expanded='both', solution=prefix+suffix[1:])
     
 #     # FIXME: set to global and to save animation
 #     sim.simulate()
@@ -221,19 +211,15 @@ def caseStudy():
 # #     sim.execute(2)
 #     sim.save()
     
+    
     ############################################################################
     ### Execute on-line path planning algorithm ################################
     ############################################################################
     
-    sim.display(expanded='both', solution=prefix+suffix[1:])
-    
     # compute potential for each state of PA
-    with Timer():
-        print compute_potentials(sim.offline.checker)
-    
-#     print 'PA final states:', sim.offline.checker.final
-#     for u, d in sim.offline.checker.g.nodes_iter(data=True):
-#         print 'node:', u, 'data:', d
+    with Timer('Computing potential function'):
+        if not compute_potentials(sim.offline.checker):
+            return
     
     # FIXME: HACK
     robot.controlspace = 0.1
@@ -256,8 +242,7 @@ def caseStudy():
             # feed data to planner and get next control input
             nextConf = sim.online.execute(requests, obstacles)
         
-        print 'local plan'
-#         sim.display(expanded=True, localinfo='plan')
+        sim.display(expanded=True, localinfo='plan')
         
         # enforce movement
         robot.move(nextConf)

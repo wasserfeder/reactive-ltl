@@ -26,6 +26,8 @@
 '''
 import numpy as np
 
+from spaces.maps2d import intersection
+
 
 class Sensor(object):
     '''Base class for sensors.'''
@@ -60,8 +62,8 @@ class SimulatedSensor(Sensor):
         requests = [r for r in self.requests
                       if self.sensingShape.intersects(r.region.center)]
         
-        obstacles = [o for o in self.obstacles
-            if (self.robot.cspace.dist(self.robot.sensingShape.center, o.center)
-                                < self.robot.sensingShape.radius + o.radius)]
+        obstacles = [intersection(self.sensingShape, o)
+                            for o in self.obstacles]
+        obstacles = [o for o in obstacles if o is not None]
         
         return requests, obstacles

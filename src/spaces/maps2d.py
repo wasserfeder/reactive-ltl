@@ -32,6 +32,7 @@ from numpy.random import uniform
 from scipy.spatial.distance import euclidean, sqeuclidean
 
 import shapely.geometry as geom
+import shapely.affinity as affine
 
 from base import Boundary, Point, Region
 
@@ -42,9 +43,7 @@ __all__ = ['Point2D', 'BoxBoundary2D', 'BoxRegion2D',
 
 
 class Point2D(Point):
-    '''
-    Defines a 2D point. 
-    '''
+    '''Defines a 2D point.'''
     __slots__ = ()
     
     @property
@@ -62,8 +61,7 @@ class Point2D(Point):
 
 
 class BoxBoundary2D(Boundary):
-    '''
-    Defines a 2D rectangle boundary.
+    '''Defines a 2D rectangle boundary.
     
     Note: Assumes Euclidean space.
     '''
@@ -75,6 +73,8 @@ class BoxBoundary2D(Boundary):
         assert self.ranges.shape == (2, 2)
         assert all(self.ranges[:, 0] <= self.ranges[:, 1])
         self.dimension = 2
+        
+        self.polygon = None
         
         self._hash = hash(tuple(self.ranges.flat))
     
@@ -89,8 +89,7 @@ class BoxBoundary2D(Boundary):
         return Point2D(low + uniform(size=2)* (high - low))
     
     def intersects(self, src, dest=None):
-        '''
-        It dest is None then it returns true if src is inside the region,
+        '''It dest is None then it returns true if src is inside the region,
         otherwise it returns true if the line segment intersects the region.
         
         .. math ::
@@ -152,12 +151,26 @@ class BoxBoundary2D(Boundary):
                 and self.ranges[1, 0] <= src.y <= self.ranges[1, 1])
     
     def contains(self, src, dest):
-        '''
-        Returns True if the line segment from src to dest in contained in the
+        '''Returns True if the line segment from src to dest in contained in the
         box boundary.
         '''
         return self.intersects(src) and self.intersects(dest)
-        
+    
+    def toPolygon(self):
+        '''Convert to list of points forming a polygon.'''
+        if self.polygon is None:
+            low, high = self.ranges.T
+            self.polygon = geom.Polygon([low, (low[0], high[1]),
+                                         high, (high[0], low[1])])
+        return self.polygon
+    
+    def translate(self, v):
+        '''Translates the object.'''
+        v = np.asarray(v)
+        self.ranges[0] += v[0]
+        self.ranges[1] += v[1]
+        self.polygon = None
+    
     def xrange(self):
         '''Returns the range of the x coordinate.'''
         return self.ranges[0]
@@ -174,8 +187,7 @@ class BoxBoundary2D(Boundary):
     
 
 class BoxRegion2D(BoxBoundary2D, Region):
-    '''
-    Defines a labeled box region in a 2-dimensional workspace.
+    '''Defines a labeled box region in a 2-dimensional workspace.
     
     Note: Assumes Euclidean space.
     '''
@@ -191,8 +203,7 @@ class BoxRegion2D(BoxBoundary2D, Region):
 
 
 class BallBoundary2D(Boundary):
-    '''
-    Defines a ball boundary in a 2-dimensional workspace.
+    '''Defines a ball boundary in a 2-dimensional workspace.
     
     Note: Assumes Euclidean space.
     '''
@@ -207,6 +218,8 @@ class BallBoundary2D(Boundary):
         self.center = array(center).flatten()
         self.radius = float(radius)
         self.dimension = 2
+        
+        self.polygon = None
         
         self._hash =  self._hash = hash(tuple(self.center) + (self.radius,))
     
@@ -227,8 +240,7 @@ class BallBoundary2D(Boundary):
         return Point2D(self.center + p)
     
     def intersects(self, src, dest=None):
-        '''
-        It dest is None then it returns true if src is inside the region,
+        '''It dest is None then it returns true if src is inside the region,
         otherwise it returns true if the line segment intersects the region.
         
         .. math ::
@@ -258,11 +270,26 @@ class BallBoundary2D(Boundary):
         return euclidean(self.center, src) <= self.radius
     
     def contains(self, src, dest):
-        '''
-        Returns True if the line segment from src to dest in contained in the
+        '''Returns True if the line segment from src to dest in contained in the
         ball boundary.
         '''
         return self.intersects(src) and self.intersects(dest)
+    
+    def toPolygon(self):
+        '''Convert to list of points forming a polygon.'''
+        if self.polygon is None:
+            N = 36
+            points = np.empty((N, 2))
+            theta = np.linspace(0, 2*np.pi, N)
+            points[:, 0] = self.center[0] + self.radius * np.cos(theta)
+            points[:, 1] = self.center[1] + self.radius * np.sin(theta)
+            self.polygon = geom.Polygon(points)
+        return self.polygon
+    
+    def translate(self, v):
+        '''Translates the object.'''
+        self.center += np.asarray(v)
+        self.polygon = None
     
     def __eq__(self, other):
         return np.all(self.center == other.center) and (self.radius == other.radius)
@@ -273,8 +300,7 @@ class BallBoundary2D(Boundary):
 
 
 class BallRegion2D(BallBoundary2D, Region):
-    '''
-    Defines a labeled ball region in a 2-dimensional workspace.
+    '''Defines a labeled ball region in a 2-dimensional workspace.
     
     Note: Assumes Euclidean space.
     '''
@@ -292,8 +318,7 @@ class BallRegion2D(BallBoundary2D, Region):
 
 
 class PolygonBoundary2D(Boundary):
-    '''
-    Defines a polygon boundary in a 2-dimensional workspace.
+    '''Defines a polygon boundary in a 2-dimensional workspace.
     
     Note: Assumes Euclidean space.
     '''
@@ -317,12 +342,19 @@ class PolygonBoundary2D(Boundary):
         return self.polygon.intersects(geom.Point(src.coords))
     
     def contains(self, src, dest):
-        '''
-        Returns True if the line segment from src to dest in contained in the
+        '''Returns True if the line segment from src to dest in contained in the
         polygon boundary.
         '''
         return self.polygon.contains(geom.LineString(src, dest))
-         
+    
+    def toPolygon(self):
+        '''Convert to list of points forming a polygon.'''
+        return self.polygon
+    
+    def translate(self, v):
+        '''Translates the object.'''
+        affine.translate(self.polygon, xoff=v[0], yoff=v[1])
+    
     def __eq__(self, other):
         return self.polygon == other.polygon
     
@@ -331,8 +363,7 @@ class PolygonBoundary2D(Boundary):
                                                   self.polygon.exterior.coords))
 
 class PolygonRegion2D(PolygonBoundary2D, Region):
-    '''
-    Defines a labeled polygon region in a 2-dimensional workspace.
+    '''Defines a labeled polygon region in a 2-dimensional workspace.
     
     Note: Assumes Euclidean space.
     '''
@@ -363,6 +394,14 @@ def expandRegion(region, epsilon, tolerance=0.01):
     else:
         raise TypeError(str(region))
 
+def intersection(reg1, reg2):
+    poly1 = reg1.toPolygon()
+    poly2 = reg2.toPolygon()
+    poly3 = poly1.intersection(poly2)
+    
+    if not poly3:
+        return None
+    return PolygonBoundary2D(poly3.exterior.coords)
 
 if __name__ == '__main__':
     import doctest
