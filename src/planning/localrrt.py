@@ -26,6 +26,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
+import logging
 from collections import namedtuple
 
 import numpy as np
@@ -123,11 +124,18 @@ class LocalPlanner(object):
         local_planning_timer = Timer('Generate Local Plan')
         with local_planning_timer:
             nr_nodes = -1
+            
+            # if global state => switch to next global state
+            current_state = self.robot.currentConf
+            if current_state in self.ts.g:
+                final_state = self.min_potential_global_state(current_state)
+                self.global_target_state = final_state
+            
             if not self.check_local_plan():
-                print 'Local check: False'
+                logging.debug('Local check: False')
                 self.local_plan, nr_nodes = self.generate_local_plan()
             else:
-                print 'Local check: True'
+                logging.debug('Local check: True')
         # update meta data
         self.durations.append(local_planning_timer.duration)
         self.sizes.append(nr_nodes)
@@ -164,7 +172,9 @@ class LocalPlanner(object):
         if not self.local_plan:
             return False
         # 2. check that path is collision free
-        return self.robot.collision_free(self.local_plan, self.obstacles)
+        r = self.robot.collision_free(self.local_plan, self.obstacles)
+        logging.debug('Collision check with local obstacles: %s', r)
+        return r
 
     def update(self):
         '''Updates the information for the next configuration in the local plan.
@@ -205,15 +215,10 @@ class LocalPlanner(object):
         if not current_state:
             current_state = self.robot.currentConf
         
-        # if global state => switch to next global state
-        if current_state in self.ts.g:
-            final_state = self.min_potential_global_state(current_state)
-            self.global_target_state = final_state
-        else: # local state
-            final_state = self.global_target_state
-            # check if it can be connected
-            if not self.robot.isSimpleSegment(current_state, final_state):
-                return []
+        final_state = self.global_target_state
+        # check if it can be connected
+        if not self.robot.isSimpleSegment(current_state, final_state):
+            return []
         
         # generate straight path to the node
         current_state = np.array(current_state.coords)
@@ -240,10 +245,12 @@ class LocalPlanner(object):
             if not self.lts.g.node[state]['hit']:
                 return False
         
+        r = self.robot.collision_free_segment(state, self.global_target_state,
+                                              self.obstacles)
+        logging.debug('Test:collision_checking: %s', r)
         # test if the node can be connected to the global ts
         return (self.robot.isSimpleSegment(state, self.global_target_state)
-         and self.robot.collision_free_segment(state, self.global_target_state,
-                                               self.obstacles))
+                and r)
 
     def generate_local_plan(self):
         '''Generates the local plan from the current configuration.
@@ -254,12 +261,19 @@ class LocalPlanner(object):
         '''
         
         local_requests, local_obstacles = self.requests, self.obstacles
-        
         # 0. no local requests => move towards global state of minimum potential
-        if not local_requests and not local_obstacles:
-            local_plan = self.free_movement()
-            if local_plan:
-                return local_plan, -1
+        if not local_requests:
+            if not local_obstacles:
+                collision_free = True
+            else:
+                state = self.robot.currentConf
+                assert self.robot.isSimpleSegment(state, self.global_target_state)
+                collision_free = self.robot.collision_free_segment(state,
+                                     self.global_target_state, local_obstacles)
+            if collision_free:
+                local_plan = self.free_movement()
+                if local_plan:
+                    return local_plan, -1
         
         target = self.tracking_req
         
@@ -307,17 +321,39 @@ class LocalPlanner(object):
             if dest_state not in self.lts.g:
                 dest_state = None
             
-            # uncomment for debugging
-            if dest_state:
-                print '[generate_local_plan] local tree'
-                print '[generate_local_plan] hit', hit
-                print '[generate_local_plan] dest_local_prop', dest_local_prop
-                print '[generate_local_plan] target.name', target.name
-                print '[generate_local_plan] test', self.test(dest_state)
-                self.sim.display(expanded=True, localinfo='tree')
+            if logging.getLogger().isEnabledFor(logging.DEBUG):
+                r = self.test(dest_state)
+                # uncomment for debugging
+                if dest_state and r:
+                    logging.debug('[generate_local_plan] local tree')
+                    logging.debug('[generate_local_plan] dest_state: %s',
+                                  dest_state)
+                    logging.debug('[generate_local_plan] hit: %s', hit)
+                    logging.debug('[generate_local_plan] dest_local_prop: %s',
+                                  dest_local_prop)
+                    if target:
+                        logging.debug('[generate_local_plan] target.name: %s',
+                                      target.name)
+                    logging.debug('[generate_local_plan] test: %s', r)
+                    self.sim.display(expanded=True, localinfo=('tree',))
+                else:
+                    logging.debug('[generate_local_plan] rejected')
         
         # 11. return local plan
         plan_to_leaf = nx.shortest_path(self.lts.g, self.robot.currentConf,
                                         dest_state)[1:]
+        
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            ll = self.local_plan
+            
+            logging.debug('plan to leaf: %s', plan_to_leaf)
+            logging.debug('dest state: %s', dest_state)
+            
+            logging.debug('free movement: %s', self.free_movement(dest_state))
+            
+            self.local_plan = plan_to_leaf + self.free_movement(dest_state)
+            self.sim.display(expanded=True, localinfo=('plan', 'trajectory'))
+            self.local_plan = ll
+        
         return (plan_to_leaf + self.free_movement(dest_state),
                 self.lts.g.number_of_nodes())

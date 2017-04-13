@@ -172,8 +172,11 @@ def drawPolicy(viewport, solution, color='black'):
 
 
 class Simulate2D(object):
-    '''
-    TODO: 
+    '''Management class for planar systems and environments. It implements
+    visualization of the workspace, saves images or videos, and support playback
+    of computed trajectories.
+    
+    It also handles the simulation of local requests.
     '''
     
     def __init__(self, workspace, robot, expandedWorkspace=None, config=None):
@@ -293,11 +296,11 @@ class Simulate2D(object):
                     text = r.text
                 drawRegion2D(viewport, r, r.style, text, r.textStyle)
             
-            if localinfo == 'tree' and self.online.lts:
+            if 'tree' in localinfo and self.online.lts:
                 drawGraph(viewport, self.online.lts.g)
-            elif localinfo == 'trajectory':
-                drawPolicy(viewport, self.trajectory)
-            elif localinfo == 'plan':
+            if 'trajectory' in localinfo:
+                drawPolicy(viewport, self.online.trajectory)
+            if 'plan' in localinfo:
                 local_plan = [self.robot.currentConf] + self.online.local_plan
                 drawPolicy(viewport, local_plan, 'blue')
     

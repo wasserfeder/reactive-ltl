@@ -24,6 +24,8 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
+import logging
+
 import numpy as np
 
 from spaces.maps2d import intersection
@@ -58,12 +60,16 @@ class SimulatedSensor(Sensor):
     
     def sense(self):
         '''Sensing method that returns requests and local obstacles.'''
-        self.sensingShape.center = np.array(self.robot.currentConf.coords)
+        v = np.array(self.robot.currentConf.coords) - self.sensingShape.center
+        self.sensingShape.translate(v)
+        assert np.all(self.sensingShape.center == self.robot.currentConf.coords)
+        
         requests = [r for r in self.requests
                       if self.sensingShape.intersects(r.region.center)]
         
         obstacles = [intersection(self.sensingShape, o)
                             for o in self.obstacles]
         obstacles = [o for o in obstacles if o is not None]
+        logging.debug('Sensor:sense: sensed obstacles: %s', obstacles)
         
         return requests, obstacles

@@ -69,7 +69,7 @@ class BoxBoundary2D(Boundary):
     def __init__(self, ranges):
         Boundary.__init__(self)
         
-        self.ranges = array(ranges)
+        self.ranges = array(ranges, dtype=np.double)
         assert self.ranges.shape == (2, 2)
         assert all(self.ranges[:, 0] <= self.ranges[:, 1])
         self.dimension = 2
@@ -160,8 +160,7 @@ class BoxBoundary2D(Boundary):
         '''Convert to list of points forming a polygon.'''
         if self.polygon is None:
             low, high = self.ranges.T
-            self.polygon = geom.Polygon([low, (low[0], high[1]),
-                                         high, (high[0], low[1])])
+            self.polygon = geom.box(low[0], low[1], high[0], high[1])
         return self.polygon
     
     def translate(self, v):
@@ -215,7 +214,7 @@ class BallBoundary2D(Boundary):
             raise ValueError("Center dimension does not match the space's dimension!")
         assert radius > 0
         
-        self.center = array(center).flatten()
+        self.center = array(center, dtype=np.double).flatten()
         self.radius = float(radius)
         self.dimension = 2
         
@@ -289,7 +288,8 @@ class BallBoundary2D(Boundary):
     def translate(self, v):
         '''Translates the object.'''
         self.center += np.asarray(v)
-        self.polygon = None
+        if self.polygon:
+            self.polygon = affine.translate(self.polygon, xoff=v[0], yoff=v[1])
     
     def __eq__(self, other):
         return np.all(self.center == other.center) and (self.radius == other.radius)
@@ -353,7 +353,7 @@ class PolygonBoundary2D(Boundary):
     
     def translate(self, v):
         '''Translates the object.'''
-        affine.translate(self.polygon, xoff=v[0], yoff=v[1])
+        self.polygon = affine.translate(self.polygon, xoff=v[0], yoff=v[1])
     
     def __eq__(self, other):
         return self.polygon == other.polygon

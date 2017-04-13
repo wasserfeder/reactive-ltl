@@ -127,24 +127,23 @@ def caseStudy():
         sim.expandedWorkspace.addRegion(er)
     
     # local  requests
-    F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']), 'orange')
-    F2 = (BallRegion2D([1.26, 0.48], 0.18, ['fire']), 'orange')
-    S2 = (BallRegion2D([4.32, 0.48], 0.27, ['survivor']), 'yellow')
+    F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']), ('orange', 0.5))
+    F2 = (BallRegion2D([1.26, 0.48], 0.18, ['fire']), ('orange', 0.5))
+    S2 = (BallRegion2D([4.32, 1.48], 0.27, ['survivor']), ('yellow', 0.5))
     requests = [F1, F2, S2]
     # define local specification as a priority function
     localSpec = {'survivor': 0, 'fire': 1}
     logging.info('Local specification: %s', localSpec)
-    # local obstacles
-    obstacles = [(BoxRegion2D([[3, 3.5], [2, 2.5]], ['LO']), 'gray')]
+    # local obstacles #FIXME: defined in expanded workspace not workspace
+    obstacles = [(BoxRegion2D([[3, 3.5], [2, 2.5]], ['LO']), ('gray', 0.8)),
+                 (PolygonRegion2D([[3.2, 1.4], [3, 0.8], [3.4, 0.7]], ['LO']),
+                  ('gray', 0.8)),
+                 (BallRegion2D([1.6, 2.1], 0.15, ['LO']), ('gray', 0.8))]
     
-    # add style to local requests
-    for r, c in requests:
+    # add style to local requests and obstacles
+    for r, c in requests + obstacles:
         # add styles to region
-        addStyle(r, style={'facecolor': to_rgba(c, 0.5)}) #FIMXE: HACK
-    # add style to local requests
-    for r, c in obstacles:
-        # add styles to region
-        addStyle(r, style={'facecolor': to_rgba(c, 0.8)}) #FIMXE: HACK
+        addStyle(r, style={'facecolor': to_rgba(*c)}) #FIMXE: HACK
     # create request objects
     reqs = []
     for r, _ in requests:
@@ -242,7 +241,7 @@ def caseStudy():
             # feed data to planner and get next control input
             nextConf = sim.online.execute(requests, obstacles)
         
-        sim.display(expanded=True, localinfo='plan')
+#         sim.display(expanded=True, localinfo=('plan', 'trajectory'))
         
         # enforce movement
         robot.move(nextConf)
