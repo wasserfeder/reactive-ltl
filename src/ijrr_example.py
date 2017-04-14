@@ -28,10 +28,11 @@
 
 import os, sys
 import logging
+import itertools as it
 
 import numpy as np
 
-from spaces.base import Workspace
+from spaces.base import Workspace, line_translate
 from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
                           expandRegion, BoxBoundary2D, BallBoundary2D, Point2D
 from robots import FullyActuatedRobot, SimulatedSensor
@@ -127,30 +128,45 @@ def caseStudy():
         sim.expandedWorkspace.addRegion(er)
     
     # local  requests
-    F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']), ('orange', 0.5))
-    F2 = (BallRegion2D([1.26, 0.48], 0.18, ['fire']), ('orange', 0.5))
-    S2 = (BallRegion2D([4.32, 1.48], 0.27, ['survivor']), ('yellow', 0.5))
+    F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']),
+          ([[3.24, 1.98], [2.54, 2.28], [3.5, 3], [4.02, 2.28]], 0.05),
+          ('orange', 0.5))
+    F2 = (BallRegion2D([1.26, 0.48], 0.18, ['fire']),
+          ([[1.26, 0.48], [1.1, 1.1], [1.74, 0.92], [0.6, 0.6]], 0.05),
+          ('orange', 0.5))
+    S2 = (BallRegion2D([4.32, 1.48], 0.27, ['survivor']),
+          ([[4.32, 1.48], [3.6, 1.2], [4, 2]], 0.05),
+          ('yellow', 0.5))
     requests = [F1, F2, S2]
     # define local specification as a priority function
     localSpec = {'survivor': 0, 'fire': 1}
     logging.info('Local specification: %s', localSpec)
     # local obstacles #FIXME: defined in expanded workspace not workspace
-    obstacles = [(BoxRegion2D([[3, 3.5], [2, 2.5]], ['LO']), ('gray', 0.8)),
+    obstacles = [(BoxRegion2D([[3, 3.5], [2, 2.5]], ['LO']), None, ('gray', 0.8)),
                  (PolygonRegion2D([[3.2, 1.4], [3, 0.8], [3.4, 0.7]], ['LO']),
+                  None,
                   ('gray', 0.8)),
-                 (BallRegion2D([1.6, 2.1], 0.15, ['LO']), ('gray', 0.8))]
+                 (BallRegion2D([1.6, 2.1], 0.15, ['LO']), None, ('gray', 0.8))]
     
     # add style to local requests and obstacles
-    for r, c in requests + obstacles:
+    for r, path, c in requests + obstacles:
         # add styles to region
         addStyle(r, style={'facecolor': to_rgba(*c)}) #FIMXE: HACK
+        # create path
+        if path:
+            wps, step = path
+            wps = wps + [wps[0]]
+            r.path = []
+            for a, b in it.izip(wps[:-1], wps[1:]):
+                r.path += line_translate(a, b, step)
+            r.path = it.cycle(r.path)
     # create request objects
     reqs = []
-    for r, _ in requests:
+    for r, _, _ in requests:
         name = next(iter(r.symbols))
         reqs.append(Request(r, name, localSpec[name]))
     requests = reqs
-    obstacles = [o for o, _ in obstacles]
+    obstacles = [o for o, _, _ in obstacles]
     
     # set the robot's sensor
     sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
@@ -241,7 +257,7 @@ def caseStudy():
             # feed data to planner and get next control input
             nextConf = sim.online.execute(requests, obstacles)
         
-#         sim.display(expanded=True, localinfo=('plan', 'trajectory'))
+        sim.display(expanded=True, localinfo=('plan', 'trajectory'))
         
         # enforce movement
         robot.move(nextConf)

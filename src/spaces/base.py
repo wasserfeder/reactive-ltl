@@ -33,6 +33,7 @@ from collections import namedtuple
 
 import numpy as np
 from numpy import array
+from numpy.linalg import norm
 from scipy.spatial.distance import euclidean
 
 __all__ = ['Point', 'State', 'Configuration',
@@ -258,7 +259,28 @@ ConfigurationSpace = RealMetricSpace
 '''Define a n-dimensional configurations space.'''
 ControlSpace = RealMetricSpace
 '''Define a n-dimensional control space.''' 
- 
-if __name__ == '__main__':
-    import doctest
-    doctest.testmod()
+
+
+def line_path(a, b, step, PointCls=Point):
+    '''Generate straight path from point a to point b.'''
+    assert issubclass(PointCls, Point)
+    a = np.array(a.coords)
+    b = np.array(b.coords)
+    u = b - a
+    dist = norm(u)
+    points = [PointCls(a + k * u) for k in np.arange(0, 1, step/dist)]
+    points.append(PointCls(b))
+    return points
+
+def line_translate(a, b, step):
+    '''Generate straight path from point a to point b as sequence of translation
+    vectors.
+    '''
+    a = np.asarray(a)
+    b = np.asarray(b)
+    u = b - a
+    dist = norm(u)
+    u = u / dist
+    points = [step * u] * int(dist/step)
+    points.append(u * (dist - step * len(points)))
+    return points

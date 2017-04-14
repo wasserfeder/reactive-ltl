@@ -305,18 +305,23 @@ class Simulate2D(object):
                 drawPolicy(viewport, local_plan, 'blue')
     
     def update(self):
-        '''TODO:
+        '''Removes requests serviced by the robot, resets all requests at the
+        end of each cycle, and moves them on their paths.
         '''
         conf = self.robot.currentConf
+        # remove serviced requests
         self.robot.sensor.requests = [r for r in self.robot.sensor.requests
                                        if not r.region.intersects(conf)]
-        
+        # move requests on their paths
+        for r in self.robot.sensor.requests:
+            v = next(r.region.path)
+            r.region.translate(v)
+        # reset requests at the start of a cycle, i.e., reaching a final state
         if (self.online.trajectory[-1] in self.online.ts.g
                 and self.online.potential[-1] == 0):
             self.robot.sensor.requests = self.requests
             return True
         return False
-        
     
     #--------------------------------------------------------------------------
     
