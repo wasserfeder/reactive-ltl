@@ -26,6 +26,7 @@
 
 import os
 import itertools as it
+import logging
 
 import numpy as np
 from numpy import mean
@@ -193,6 +194,8 @@ class Simulate2D(object):
         
         self.offline = None
         self.online = None
+        
+        self.play_global = True
     
     def __defaultConfiguration(self):
         self.config['x-padding'] = self.config.get('x-padding',
@@ -203,6 +206,8 @@ class Simulate2D(object):
         self.config['sim-step'] = self.config.get('sim-step', 0.1) # TODO: for simulation video 0.01)
         self.config['video-file'] = self.config.get('video-file', 'video.mp4')
         self.config['video-interval'] = self.config.get('video-interval', 2000)
+        self.config['video-writer'] = self.config.get('video-writer', None)
+        self.config['output-dir'] = self.config.get('output-dir', '.')
     
     def loadConfiguration(self, filename):
         pass
@@ -326,11 +331,18 @@ class Simulate2D(object):
     #--------------------------------------------------------------------------
     
     def simulate(self, loops=2, offline=True):
+        '''Simulates the system along the trajectory induced by the policy 
+        satisfying the global specification or the trajectory induced by the
+        local planner.
+        '''
         assert self.offline.checker.foundPolicy()
-        prefix, suffix = self.offline.checker.globalPolicy()
-        self.solution = (prefix, suffix[1:])
+        if offline:
+            prefix, suffix = self.offline.checker.globalPolicy()
+            self.solution = (prefix, suffix[1:])
+            trajectory = it.chain(prefix, *it.repeat(suffix[1:], times=loops))
+        else:
+            trajectory = iter(self.online.trajectory)
         
-        trajectory = it.chain(prefix, *it.repeat(suffix[1:], times=loops))
         self.path = [trajectory.next()]
         prevConf = self.path[0]
         stepSize = self.config['sim-step']
@@ -343,55 +355,59 @@ class Simulate2D(object):
             prevConf = conf
         self.path.append(conf)
     
-    def play(self):
+    def play(self, output='video'):
+        '''Playbacks of the stored path.'''
         assert self.path is not None, 'Run simulation first!'
-        self.cstep = 0
-        prefix, suffix = self.solution
-        policy = prefix + suffix
-         
+        
+        if output == 'video':
+            self.cstep = 0
+            prefix, suffix = self.solution
+            policy = prefix + suffix
+             
+            fig = plt.figure()
+            ax = fig.add_subplot(111, aspect='equal')
+             
+            def init_anim():
+                self.render(ax, expanded=True, solution=[])
+                self.render(ax, expanded=False, solution=policy)
+                return []
+             
+            def run_anim(frame, *args):
+    #             logging.info('Processing frame %s!', frame)
+    #             self.draw_time_label(frame, loops_iter.next(), d_fsa.next())
+                print frame, '/', len(self.path)
+                self.step()
+                plt.cla()
+                self.render(ax, expanded=True, solution=[])
+                self.render(ax, expanded=False, solution=policy)
+                
+                return []
+              
+            N = len(self.path)
+             
+            self.vehicle_animation = animation.FuncAnimation(fig, run_anim,
+                                init_func=init_anim, save_count=N,
+                                interval=self.config['video-interval'],
+                                blit=False)
+        elif output == 'plots':
+            pass
+#         fname = '/home/cristi/Dropbox/work/workspace_linux/ReactiveLTLPlan/data_ijrr/frames/frame_{frame:04d}.png'
+#         
 #         fig = plt.figure()
 #         ax = fig.add_subplot(111, aspect='equal')
 #         
-#         def init_anim():
-#             self.render(ax, expanded=True, solution=[])
-#             self.render(ax, expanded=False, solution=policy)
-#             return []
-#         
-#         def run_anim(frame, *args):
-# #             logging.info('Processing frame %s!', frame)
-# #             self.draw_time_label(frame, loops_iter.next(), d_fsa.next())
+#         for frame, _ in enumerate(self.path):
+# #             self.display(expanded='both', solution= policy)
 #             print frame, '/', len(self.path)
-#             self.step()
 #             plt.cla()
-#             self.render(ax, expanded=True, solution=[])
+#             self.step()
+#             self.render(ax, expanded=True, solution=[], withtext=False)
 #             self.render(ax, expanded=False, solution=policy)
 #             
-#             return []
-#          
-#         N = len(self.path)
-#         
-#         vehicle_animation = animation.FuncAnimation(fig, run_anim,
-#                             init_func=init_anim, save_count=N,
-#                             interval=self.config['video-interval'],
-#                             blit=False)
-#         filename = os.path.join('/home/cristi/Dropbox/work/workspace_linux/ReactiveLTLPlan/src', self.config['video-file'])
-# #         logging.info('Saving video to file: %s !', filename)
-#         vehicle_animation.save(filename, writer='mencoder', metadata={'artist':
-#                                                    'Cristian-Ioan Vasile'})
-        fname = '/home/cristi/Dropbox/work/workspace_linux/ReactiveLTLPlan/data_ijrr/frames/frame_{frame:04d}.png'
-        
-        fig = plt.figure()
-        ax = fig.add_subplot(111, aspect='equal')
-        
-        for frame, _ in enumerate(self.path):
-#             self.display(expanded='both', solution= policy)
-            print frame, '/', len(self.path)
-            plt.cla()
-            self.step()
-            self.render(ax, expanded=True, solution=[], withtext=False)
-            self.render(ax, expanded=False, solution=policy)
-            
-            plt.savefig(fname.format(frame=frame))
+#             plt.savefig(fname.format(frame=frame))
+
+        else:
+            raise NotImplementedError('Unknown output format!')
     
     def execute(self, loops=2):
         self.robot.setup()
@@ -405,9 +421,17 @@ class Simulate2D(object):
             print 'Move to:', c.coords
             self.step()
     
-    def save(self):
+    def save(self, output='video'):
         # TODO:
-        pass
+        if output == 'video':
+            filename = os.path.join(self.config['output-dir'],
+                                    self.config['video-file'])
+            logging.info('Saving video to file: %s !', filename)
+            self.vehicle_animation.save(filename,
+                writer=self.config['video-writer'],
+                metadata={'artist': 'Cristian-Ioan Vasile'})
+        else:
+            raise NotImplementedError('Unknown output format!')
     
     def step(self, steps=1):
         assert self.path is not None, 'Run simulation first!'

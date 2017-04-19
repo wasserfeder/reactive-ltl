@@ -154,7 +154,7 @@ class IncrementalProduct(Model):
     
     def updateSCC(self, E=None):
         '''Incrementally updates the SCCs of PA.'''
-        self.scc = nx.strongly_connected_components(self.g)
+        self.scc = list(nx.strongly_connected_components(self.g))
         
         return
         # incremental computation

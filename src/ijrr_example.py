@@ -47,8 +47,7 @@ def caseStudy():
     ############################################################################
     ### Output and debug options ###############################################
     ############################################################################
-    outputdir = ('/home/cristi/Dropbox/work/workspace_linux/ReactiveLTLPlan/data_ijrr/'
-                 + 'example1')
+    outputdir = os.path.abspath('../data_ijrr/example1')
     if not os.path.isdir(outputdir):
         os.makedirs(outputdir)
     
@@ -97,6 +96,7 @@ def caseStudy():
     
     # create simulation object
     sim = Simulate2D(wspace, robot, ewspace)
+    sim.config['output-dir'] = outputdir
     
     # regions of interest
     R1 = (BoxRegion2D([[0.45, 0.75], [0.45, 0.6]], ['r1']), 'brown')
@@ -221,11 +221,11 @@ def caseStudy():
     sim.display(expanded='both', solution=prefix+suffix[1:])
     
 #     # FIXME: set to global and to save animation
-#     sim.simulate()
-#     sim.play()
+    sim.simulate(loops=2, offline=2)
+    sim.play()
 # #     sim.execute(2)
-#     sim.save()
-    
+    sim.save()
+    return
     
     ############################################################################
     ### Execute on-line path planning algorithm ################################
