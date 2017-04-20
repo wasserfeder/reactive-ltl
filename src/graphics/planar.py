@@ -356,30 +356,39 @@ class Simulate2D(object):
         self.path.append(conf)
     
     def play(self, output='video'):
-        '''Playbacks of the stored path.'''
+        '''Playbacks the stored path.'''
         assert self.path is not None, 'Run simulation first!'
+        
+        # TODO: delete after debugging
+        from lomap import Timer
+        print 'Starting playback...'
         
         if output == 'video':
             self.cstep = 0
             prefix, suffix = self.solution
             policy = prefix + suffix
-             
+            
             fig = plt.figure()
             ax = fig.add_subplot(111, aspect='equal')
-             
+            
             def init_anim():
                 self.render(ax, expanded=True, solution=[])
                 self.render(ax, expanded=False, solution=policy)
                 return []
-             
+            
             def run_anim(frame, *args):
     #             logging.info('Processing frame %s!', frame)
     #             self.draw_time_label(frame, loops_iter.next(), d_fsa.next())
                 print frame, '/', len(self.path)
-                self.step()
-                plt.cla()
-                self.render(ax, expanded=True, solution=[])
-                self.render(ax, expanded=False, solution=policy)
+                with Timer('Overall'):
+                    with Timer('Step'):
+                        self.step()
+                    with Timer('Clear plot'):
+                        plt.cla()
+                    with Timer('render expanded workspace'):
+                        self.render(ax, expanded=True, solution=[])
+                    with Timer('render workspace'):
+                        self.render(ax, expanded=False, solution=policy)
                 
                 return []
               
@@ -391,7 +400,7 @@ class Simulate2D(object):
                                 blit=False)
         elif output == 'plots':
             pass
-#         fname = '/home/cristi/Dropbox/work/workspace_linux/ReactiveLTLPlan/data_ijrr/frames/frame_{frame:04d}.png'
+#         fname = 'frames/frame_{frame:04d}.png' #TODO: fix path
 #         
 #         fig = plt.figure()
 #         ax = fig.add_subplot(111, aspect='equal')
@@ -409,20 +418,21 @@ class Simulate2D(object):
         else:
             raise NotImplementedError('Unknown output format!')
     
-    def execute(self, loops=2):
-        self.robot.setup()
-        assert self.offline.checker.foundPolicy()
-        prefix, suffix = self.offline.checker.globalPolicy()
-        self.solution = (prefix, suffix[1:])
-        self.path = list(it.chain(prefix, *it.repeat(suffix[1:], times=loops)))
-        
-        self.cstep = -1
-        for c in self.path:
-            print 'Move to:', c.coords
-            self.step()
+#     def execute(self, loops=2):
+#         self.robot.setup()
+#         assert self.offline.checker.foundPolicy()
+#         prefix, suffix = self.offline.checker.globalPolicy()
+#         self.solution = (prefix, suffix[1:])
+#         self.path = list(it.chain(prefix, *it.repeat(suffix[1:], times=loops)))
+#         
+#         self.cstep = -1
+#         for c in self.path:
+#             print 'Move to:', c.coords
+#             self.step()
     
     def save(self, output='video'):
-        # TODO:
+        '''TODO:
+        '''
         if output == 'video':
             filename = os.path.join(self.config['output-dir'],
                                     self.config['video-file'])
@@ -434,6 +444,8 @@ class Simulate2D(object):
             raise NotImplementedError('Unknown output format!')
     
     def step(self, steps=1):
+        '''TODO:
+        '''
         assert self.path is not None, 'Run simulation first!'
         if self.cstep < len(self.path)-1:
             self.cstep += 1

@@ -221,9 +221,8 @@ def caseStudy():
     sim.display(expanded='both', solution=prefix+suffix[1:])
     
 #     # FIXME: set to global and to save animation
-    sim.simulate(loops=2, offline=2)
-    sim.play()
-# #     sim.execute(2)
+    sim.simulate(loops=2, offline=True)
+    sim.play(output='video')
     sim.save()
     return
     
