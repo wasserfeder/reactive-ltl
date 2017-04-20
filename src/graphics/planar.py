@@ -400,7 +400,7 @@ class Simulate2D(object):
                                 blit=False)
         elif output == 'plots':
             pass
-#         fname = 'frames/frame_{frame:04d}.png' #TODO: fix path
+#         fname = 'frames/frame_{frame:04d}.png' #TODO: fix pathe
 #         
 #         fig = plt.figure()
 #         ax = fig.add_subplot(111, aspect='equal')
