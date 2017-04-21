@@ -203,10 +203,19 @@ class Simulate2D(object):
         self.config['y-padding'] = self.config.get('y-padding',
                                                    self.robot.diameter/2)
         self.config['grid-on'] = self.config.get('grid-on', True)
-        self.config['sim-step'] = self.config.get('sim-step', 0.1) # TODO: for simulation video 0.01)
+        # TODO: for simulation video 0.01)
+        self.config['sim-step'] = self.config.get('sim-step', 0.1)
+        
+        self.config['detected-request-transparency'] = \
+                        self.config.get('local-obstacle-transparency', 0.2)
+        self.config['request-transparency'] = \
+                        self.config.get('request-transparency', 0.5)
+        
         self.config['video-file'] = self.config.get('video-file', 'video.mp4')
-        self.config['video-interval'] = self.config.get('video-interval', 2000)
+        self.config['video-interval'] = self.config.get('video-interval', 1000)
         self.config['video-writer'] = self.config.get('video-writer', None)
+        self.config['image-file-template'] = \
+          self.config.get('image-file-template', 'frames/frame_{frame:04d}.png')
         self.config['output-dir'] = self.config.get('output-dir', '.')
     
     def loadConfiguration(self, filename):
@@ -221,10 +230,10 @@ class Simulate2D(object):
     def reset(self):
         pass
     
-    def makeRequestsRecurrent(self):
-        '''TODO:
-        '''
-        self.requests = self.robot.sensor.requests
+#     def makeRequestsRecurrent(self):
+#         '''TODO:
+#         '''
+#         self.requests = self.robot.sensor.requests
     
     def display(self, expanded=False, solution=None, localinfo=None):
         fig = plt.figure()
@@ -283,15 +292,17 @@ class Simulate2D(object):
         
         # draw local regions/plans/data
         if self.online is not None:
-            for req in self.robot.sensor.requests:
+            for req in self.robot.sensor.all_requests:
                 r = req.region
                 text = None
                 if withtext:
                     text = req.region.text
-                if req in self.online.requests: #FIXME: remove hack
-                    r.style['facecolor'] = r.style['facecolor'][:3] + (0.2,)
+                if req in self.online.requests: #FIXME: bug in displaying requests
+                    r.style['facecolor'] = r.style['facecolor'][:3] \
+                            + (self.config['request-transparency'],)
                 else:
-                    r.style['facecolor'] = r.style['facecolor'][:3] + (0.5,)
+                    r.style['facecolor'] = r.style['facecolor'][:3] \
+                            + (self.config['detected-request-transparency'],)
                 
                 drawRegion2D(viewport, r, r.style, text, r.textStyle)
             
@@ -313,22 +324,15 @@ class Simulate2D(object):
         '''Removes requests serviced by the robot, resets all requests at the
         end of each cycle, and moves them on their paths.
         '''
-        conf = self.robot.currentConf
-        # remove serviced requests
-        self.robot.sensor.requests = [r for r in self.robot.sensor.requests
-                                       if not r.region.intersects(conf)]
-        # move requests on their paths
-        for r in self.robot.sensor.requests:
-            v = next(r.region.path)
-            r.region.translate(v)
+        
+        # update requests and local obstacles
+        self.robot.sensor.update()
         # reset requests at the start of a cycle, i.e., reaching a final state
         if (self.online.trajectory[-1] in self.online.ts.g
                 and self.online.potential[-1] == 0):
-            self.robot.sensor.requests = self.requests
+            self.robot.sensor.reset()
             return True
         return False
-    
-    #--------------------------------------------------------------------------
     
     def simulate(self, loops=2, offline=True):
         '''Simulates the system along the trajectory induced by the policy 
@@ -336,9 +340,10 @@ class Simulate2D(object):
         local planner.
         '''
         assert self.offline.checker.foundPolicy()
+        
+        prefix, suffix = self.offline.checker.globalPolicy()
+        self.solution = (prefix, suffix[1:])
         if offline:
-            prefix, suffix = self.offline.checker.globalPolicy()
-            self.solution = (prefix, suffix[1:])
             trajectory = it.chain(prefix, *it.repeat(suffix[1:], times=loops))
         else:
             trajectory = iter(self.online.trajectory)
@@ -355,84 +360,50 @@ class Simulate2D(object):
             prevConf = conf
         self.path.append(conf)
     
-    def play(self, output='video'):
+    def play(self, output='video', show=True):
         '''Playbacks the stored path.'''
         assert self.path is not None, 'Run simulation first!'
         
-        # TODO: delete after debugging
-        from lomap import Timer
-        print 'Starting playback...'
+        logging.info('Starting playback...')
+        
+        self.cstep = 0
+        prefix, suffix = self.solution
+        policy = prefix + suffix
+        
+        fig = plt.figure()
+        ax = fig.add_subplot(111, aspect='equal')
+        
+        def init_anim():
+            self.render(ax, expanded=True, solution=[],
+                        localinfo=('trajectory',))
+            self.render(ax, expanded=False, solution=policy,
+                        localinfo=('trajectory',))
+            return []
+        
+        def run_anim(frame, *args):
+#             logging.info('Processing frame %s!', frame)
+#             self.draw_time_label(frame, loops_iter.next(), d_fsa.next())
+            logging.info('%d/%d', frame, len(self.path))
+            self.step()
+            plt.cla()
+            self.render(ax, expanded=True, solution=[], localinfo=[])
+            self.render(ax, expanded=False, solution=policy, localinfo=[])
+            return []
         
         if output == 'video':
-            self.cstep = 0
-            prefix, suffix = self.solution
-            policy = prefix + suffix
-            
-            fig = plt.figure()
-            ax = fig.add_subplot(111, aspect='equal')
-            
-            def init_anim():
-                self.render(ax, expanded=True, solution=[])
-                self.render(ax, expanded=False, solution=policy)
-                return []
-            
-            def run_anim(frame, *args):
-    #             logging.info('Processing frame %s!', frame)
-    #             self.draw_time_label(frame, loops_iter.next(), d_fsa.next())
-                print frame, '/', len(self.path)
-                with Timer('Overall'):
-                    with Timer('Step'):
-                        self.step()
-                    with Timer('Clear plot'):
-                        plt.cla()
-                    with Timer('render expanded workspace'):
-                        self.render(ax, expanded=True, solution=[])
-                    with Timer('render workspace'):
-                        self.render(ax, expanded=False, solution=policy)
-                
-                return []
-              
-            N = len(self.path)
-             
             self.vehicle_animation = animation.FuncAnimation(fig, run_anim,
-                                init_func=init_anim, save_count=N,
-                                interval=self.config['video-interval'],
-                                blit=False)
+                            init_func=init_anim, save_count=len(self.path),
+                            interval=self.config['video-interval'], blit=False)
         elif output == 'plots':
-            pass
-#         fname = 'frames/frame_{frame:04d}.png' #TODO: fix pathe
-#         
-#         fig = plt.figure()
-#         ax = fig.add_subplot(111, aspect='equal')
-#         
-#         for frame, _ in enumerate(self.path):
-# #             self.display(expanded='both', solution= policy)
-#             print frame, '/', len(self.path)
-#             plt.cla()
-#             self.step()
-#             self.render(ax, expanded=True, solution=[], withtext=False)
-#             self.render(ax, expanded=False, solution=policy)
-#             
-#             plt.savefig(fname.format(frame=frame))
-
+            self.draw_plot = run_anim
         else:
             raise NotImplementedError('Unknown output format!')
-    
-#     def execute(self, loops=2):
-#         self.robot.setup()
-#         assert self.offline.checker.foundPolicy()
-#         prefix, suffix = self.offline.checker.globalPolicy()
-#         self.solution = (prefix, suffix[1:])
-#         self.path = list(it.chain(prefix, *it.repeat(suffix[1:], times=loops)))
-#         
-#         self.cstep = -1
-#         for c in self.path:
-#             print 'Move to:', c.coords
-#             self.step()
+        
+        if show:
+            plt.show()
     
     def save(self, output='video'):
-        '''TODO:
-        '''
+        '''Saves the playback data in the given output format.'''
         if output == 'video':
             filename = os.path.join(self.config['output-dir'],
                                     self.config['video-file'])
@@ -440,20 +411,26 @@ class Simulate2D(object):
             self.vehicle_animation.save(filename,
                 writer=self.config['video-writer'],
                 metadata={'artist': 'Cristian-Ioan Vasile'})
+        elif output == 'plots':
+            filename = os.path.join(self.config['output-dir'],
+                                    self.config['image-file-template'])
+            basedir = os.path.dirname(filename)
+            if not os.path.isdir(basedir):
+                os.makedirs(basedir)
+            
+            for frame, _ in enumerate(self.path):
+                self.draw_plot(frame)
+                logging.info('Saving frame %d to file: %s !', frame, filename)
+                plt.savefig(filename.format(frame=frame))
         else:
             raise NotImplementedError('Unknown output format!')
     
     def step(self, steps=1):
-        '''TODO:
-        '''
+        '''Moves the robot along the stored path.'''
         assert self.path is not None, 'Run simulation first!'
         if self.cstep < len(self.path)-1:
             self.cstep += 1
             self.robot.move(self.path[self.cstep])
-    
-    def rewind(self, steps=1):
-        # TODO:
-        pass
 
 if __name__ == '__main__':
     import doctest

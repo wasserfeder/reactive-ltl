@@ -335,7 +335,7 @@ class LocalPlanner(object):
                         logging.debug('[generate_local_plan] target.name: %s',
                                       target.name)
                     logging.debug('[generate_local_plan] test: %s', r)
-                    self.sim.display(expanded=True, localinfo=('tree',))
+#                     self.sim.display(expanded=True, localinfo=('tree',))
                 else:
                     logging.debug('[generate_local_plan] rejected')
         
@@ -352,7 +352,7 @@ class LocalPlanner(object):
             logging.debug('free movement: %s', self.free_movement(dest_state))
             
             self.local_plan = plan_to_leaf + self.free_movement(dest_state)
-            self.sim.display(expanded=True, localinfo=('plan', 'trajectory'))
+#             self.sim.display(expanded=True, localinfo=('plan', 'trajectory'))
             self.local_plan = ll
         
         return (plan_to_leaf + self.free_movement(dest_state),

@@ -44,6 +44,12 @@ class Sensor(object):
     def sense(self):
         '''Sensing method that returns requests and local obstacles.'''
         raise NotImplementedError
+    
+    def update(self):
+        '''Updates requests and local obstacles.'''
+    
+    def reset(self):
+        '''Resets requests and local obstacles.'''
 
 
 class SimulatedSensor(Sensor):
@@ -57,6 +63,7 @@ class SimulatedSensor(Sensor):
         
         self.requests = requests
         self.obstacles = obstacles
+        self.all_requests = requests
     
     def sense(self):
         '''Sensing method that returns requests and local obstacles.'''
@@ -73,3 +80,18 @@ class SimulatedSensor(Sensor):
         logging.debug('Sensor:sense: sensed obstacles: %s', obstacles)
         
         return requests, obstacles
+    
+    def update(self):
+        '''Updates requests and local obstacles.'''
+        conf = self.robot.currentConf
+        # remove serviced requests
+        self.requests = [r for r in self.requests
+                                            if not r.region.intersects(conf)]
+        # move requests on their paths
+        for r in self.requests:
+            v = next(r.region.path)
+            r.region.translate(v)
+    
+    def reset(self):
+        '''Resets requests and local obstacles.'''
+        self.robot.sensor.requests = self.all_requests

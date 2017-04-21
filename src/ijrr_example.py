@@ -172,9 +172,6 @@ def caseStudy():
     sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
     robot.sensor = SimulatedSensor(robot, sensingShape, requests, obstacles)
     
-    # resets requests in each surveillance cycle
-    sim.makeRequestsRecurrent()
-    
     # display workspace
     sim.display()
      
@@ -220,11 +217,10 @@ def caseStudy():
     prefix, suffix = sim.offline.checker.globalPolicy(sim.offline.ts)
     sim.display(expanded='both', solution=prefix+suffix[1:])
     
-#     # FIXME: set to global and to save animation
-    sim.simulate(loops=2, offline=True)
-    sim.play(output='video')
-    sim.save()
-    return
+    # set to global and to save animation
+#     sim.simulate(loops=2, offline=True)
+#     sim.play(output='video') # TODO: uncomment on linux desktop, show=False)
+#     sim.save() # TODO: uncomment on linux desktop
     
     ############################################################################
     ### Execute on-line path planning algorithm ################################
@@ -268,10 +264,11 @@ def caseStudy():
     ### Display the local transition systems and the on-line control policy ####
     ############################################################################
     
-#     # FIXME: set to local and to save animation 
-#     sim.simulate()
-#     sim.save()
-    
+    # set to local and to save animation 
+    sim.simulate(offline=False)
+    sim.play(output='video', show=True)
+#     sim.save() #TODO: uncomment on linux desktop
+
 
 if __name__ == '__main__':
     np.random.seed(1001)
