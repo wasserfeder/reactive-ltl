@@ -94,4 +94,4 @@ class SimulatedSensor(Sensor):
     
     def reset(self):
         '''Resets requests and local obstacles.'''
-        self.robot.sensor.requests = self.all_requests
+        self.requests = self.all_requests
