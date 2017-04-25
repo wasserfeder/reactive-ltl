@@ -142,10 +142,10 @@ def caseStudy():
     localSpec = {'survivor': 0, 'fire': 1}
     logging.info('Local specification: %s', localSpec)
     # local obstacles #FIXME: defined in expanded workspace not workspace
-    obstacles = [(BoxRegion2D([[3, 3.5], [2, 2.5]], ['LO']), None, ('gray', 0.8)),
-                 (PolygonRegion2D([[3.2, 1.4], [3, 0.8], [3.4, 0.7]], ['LO']),
-                  None,
+    obstacles = [(BoxRegion2D([[3, 3.5], [2, 2.5]], ['LO']), None,
                   ('gray', 0.8)),
+                 (PolygonRegion2D([[3.2, 1.4], [3, 0.8], [3.4, 0.7]], ['LO']),
+                  None, ('gray', 0.8)),
                  (BallRegion2D([1.6, 2.1], 0.15, ['LO']), None, ('gray', 0.8))]
     
     # add style to local requests and obstacles
