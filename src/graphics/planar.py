@@ -292,7 +292,7 @@ class Simulate2D(object):
         
         # draw local regions/plans/data
         if self.online is not None:
-            for req in self.robot.sensor.all_requests:
+            for req in self.robot.sensor.requests:
                 r = req.region
                 text = None
                 if withtext:
@@ -340,6 +340,7 @@ class Simulate2D(object):
         local planner.
         '''
         assert self.offline.checker.foundPolicy()
+        self.cstep = 0
         
         prefix, suffix = self.offline.checker.globalPolicy()
         self.solution = (prefix, suffix[1:])
@@ -430,7 +431,10 @@ class Simulate2D(object):
         assert self.path is not None, 'Run simulation first!'
         if self.cstep < len(self.path)-1:
             self.cstep += 1
+            print('Move to', self.path[self.cstep])
             self.robot.move(self.path[self.cstep])
+            return True
+        return False
 
 if __name__ == '__main__':
     import doctest
