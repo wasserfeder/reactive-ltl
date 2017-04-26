@@ -179,6 +179,8 @@ class BoxBoundary2D(Boundary):
         return self.ranges[1]
      
     def __eq__(self, other):
+        if not isinstance(other, BoxBoundary2D):
+            return False
         return self.ranges == other.ranges
     
     def __repr__(self):
@@ -292,6 +294,8 @@ class BallBoundary2D(Boundary):
             self.polygon = affine.translate(self.polygon, xoff=v[0], yoff=v[1])
     
     def __eq__(self, other):
+        if not isinstance(other, BallBoundary2D):
+            return False
         return np.all(self.center == other.center) and (self.radius == other.radius)
     
     def __repr__(self):
@@ -356,6 +360,8 @@ class PolygonBoundary2D(Boundary):
         self.polygon = affine.translate(self.polygon, xoff=v[0], yoff=v[1])
     
     def __eq__(self, other):
+        if not isinstance(other, PolygonBoundary2D):
+            return False
         return self.polygon == other.polygon
     
     def __repr__(self):
