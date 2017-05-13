@@ -73,9 +73,7 @@ def monitor(start, buchi, start_prop, stop_prop=None):
     return stop
 
 def nearest(lts, random_sample):
-    '''
-    Returns nearest node in lts to the random sample. Uses linear search.
-    '''
+    '''Returns nearest node in lts to the random sample. Uses linear search.'''
     random_sample = random_sample.coords
     return min(lts.g.nodes_iter(), key=lambda x: norm(x.coords - random_sample))
 
@@ -143,35 +141,49 @@ class LocalPlanner(object):
         # return next point
         return self.local_plan.pop(0)
 
+    def local_plan_hit(self):
+        '''Checks if the local plan hits the tracked request.'''
+        if not self.local_plan:
+            return False
+        assert self.local_plan[-1] in self.ts.g # last state is global
+        target = self.tracking_req.name
+        for conf in self.local_plan:
+            if target in self.robot.getSymbols(conf, local=True):
+                logging.debug("local_plan_hit: True!")
+                return True
+        logging.debug("local_plan_hit: False!")
+        return False
+
     def check_local_plan(self):
         '''Checks if the local plan is still satisfying with respect to the
         local specification.
         
-        NOTE: Assumes the path is satisfying w.r.t. the global specificcation.
+        NOTE: Assumes the path is satisfying w.r.t. the global specification.
         It does not check collision with global regions.
         NOTE: Sets/Resets the local target request
         1. Checks if the target needs to be modified
         2. Checks if the local plan is collision free
         '''
         requests = self.requests
-        # check if target is needs to be modified
+        # check if target needs to be modified
         if requests:
             highest_priority_req = min(requests, key=lambda req: req.priority)
             if (self.tracking_req is None or
                     self.tracking_req.priority > highest_priority_req.priority):
                 self.tracking_req = highest_priority_req
-                return False
+            return self.local_plan_hit()
         # there is a target, but it disappeared
         if self.tracking_req and self.tracking_req not in requests:
             if requests:
                 self.tracking_req = highest_priority_req # switch target
+                return self.local_plan_hit()
             else:
                 self.tracking_req = None # reset target
-            return False
         # no plan
         if not self.local_plan:
             return False
         # 2. check that path is collision free
+        assert self.local_plan[-1] in self.ts.g # last state is global
         r = self.robot.collision_free(self.local_plan, self.obstacles)
         logging.debug('Collision check with local obstacles: %s', r)
         return r
