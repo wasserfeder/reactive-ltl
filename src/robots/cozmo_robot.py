@@ -114,11 +114,10 @@ class Cozmo(Robot):
         return nrRegUV == 2
 
     def collision_free(self, plan, local_obstacles):
-        '''#TODO:
+        '''Checks if the plan is obstacle free with respect to the locally
+        detected ones.
         '''
-        if self.isSetup:
-            raise NotImplementedError
-        elif local_obstacles:
+        if local_obstacles:
             aux = [self.currentConf] + plan
             for start, stop in zip(aux[:-1], aux[1:]):
                 if any([obs.intersects(start, stop)
@@ -128,11 +127,8 @@ class Cozmo(Robot):
         return True
 
     def collision_free_segment(self, u, v, local_obstacles):
-        '''TODO:
-        '''
-        if self.isSetup:
-            raise NotImplementedError
-        elif local_obstacles:
+        '''Checks if a line segment is obstacle free.'''
+        if local_obstacles:
             return not any([obs.intersects(u, v) for obs in local_obstacles])
         return True
 

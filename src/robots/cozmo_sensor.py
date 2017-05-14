@@ -57,7 +57,7 @@ class CozmoSensor(Sensor):
                   list(msg.cube_light))
             # update requests position
             [r.translate(np.asarray(p[:2]) - r.center)
-                             for r, p in it.izip(self.requests, msg.cube_pose)]
+                        for r, p in it.izip(self.all_requests, msg.cube_pose)]
             # select visible and active requests (lights on and in camera view)
             self.requests = [r for idx, r in enumerate(self.all_requests)
                                 if msg.cubes[idx] and msg.cube_light[idx] > 0]
@@ -83,10 +83,12 @@ class CozmoSensor(Sensor):
         '''Updates requests and local obstacles.'''
         conf = self.robot.currentConf
         
-        for idx, r in enumerate(self.requests):
+        for idx, r in enumerate(self.all_requests):
             if r.region.intersects(conf):
+                self.cube_msg.timestamp = int(time.time() * 1000000)
                 self.cube_msg.which = idx
                 self.cube_msg.color = 0 # LIGHTS OFF
+                self.lc.publish('CUBE', self.cube_msg.encode())
         
         # remove serviced requests
         self.requests = [r for r in self.requests
@@ -95,3 +97,10 @@ class CozmoSensor(Sensor):
     def reset(self):
         '''Resets requests and local obstacles.'''
         self.requests = self.all_requests
+        
+        # reset color to original
+        for idx, r in enumerate(self.all_requests):
+            self.cube_msg.timestamp = int(time.time() * 1000000)
+            self.cube_msg.which = idx
+            self.cube_msg.color = r.cube_color # LIGHTS OFF
+            self.lc.publish('CUBE', self.cube_msg.encode())
