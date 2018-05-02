@@ -129,14 +129,14 @@ def caseStudy():
         sim.expandedWorkspace.addRegion(er)
     
     # local  requests
-    F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']), ('orange', 0.5))
-    F2 = (BallRegion2D([1.26, 0.48], 0.18, ['fire']), ('orange', 0.5))
-    S2 = (BallRegion2D([4.32, 1.48], 0.27, ['survivor']), ('yellow', 0.5))
+    F1 = (BallRegion2D([3.24, 1.98], 0.2, ['fire']), ('orange', 0.5))
+    F2 = (BallRegion2D([1.26, 0.48], 0.2, ['fire']), ('orange', 0.5))
+    S2 = (BallRegion2D([4.32, 1.48], 0.2, ['survivor']), ('yellow', 0.5))
     requests = [F1, F2, S2]
     # define local specification as a priority function
     localSpec = {'survivor': 0, 'fire': 1}
     logging.info('Local specification: %s', localSpec)
-    localSpec_cube_color = {'survivor': 3, 'fire': 2}
+    localSpec_cube_color = {'survivor': 3, 'fire': 4}
     # local obstacles
     obstacles = []
     
@@ -157,6 +157,7 @@ def caseStudy():
     # set the robot's sensor
     sensingShape = BallBoundary2D([0, 0], 0.5)
     robot.sensor = CozmoSensor(robot, sensingShape, requests, obstacles)
+    robot.sensor.reset()
     
     # display workspace
     sim.display()
@@ -201,7 +202,9 @@ def caseStudy():
     
     # display workspace and global transition system
     prefix, suffix = sim.offline.checker.globalPolicy(sim.offline.ts)
-    sim.display(expanded='both', solution=prefix+suffix[1:])
+    sim.display(expanded=False, solution=prefix)
+    sim.display(expanded=False, solution=suffix)
+    sim.display(expanded=False, solution=prefix+suffix[1:])
     
     # set to global and to save animation
     sim.simulate(loops=2, offline=True)
@@ -210,13 +213,13 @@ def caseStudy():
     
     # move to start position
     startConf = next(iter(sim.path))
-    
-    print(startConf)
+    logging.info('Moving to start configuration: %s', startConf)
     sim.robot.move(startConf)
     
-    while sim.step():
-        pass
-    return
+    # execute computed path satisfying the global specification
+#     while sim.step():
+#         pass
+#     return
     ############################################################################
     ### Execute on-line path planning algorithm ################################
     ############################################################################
@@ -237,7 +240,7 @@ def caseStudy():
     sim.online.sim = sim
     
     # define number of surveillance cycles to run
-    cycles = 4
+    cycles = 2
     # execute controller
     cycle = -1 # number of completed cycles, -1 accounts for the prefix 
     while cycle < cycles:
@@ -247,7 +250,7 @@ def caseStudy():
             # feed data to planner and get next control input
             nextConf = sim.online.execute(requests, obstacles)
         
-        sim.display(expanded=True, localinfo=('plan', 'trajectory'))
+#         sim.display(expanded=True, localinfo=('plan', 'trajectory'))
         
         # enforce movement
         robot.move(nextConf)
@@ -259,9 +262,23 @@ def caseStudy():
     ### Display the local transition systems and the on-line control policy ####
     ############################################################################
     
-    # set to local and to save animation 
-    sim.simulate(offline=False)
-    sim.play(output='video', show=True)
+    # save data # TODO: move this to some post-processing function and make it
+    # incremental
+    with open(os.path.join(outputdir, 'trajectory.txt'), 'w') as fout:
+        print>>fout, sim.online.trajectory
+    with open(os.path.join(outputdir, 'buchi_states.txt'), 'w') as fout:
+        print>>fout, sim.online.buchi_states
+    with open(os.path.join(outputdir, 'potential.txt'), 'w') as fout:
+        print>>fout, sim.online.potential
+    with open(os.path.join(outputdir, 'durations.txt'), 'w') as fout:
+        print>>fout, sim.online.durations
+    with open(os.path.join(outputdir, 'sizes.txt'), 'w') as fout:
+        print>>fout, sim.online.sizes
+    
+    
+#     # set to local and to save animation 
+#     sim.simulate(offline=False)
+#     sim.play(output='video', show=True)
 #     sim.save() #TODO: uncomment on linux desktop
 
 

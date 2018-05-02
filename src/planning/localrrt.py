@@ -137,6 +137,18 @@ class LocalPlanner(object):
         # update meta data
         self.durations.append(local_planning_timer.duration)
         self.sizes.append(nr_nodes)
+        
+        # TODO: this is badly hacked; should implement it with a post-processing
+        # function
+        if nr_nodes > 0:
+            import os # TODO: very bad... should be ashamed of it
+            outputdir = os.path.abspath('../data_ijrr/example2')
+            fname = 'lts_{:0>4d}.yaml'.format(len(self.durations)-1)
+            with open(os.path.join(outputdir, fname), 'w') as ltsf:
+                print>>ltsf, self.lts.init
+                print>>ltsf, self.lts.g.nodes(data=True)
+                print>>ltsf, self.lts.g.edges(data=True)
+        
         self.update()
         # return next point
         return self.local_plan.pop(0)
@@ -316,6 +328,7 @@ class LocalPlanner(object):
                 source_data = self.lts.g.node[source_state]
                 B = monitor(source_data['buchi_states'], self.pa.buchi,
                             source_data['global_prop'], dest_global_prop)
+                
                 if B:
                     if self.robot.collision_free_segment(source_state,
                                                   dest_state, local_obstacles):
@@ -333,39 +346,39 @@ class LocalPlanner(object):
             if dest_state not in self.lts.g:
                 dest_state = None
             
-            if logging.getLogger().isEnabledFor(logging.DEBUG):
-                r = self.test(dest_state)
-                # uncomment for debugging
-                if dest_state and r:
-                    logging.debug('[generate_local_plan] local tree')
-                    logging.debug('[generate_local_plan] dest_state: %s',
-                                  dest_state)
-                    logging.debug('[generate_local_plan] hit: %s', hit)
-                    logging.debug('[generate_local_plan] dest_local_prop: %s',
-                                  dest_local_prop)
-                    if target:
-                        logging.debug('[generate_local_plan] target.name: %s',
-                                      target.name)
-                    logging.debug('[generate_local_plan] test: %s', r)
-#                     self.sim.display(expanded=True, localinfo=('tree',))
-                else:
-                    logging.debug('[generate_local_plan] rejected')
+#             if logging.getLogger().isEnabledFor(logging.DEBUG):
+#                 r = self.test(dest_state)
+#                 # uncomment for debugging
+#                 if dest_state and r:
+#                     logging.debug('[generate_local_plan] local tree')
+#                     logging.debug('[generate_local_plan] dest_state: %s',
+#                                   dest_state)
+#                     logging.debug('[generate_local_plan] hit: %s', hit)
+#                     logging.debug('[generate_local_plan] dest_local_prop: %s',
+#                                   dest_local_prop)
+#                     if target:
+#                         logging.debug('[generate_local_plan] target.name: %s',
+#                                       target.name)
+#                     logging.debug('[generate_local_plan] test: %s', r)
+# #                     self.sim.display(expanded=True, localinfo=('tree',))
+#                 else:
+#                     logging.debug('[generate_local_plan] rejected')
         
         # 11. return local plan
         plan_to_leaf = nx.shortest_path(self.lts.g, self.robot.currentConf,
                                         dest_state)[1:]
         
-        if logging.getLogger().isEnabledFor(logging.DEBUG):
-            ll = self.local_plan
-            
-            logging.debug('plan to leaf: %s', plan_to_leaf)
-            logging.debug('dest state: %s', dest_state)
-            
-            logging.debug('free movement: %s', self.free_movement(dest_state))
-            
-            self.local_plan = plan_to_leaf + self.free_movement(dest_state)
+#         if logging.getLogger().isEnabledFor(logging.DEBUG):
+#             ll = self.local_plan
+#             
+#             logging.debug('plan to leaf: %s', plan_to_leaf)
+#             logging.debug('dest state: %s', dest_state)
+#             
+#             logging.debug('free movement: %s', self.free_movement(dest_state))
+#             
+#             self.local_plan = plan_to_leaf + self.free_movement(dest_state)
 #             self.sim.display(expanded=True, localinfo=('plan', 'trajectory'))
-            self.local_plan = ll
+#             self.local_plan = ll
         
         return (plan_to_leaf + self.free_movement(dest_state),
                 self.lts.g.number_of_nodes())
