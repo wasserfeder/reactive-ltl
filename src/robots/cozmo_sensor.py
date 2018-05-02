@@ -56,7 +56,7 @@ class CozmoSensor(Sensor):
             print('World reply from cozmo:', list(msg.cubes),
                   list(msg.cube_light))
             # update requests position
-            [r.translate(np.asarray(p[:2]) - r.center)
+            [r.region.translate(np.asarray(p[:2]) - r.region.center)
                         for r, p in it.izip(self.all_requests, msg.cube_pose)]
             # select visible and active requests (lights on and in camera view)
             self.requests = [r for idx, r in enumerate(self.all_requests)
@@ -71,6 +71,10 @@ class CozmoSensor(Sensor):
 
     def sense(self):
         '''Sensing method that returns requests and local obstacles.'''
+        v = np.array(self.robot.currentConf.coords) - self.sensingShape.center
+        self.sensingShape.translate(v)
+        assert np.all(self.sensingShape.center == self.robot.currentConf.coords)
+        
         self.poll_msg.timestamp = int(time.time() * 1000000)
         self.poll_msg.what = 0 # world
         print('Send poll for world data...')
@@ -102,5 +106,5 @@ class CozmoSensor(Sensor):
         for idx, r in enumerate(self.all_requests):
             self.cube_msg.timestamp = int(time.time() * 1000000)
             self.cube_msg.which = idx
-            self.cube_msg.color = r.cube_color # LIGHTS OFF
+            self.cube_msg.color = r.region.cube_color # LIGHTS OFF
             self.lc.publish('CUBE', self.cube_msg.encode())
