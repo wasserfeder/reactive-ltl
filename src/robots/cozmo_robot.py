@@ -47,11 +47,11 @@ class Cozmo(Robot):
     def setup(self):
         self.move_msg = cozmo_msg_t()
         self.lc = lcm.LCM()
-        
+
         def reply_handler(channel, data):
             msg = reply_msg_t.decode(data)
             print('reply from cozmo:', msg.code) # TODO: remove after debug
-        
+
         self.lc.subscribe('COZMO_REPLY', reply_handler)
 
     def move(self, conf):
@@ -61,7 +61,7 @@ class Cozmo(Robot):
         self.lc.publish('COZMO', self.move_msg.encode())
         # await reply
         self.lc.handle()
-        
+
         super(Cozmo, self).move(conf)
 
     def getSymbols(self, position, local=False):
@@ -74,7 +74,7 @@ class Cozmo(Robot):
         '''Returns a position that the robot can move to from the start position
         such that it steers closer to the given target position using the
         robot's dynamics.
-        
+
         Note: It simulates the movement.
         '''
         s = start.coords
@@ -93,13 +93,13 @@ class Cozmo(Robot):
         intersects.
         Since the robot is a fully actuate points, the configuration space is
         the same as the workspace and the submersion is the identity map.
-        
-        Note: assumes non-overlapping regions. 
+
+        Note: assumes non-overlapping regions.
         '''
         nrRegUV = len(self.cspace.intersectingRegions(u, v))
         regU = self.cspace.intersectingRegions(u)
         regV = self.cspace.intersectingRegions(v)
-        
+
         # if both endpoints of the segment are in the free space
         if (not regU) and (not regV):
             return nrRegUV == 0

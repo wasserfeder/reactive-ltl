@@ -27,25 +27,25 @@
 
 class Robot(object):
     '''Base class for a robot.'''
-    
+
     def __init__(self, name, initConf=None, cspace=None, wspace=None,
                  controlspace=None, sensor=None, dynamics=None):
         self.name = name
-        
+
         self.initConf = initConf # initial position
         self.currentConf = self.initConf # current position
         self.sensor = sensor # set sensor
-        
+
         self.cspace = cspace
         self.wspace = wspace
         self.controlspace = controlspace
         self.dynamics = dynamics
-        
+
         self.localObst = None # local obstacle symbol
-        
+
     def steer(self):
         raise NotImplementedError
-    
+
     def sample(self, local=False):
         ''' Generate a sample in the configuration space (global) or local
         within the sensing area.
@@ -53,13 +53,13 @@ class Robot(object):
         if local:
             return self.sensor.sensingShape.sample()
         return self.cspace.getSample()
-    
+
     def move(self, conf):
         '''Moves the robot to the given configuration.'''
         self.currentConf = conf
-    
+
     def getSymbols(self, position, local=False):
         raise NotImplementedError
-    
+
     def isSimpleSegment(self, u, v):
         raise NotImplementedError

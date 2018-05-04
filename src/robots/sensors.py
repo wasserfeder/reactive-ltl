@@ -40,47 +40,47 @@ class Sensor(object):
         '''
         self.robot = robot
         self.sensingShape = sensingShape # sensing shape
-    
+
     def sense(self):
         '''Sensing method that returns requests and local obstacles.'''
         raise NotImplementedError
-    
+
     def update(self):
         '''Updates requests and local obstacles.'''
-    
+
     def reset(self):
         '''Resets requests and local obstacles.'''
 
 
 class SimulatedSensor(Sensor):
     '''Simulated ideal sensor.'''
-    
+
     def __init__(self, robot, sensingShape, requests, obstacles):
         '''
         Constructor
         '''
         Sensor.__init__(self, robot, sensingShape)
-        
+
         self.requests = requests
         self.obstacles = obstacles
         self.all_requests = requests
-    
+
     def sense(self):
         '''Sensing method that returns requests and local obstacles.'''
         v = np.array(self.robot.currentConf.coords) - self.sensingShape.center
         self.sensingShape.translate(v)
         assert np.all(self.sensingShape.center == self.robot.currentConf.coords)
-        
+
         requests = [r for r in self.requests
                       if self.sensingShape.intersects(r.region.center)]
-        
+
         obstacles = [intersection(self.sensingShape, o)
                             for o in self.obstacles]
         obstacles = [o for o in obstacles if o is not None]
         logging.debug('Sensor:sense: sensed obstacles: %s', obstacles)
-        
+
         return requests, obstacles
-    
+
     def update(self):
         '''Updates requests and local obstacles.'''
         conf = self.robot.currentConf
@@ -91,7 +91,7 @@ class SimulatedSensor(Sensor):
         for r in self.requests:
             v = next(r.region.path)
             r.region.translate(v)
-    
+
     def reset(self):
         '''Resets requests and local obstacles.'''
         self.requests = self.all_requests

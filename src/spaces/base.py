@@ -45,9 +45,9 @@ BasePoint = namedtuple('Point', ['coords', 'hash'])
 class Point(BasePoint):
     '''Representation of a point in an n-dimensional real metric space.
     The point is represented as NumPy array.
-    
+
     .. see also:: http://docs.scipy.org/doc/numpy/reference/index.html
-    
+
     Example
     -------
     >>> p = Point(array([1, 2, 3]), copy=False)
@@ -69,31 +69,31 @@ class Point(BasePoint):
     1
     '''
     __slots__ = ()
-    
+
     @staticmethod
     def __new__(cls, coords, copy=True):
         if copy:
             coords = array(coords)
             coords.setflags(write=False)
         assert isinstance(coords, np.ndarray)
-        
+
         return super(Point, cls).__new__(cls, coords, hash(tuple(coords)))
-        
+
     def __len__(self):
         return len(self.coords)
-        
+
     def __ne__(self, other):
         if type(other) != Point:
             return not np.array_equal(self.coords, other)
         return not np.array_equal(self.coords, other.coords)
-    
+
     def __eq__(self, other):
         if type(other) == types.IntType: # equality by hash value
             return self.hash == other
         if isinstance(other, Point): # equality to a Point
             return np.array_equal(self.coords, other.coords)
         return np.array_equal(self.coords, other) # equality to an iterator type
-    
+
     def __lt__(self, other):
         return self.hash < other.hash
     def __leq__(self, other):
@@ -102,7 +102,7 @@ class Point(BasePoint):
         return self.hash > other.hash
     def __geq__(self, other):
         return self.hash >= other.hash
-    
+
     def __hash__(self):
         return self.hash
 
@@ -118,19 +118,19 @@ class Boundary(object):
     '''Defines a boundary for a metric space.'''
     def __init__(self):
         self._hash = None
-        
+
     def intersects(self, src, dest=None):
         raise NotImplementedError
-    
+
     def volume(self):
         raise NotImplementedError
-    
+
     def boundingBox(self):
         raise NotImplementedError
-    
+
     def sample(self):
         raise NotImplementedError
-    
+
     def __hash__(self):
         return self._hash
 
@@ -140,17 +140,17 @@ class Region(Boundary):
     def __init__(self, symbols):
         Boundary.__init__(self)
         self.symbols = set(symbols)
-    
+
     def outputWord(self, traj):
         raise NotImplementedError
-    
+
     def __eq__(self):
         raise NotImplementedError
-    
+
     def __str__(self):
         return 'Region(boundary={boundary}, symbols={symbols})'.format(
                 boundary=None, symbols=tuple(self.symbols))
-    
+
     __repr__ = __str__
 
 
@@ -158,7 +158,7 @@ class RealMetricSpace(object):
     '''Defines an n-dimensional real metric space. The metric should be given as
     a distance function.
     '''
-     
+
     def __init__(self, dimension=2, boundary=None, metric=euclidean):
         '''Constructor'''
         # set boundary (may be undefined)
@@ -169,10 +169,10 @@ class RealMetricSpace(object):
         self.metric = metric
         self.dist = lambda x, y: self.metric(x.coords, y.coords)
         self.norm = lambda x: self.metric(x.coords, 0)
-    
+
     def getDimensions(self):
         '''Returns the dimensions of the configuration space.
-         
+
         Examples:
         ---------
         >>> space = RealMetricSpace()
@@ -180,13 +180,13 @@ class RealMetricSpace(object):
         2
         '''
         return self.dimension
-    
+
     def getVolume(self):
         '''Returns the volume delimited by the boundary.'''
         if self.boundary:
             return self.boundary.volume()
         return -1
-    
+
     def __str__(self):
         return 'RealMetricSpace(dimension={dim})'.format(dim=self.dim)
 
@@ -195,25 +195,25 @@ class Workspace(RealMetricSpace):
     '''Defines an n-dimensional real metric space with labeled regions. The
     metric should be given as a distance function.
     '''
-    
+
     def __init__(self, dimension=2, boundary=None, metric=euclidean,
                  regions=None):
         '''Constructor'''
         RealMetricSpace.__init__(self, dimension, boundary, metric)
-         
+
         # set regions
         if regions: # regions are static (immmutable)
             self.regions = set(regions)
         else:
             self.regions = set()
-        
+
         # extract global symbols set
         symbols = (region.symbols for region in self.regions)
         self.symbols = set(itertools.chain.from_iterable(symbols))
-    
+
     def getSample(self):
-        return self.boundary.sample() 
- 
+        return self.boundary.sample()
+
     def getSymbols(self, position=None):
         '''Returns the set of symbols of all regions that overlap the given
         position. If position is None, it returns all symbols from all regions.
@@ -223,14 +223,14 @@ class Workspace(RealMetricSpace):
         regions = (region.symbols for region in self.regions
                                                  if region.intersects(position))
         return set(itertools.chain.from_iterable(regions))
-     
+
     def addRegion(self, region):
         '''Adds a region of interest to the workspace.'''
         if not isinstance(region, Region):
             raise TypeError('Expected Region variable!')
         self.regions.add(region)
         self.symbols |= region.symbols
-     
+
     def removeRegion(self, region, update=False):
         '''Removes a region of interest from the workspace.'''
         if not isinstance(region, Region):
@@ -239,15 +239,15 @@ class Workspace(RealMetricSpace):
         if update:
             symbols = (region.symbols for region in self.regions)
             self.symbols = set(itertools.chain.from_iterable(symbols))
-     
+
     def intersectingRegions(self, src, dest=None):
         '''Returns the regions which intersect the point or line.'''
         return [r for r in self.regions if r.intersects(src, dest)]
-    
+
     def __str__(self):
         return 'Workspace(boundary={boundary}, regions={regions})'.format(
                     boundary=self.boundary, regions=self.regions)
-    
+
     __repr__ = __str__
 
 
@@ -258,7 +258,7 @@ StateSpace = RealMetricSpace
 ConfigurationSpace = RealMetricSpace
 '''Define a n-dimensional configurations space.'''
 ControlSpace = RealMetricSpace
-'''Define a n-dimensional control space.''' 
+'''Define a n-dimensional control space.'''
 
 
 def line_path(a, b, step, PointCls=Point):

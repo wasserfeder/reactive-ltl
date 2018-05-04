@@ -46,11 +46,11 @@ class CozmoSensor(Sensor):
     def __init__(self, robot, sensingShape, requests, obstacles):
         '''Constructor'''
         Sensor.__init__(self, robot, sensingShape)
-        
+
         self.requests = requests
         self.obstacles = obstacles
         self.all_requests = requests
-        
+
         def world_reply_handler(channel, data):
             msg = world_msg_t.decode(data)
             print('World reply from cozmo:', list(msg.cubes),
@@ -62,10 +62,10 @@ class CozmoSensor(Sensor):
             self.requests = [r for idx, r in enumerate(self.all_requests)
                                 if msg.cubes[idx] and msg.cube_light[idx] > 0]
             self.obstacles = [] #TODO:
-        
+
         self.lc = lcm.LCM()
         self.lc.subscribe('WORLD', world_reply_handler)
-        
+
         self.poll_msg = poll_msg_t()
         self.cube_msg = cube_msg_t()
 
@@ -74,26 +74,26 @@ class CozmoSensor(Sensor):
         v = np.array(self.robot.currentConf.coords) - self.sensingShape.center
         self.sensingShape.translate(v)
         assert np.all(self.sensingShape.center == self.robot.currentConf.coords)
-        
+
         self.poll_msg.timestamp = int(time.time() * 1000000)
         self.poll_msg.what = 0 # world
         print('Send poll for world data...')
         self.lc.publish('POLL', self.poll_msg.encode())
         self.lc.handle()
-        
+
         return self.requests, self.obstacles
 
     def update(self):
         '''Updates requests and local obstacles.'''
         conf = self.robot.currentConf
-        
+
         for idx, r in enumerate(self.all_requests):
             if r.region.intersects(conf):
                 self.cube_msg.timestamp = int(time.time() * 1000000)
                 self.cube_msg.which = idx
                 self.cube_msg.color = 0 # LIGHTS OFF
                 self.lc.publish('CUBE', self.cube_msg.encode())
-        
+
         # remove serviced requests
         self.requests = [r for r in self.requests
                                             if not r.region.intersects(conf)]
@@ -101,7 +101,7 @@ class CozmoSensor(Sensor):
     def reset(self):
         '''Resets requests and local obstacles.'''
         self.requests = self.all_requests
-        
+
         # reset color to original
         for idx, r in enumerate(self.all_requests):
             self.cube_msg.timestamp = int(time.time() * 1000000)

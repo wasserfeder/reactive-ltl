@@ -50,7 +50,7 @@ def caseStudy():
     outputdir = os.path.abspath('../data_ijrr/example2')
     if not os.path.isdir(outputdir):
         os.makedirs(outputdir)
-    
+
     # configure logging
     fs, dfs = '%(asctime)s %(levelname)s %(message)s', '%m/%d/%Y %I:%M:%S %p'
     loglevel = logging.DEBUG
@@ -64,15 +64,15 @@ def caseStudy():
         ch.setLevel(loglevel)
         ch.setFormatter(logging.Formatter(fs, dfs))
         root.addHandler(ch)
-    
-    
+
+
     ############################################################################
     ### Define case study setup (robot parameters, workspace, etc.) ############
     ############################################################################
-    
+
     # define robot diameter (used to compute the expanded workspace)
     robotDiameter = 0.036
-    
+
     # define boundary
     boundary = BoxBoundary2D([[0, 4.8], [0, 3.6]])
     # define boundary style
@@ -81,23 +81,23 @@ def caseStudy():
     eboundary = BoxBoundary2D(boundary.ranges +
                                 np.array([[1, -1], [1, -1]]) * robotDiameter/2)
     eboundary.style = {'color' : 'black'}
-    
+
     # create robot's workspace and expanded workspace
     wspace = Workspace(boundary=boundary)
     ewspace = Workspace(boundary=eboundary)
-    
+
     # create robot object
     robot = Cozmo('Cozmo', init=Point2D((2, 2)), wspace=ewspace, stepsize=0.999)
     robot.diameter = robotDiameter
     robot.localObst = 'local_obstacle'
-    
+
     logging.info('Conf space: %s', robot.cspace)
-    
+
     # create simulation object
     sim = Simulate2D(wspace, robot, ewspace)
     sim.config['output-dir'] = outputdir
     sim.config['background'] = os.path.abspath('../data_ijrr/imMap.png')
-    
+
     # regions of interest
     R1 = (BoxRegion2D([[1.0, 2.0], [0.2, 0.8]], ['r1']), 'brown')
     R2 = (BallRegion2D([4.2, 0.7], 0.3, ['r2']), 'green')
@@ -111,10 +111,10 @@ def caseStudy():
     O3 = (PolygonRegion2D([[3.54, 1.27], [4.8, 1.52], [4.8, 1.3], [3.44, 1.08]],
                           ['o3']), 'gray')
     O4 = (BoxRegion2D([[0, 4.8], [2.5, 3.6]], ['o4']), 'gray')
-    
+
     # add all regions
     regions = [R1, R2, R3, R4, O1, O2, O3, O4]
-    
+
     # add regions to workspace
     for r, c in regions:
         # add styles to region
@@ -127,7 +127,7 @@ def caseStudy():
         addStyle(er, style={'facecolor': c})
         # add expanded region to the expanded workspace
         sim.expandedWorkspace.addRegion(er)
-    
+
     # local  requests
     F1 = (BallRegion2D([3.24, 1.98], 0.2, ['fire']), ('orange', 0.5))
     F2 = (BallRegion2D([1.26, 0.48], 0.2, ['fire']), ('orange', 0.5))
@@ -139,13 +139,13 @@ def caseStudy():
     localSpec_cube_color = {'survivor': 3, 'fire': 4}
     # local obstacles
     obstacles = []
-    
+
     # add style to local requests and obstacles
     for r, c in requests:
         # add styles to region
         addStyle(r, style={'facecolor': to_rgba(*c)}) #FIMXE: HACK
         r.cube_color = localSpec_cube_color[next(iter(r.symbols))]
-    
+
     # create request objects
     reqs = []
     for r, _ in requests:
@@ -153,69 +153,69 @@ def caseStudy():
         reqs.append(Request(r, name, localSpec[name]))
     requests = reqs
     obstacles = [o for o, _, _ in obstacles]
-    
+
     # set the robot's sensor
     sensingShape = BallBoundary2D([0, 0], 0.5)
     robot.sensor = CozmoSensor(robot, sensingShape, requests, obstacles)
     robot.sensor.reset()
-    
+
     # display workspace
     sim.display()
-     
+
     # display expanded workspace
     sim.display(expanded=True)
-    
+
     ############################################################################
     ### Generate global transition system and off-line control policy ##########
     ############################################################################
-    
+
     globalSpec = ('[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4)'
                   + ' && !(o1 || o2 || o3 || o4))')
     logging.info('Global specification: %s', globalSpec)
-    
+
     # initialize incremental product automaton
     checker = IncrementalProduct(globalSpec) #, specFile='ijrr_globalSpec.txt')
     logging.info('Buchi size: (%d, %d)', checker.buchi.g.number_of_nodes(),
                                          checker.buchi.g.number_of_edges())
-    
+
     # initialize global off-line RRG planner
     sim.offline = RRGPlanner(robot, checker, None, iterations=1000)
     sim.offline.eta = [0.5, 1.0] # good bounds for the planar case study
-    
+
     with Timer():
         if sim.offline.solve():
             logging.info('Found solution!')
         else:
             logging.info('No solution found!')
             return
-    
+
     logging.info('Finished in %d iterations!', sim.offline.iteration)
     logging.info('Size of TS: %s', sim.offline.ts.size())
     logging.info('Size of PA: %s', sim.offline.checker.size())
-    
+
     # save global transition system and control policy
     sim.offline.ts.save(os.path.join(outputdir, 'ts.yaml'))
-    
+
     ############################################################################
     ### Display the global transition system and the off-line control policy ###
     ############################################################################
-    
+
     # display workspace and global transition system
     prefix, suffix = sim.offline.checker.globalPolicy(sim.offline.ts)
     sim.display(expanded=False, solution=prefix)
     sim.display(expanded=False, solution=suffix)
     sim.display(expanded=False, solution=prefix+suffix[1:])
-    
+
     # set to global and to save animation
     sim.simulate(loops=2, offline=True)
 #     sim.play(output='video') # TODO: uncomment on linux desktop, show=False)
 #     sim.save() # TODO: uncomment on linux desktop
-    
+
     # move to start position
     startConf = next(iter(sim.path))
     logging.info('Moving to start configuration: %s', startConf)
     sim.robot.move(startConf)
-    
+
     # execute computed path satisfying the global specification
 #     while sim.step():
 #         pass
@@ -223,45 +223,45 @@ def caseStudy():
     ############################################################################
     ### Execute on-line path planning algorithm ################################
     ############################################################################
-    
+
     # compute potential for each state of PA
     with Timer('Computing potential function'):
         if not compute_potentials(sim.offline.checker):
             return
-    
+
     # FIXME: HACK
     robot.controlspace = 0.1
-    
+
     # initialize local on-line RRT planner
     sim.online = LocalPlanner(sim.offline.checker, sim.offline.ts, robot,
                               localSpec)
-    
+
     # TODO: debug code, delete after use
     sim.online.sim = sim
-    
+
     # define number of surveillance cycles to run
     cycles = 2
     # execute controller
-    cycle = -1 # number of completed cycles, -1 accounts for the prefix 
+    cycle = -1 # number of completed cycles, -1 accounts for the prefix
     while cycle < cycles:
         # update the locally sensed requests and obstacles
         requests, obstacles = robot.sensor.sense()
         with Timer('local planning'):
             # feed data to planner and get next control input
             nextConf = sim.online.execute(requests, obstacles)
-        
+
 #         sim.display(expanded=True, localinfo=('plan', 'trajectory'))
-        
+
         # enforce movement
         robot.move(nextConf)
         # if completed cycle increment cycle
         if sim.update():
             cycle += 1
-    
+
     ############################################################################
     ### Display the local transition systems and the on-line control policy ####
     ############################################################################
-    
+
     # save data # TODO: move this to some post-processing function and make it
     # incremental
     with open(os.path.join(outputdir, 'trajectory.txt'), 'w') as fout:
@@ -274,9 +274,9 @@ def caseStudy():
         print>>fout, sim.online.durations
     with open(os.path.join(outputdir, 'sizes.txt'), 'w') as fout:
         print>>fout, sim.online.sizes
-    
-    
-#     # set to local and to save animation 
+
+
+#     # set to local and to save animation
 #     sim.simulate(offline=False)
 #     sim.play(output='video', show=True)
 #     sim.save() #TODO: uncomment on linux desktop
