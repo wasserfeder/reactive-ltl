@@ -8,7 +8,7 @@
 
 '''
     Defines the case study presented in the IJRR journal paper.
-    Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
+    Copyright (C) 2014-2018  Cristian Ioan Vasile <cvasile@bu.edu>
     Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
     Boston University
 
@@ -38,7 +38,8 @@ from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
 from robots import FullyActuatedRobot, SimulatedSensor
 
 from planning import RRGPlanner, LocalPlanner, Request
-from models import IncrementalProduct, compute_potentials
+from models import IncrementalProduct
+from lomap import compute_potentials
 from graphics.planar import addStyle, Simulate2D, to_rgba
 from lomap import Timer
 
@@ -50,29 +51,30 @@ def caseStudy():
     outputdir = os.path.abspath('../data_ijrr/example1')
     if not os.path.isdir(outputdir):
         os.makedirs(outputdir)
-    
+
     # configure logging
-    fs, dfs = '%(asctime)s %(levelname)s %(message)s', '%m/%d/%Y %I:%M:%S %p'
+    fs = '%(asctime)s [%(levelname)s] -- { %(message)s }'
+    dfs = '%m/%d/%Y %I:%M:%S %p'
     loglevel = logging.DEBUG
     logfile = os.path.join(outputdir, 'ijrr_example_1.log')
     verbose = True
-    logging.basicConfig(filename=logfile, level=loglevel, format=fs,
-                        datefmt=dfs)
+    logging.basicConfig(filename=logfile, filemode='w', level=loglevel,
+                        format=fs, datefmt=dfs)
     if verbose:
         root = logging.getLogger()
         ch = logging.StreamHandler(sys.stdout)
         ch.setLevel(loglevel)
         ch.setFormatter(logging.Formatter(fs, dfs))
         root.addHandler(ch)
-    
-    
+
+
     ############################################################################
     ### Define case study setup (robot parameters, workspace, etc.) ############
     ############################################################################
-    
+
     # define robot diameter (used to compute the expanded workspace)
     robotDiameter = 0.36
-    
+
     # define boundary
     boundary = BoxBoundary2D([[0, 4.8], [0, 3.6]])
     # define boundary style
@@ -81,23 +83,32 @@ def caseStudy():
     eboundary = BoxBoundary2D(boundary.ranges +
                                 np.array([[1, -1], [1, -1]]) * robotDiameter/2)
     eboundary.style = {'color' : 'black'}
-    
+
     # create robot's workspace and expanded workspace
     wspace = Workspace(boundary=boundary)
     ewspace = Workspace(boundary=eboundary)
-    
+
     # create robot object
     robot = FullyActuatedRobot('Cozmo', init=Point2D((2, 2)), wspace=ewspace,
                                stepsize=0.999)
     robot.diameter = robotDiameter
     robot.localObst = 'local_obstacle'
-    
-    logging.info('Conf space: %s', robot.cspace)
-    
+
+    logging.info('"Workspace": (%s, %s)', wspace, boundary.style)
+    logging.info('"Expanded workspace": (%s, %s)', ewspace, eboundary.style)
+    logging.info('"Robot name": "%s"', robot.name)
+    logging.info('"Robot initial configuration": %s', robot.initConf)
+    logging.info('"Robot step size": %f', robot.controlspace)
+    logging.info('"Robot diameter": %f', robot.diameter)
+    logging.info('"Robot constructor": "%s"',
+        'FullyActuatedRobot(robot_name, init=initConf, wspace=ewspace, '
+        'stepsize=stepsize)')
+    logging.info('"Local obstacle label": "%s"', robot.localObst)
+
     # create simulation object
     sim = Simulate2D(wspace, robot, ewspace)
     sim.config['output-dir'] = outputdir
-    
+
     # regions of interest
     R1 = (BoxRegion2D([[0.45, 0.75], [0.45, 0.6]], ['r1']), 'brown')
     R2 = (BallRegion2D([3.9, 1.2], 0.3, ['r2']), 'green')
@@ -110,12 +121,12 @@ def caseStudy():
           'gray')
     O3 = (PolygonRegion2D([[2.1, 2.7], [2.4, 3], [2.7, 2.7]], ['o3']), 'gray')
     O4 = (BoxRegion2D([[1.65, 1.95], [0.45, 0.6]], ['o4']), 'gray')
-    
+
     # add all regions
     regions = [R1, R2, R3, R4, O1, O2, O3, O4]
-    
+
     # add regions to workspace
-    for r, c in regions:
+    for k, (r, c) in enumerate(regions):
         # add styles to region
         addStyle(r, style={'facecolor': c})
         # add region to workspace
@@ -126,7 +137,9 @@ def caseStudy():
         addStyle(er, style={'facecolor': c})
         # add expanded region to the expanded workspace
         sim.expandedWorkspace.addRegion(er)
-    
+
+        logging.info('("Global region", %d): (%s, %s)', k, r, r.style)
+
     # local  requests
     F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']),
           ([[3.24, 1.98], [2.54, 2.28], [3.5, 3], [4.02, 2.28]], 0.05),
@@ -140,14 +153,14 @@ def caseStudy():
     requests = [F1, F2, S2]
     # define local specification as a priority function
     localSpec = {'survivor': 0, 'fire': 1}
-    logging.info('Local specification: %s', localSpec)
+    logging.info('"Local specification": %s', localSpec)
     # local obstacles #FIXME: defined in expanded workspace not workspace
     obstacles = [(BoxRegion2D([[3, 3.5], [2, 2.5]], ['LO']), None,
                   ('gray', 0.8)),
                  (PolygonRegion2D([[3.2, 1.4], [3, 0.8], [3.4, 0.7]], ['LO']),
                   None, ('gray', 0.8)),
                  (BallRegion2D([1.6, 2.1], 0.15, ['LO']), None, ('gray', 0.8))]
-    
+
     # add style to local requests and obstacles
     for r, path, c in requests + obstacles:
         # add styles to region
@@ -167,104 +180,105 @@ def caseStudy():
         reqs.append(Request(r, name, localSpec[name]))
     requests = reqs
     obstacles = [o for o, _, _ in obstacles]
-    
+
     # set the robot's sensor
     sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
     robot.sensor = SimulatedSensor(robot, sensingShape, requests, obstacles)
-    
+
+    logging.info('"Robot sensor constructor": "%s"',
+        'SimulatedSensor(robot, BallBoundary2D([0, 0], robot.diameter*2.5),'
+        'requests, obstacles)')
+
     # display workspace
     sim.display()
-     
+
     # display expanded workspace
     sim.display(expanded=True)
-    
+
     ############################################################################
     ### Generate global transition system and off-line control policy ##########
     ############################################################################
-    
+
     globalSpec = ('[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4)'
                   + ' && !(o1 || o2 || o3 || o4 || o5))')
-    logging.info('Global specification: %s', globalSpec)
-    
+    logging.info('"Global specification": "%s"', globalSpec)
+
     # initialize incremental product automaton
     checker = IncrementalProduct(globalSpec) #, specFile='ijrr_globalSpec.txt')
-    logging.info('Buchi size: (%d, %d)', checker.buchi.g.number_of_nodes(),
-                                         checker.buchi.g.number_of_edges())
-    
+    logging.info('"Buchi size": (%d, %d)', checker.buchi.g.number_of_nodes(),
+                                           checker.buchi.g.number_of_edges())
+
     # initialize global off-line RRG planner
-    sim.offline = RRGPlanner(robot, checker, None, iterations=1000)
+    sim.offline = RRGPlanner(robot, checker, iterations=1000)
     sim.offline.eta = [0.5, 1.0] # good bounds for the planar case study
-    
-    with Timer():
-        if sim.offline.solve():
-            logging.info('Found solution!')
-        else:
-            logging.info('No solution found!')
+
+    logging.info('"Start global planning": True')
+    with Timer(op_name='global planning', template='"%s runtime": %f'):
+        found = sim.offline.solve()
+        logging.info('"Found solution": %s', found)
+        if not found:
             return
-    
-    logging.info('Finished in %d iterations!', sim.offline.iteration)
-    logging.info('Size of TS: %s', sim.offline.ts.size())
-    logging.info('Size of PA: %s', sim.offline.checker.size())
-    
+
+    logging.info('"Iterations": %d', sim.offline.iteration)
+    logging.info('"Size of TS": %s', sim.offline.ts.size())
+    logging.info('"Size of PA": %s', sim.offline.checker.size())
+
     # save global transition system and control policy
     sim.offline.ts.save(os.path.join(outputdir, 'ts.yaml'))
-    
+
     ############################################################################
     ### Display the global transition system and the off-line control policy ###
     ############################################################################
-    
+
     # display workspace and global transition system
     prefix, suffix = sim.offline.checker.globalPolicy(sim.offline.ts)
     sim.display(expanded='both', solution=prefix+suffix[1:])
-    
-    # set to global and to save animation
-#     sim.simulate(loops=2, offline=True)
-#     sim.play(output='video') # TODO: uncomment on linux desktop, show=False)
-#     sim.save() # TODO: uncomment on linux desktop
-    
+    logging.info('"global policy": (%s, %s)', prefix, suffix)
+
     ############################################################################
     ### Execute on-line path planning algorithm ################################
     ############################################################################
-    
+
     # compute potential for each state of PA
-    with Timer('Computing potential function'):
+    with Timer(op_name='Computing potential function',
+               template='"%s runtime": %f'):
         if not compute_potentials(sim.offline.checker):
             return
-    
-    # FIXME: HACK
+
+    # set the step size for the local controller
     robot.controlspace = 0.1
-    
+
     # initialize local on-line RRT planner
     sim.online = LocalPlanner(sim.offline.checker, sim.offline.ts, robot,
                               localSpec)
-    
+
     # TODO: debug code, delete after use
     sim.online.sim = sim
-    
+
     # define number of surveillance cycles to run
-    cycles = 4
+    cycles = 1
     # execute controller
-    cycle = -1 # number of completed cycles, -1 accounts for the prefix 
+    cycle = -1 # number of completed cycles, -1 accounts for the prefix
     while cycle < cycles:
         # update the locally sensed requests and obstacles
         requests, obstacles = robot.sensor.sense()
-        with Timer('local planning'):
+        with Timer(op_name='local planning', template='"%s runtime": %f'):
             # feed data to planner and get next control input
             nextConf = sim.online.execute(requests, obstacles)
-        
-        sim.display(expanded=True, localinfo=('plan', 'trajectory'))
-        
+
+#         sim.display(expanded=True, localinfo=('plan', 'trajectory'))
+
         # enforce movement
         robot.move(nextConf)
         # if completed cycle increment cycle
         if sim.update():
             cycle += 1
-    
+
     ############################################################################
     ### Display the local transition systems and the on-line control policy ####
     ############################################################################
-    
-    # set to local and to save animation 
+
+    # set to local and to save animation
     sim.simulate(offline=False)
     sim.play(output='video', show=True)
 #     sim.save() #TODO: uncomment on linux desktop
