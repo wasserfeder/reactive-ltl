@@ -114,7 +114,7 @@ def addStyle(region, style=None, withText=True, text=None, textStyle=None):
         region.style['edgecolor'] = style.get('edgecolor', 'black')
     else:
         region.style = {'facecolor': 'white', 'edgecolor':'black'}
-    
+
     if withText:
         if text:
             region.text = text
@@ -135,13 +135,16 @@ def addStyle(region, style=None, withText=True, text=None, textStyle=None):
         region.text = None
         region.textStyle = None
 
-def drawRobot2D(viewport, robot, size, text='', textStyle=None):
+def drawRobot2D(viewport, robot, size, text='', textStyle=None,
+                sensing_area=True):
     x, y = robot.currentConf.coords
     #TODO: make this general
-    sensingShape = BallBoundary2D([x, y], robot.sensor.sensingShape.radius)
-    style = {'facecolor': (0, 0, 1, 0.2), 'edgecolor': (0, 0, 1, 0.2), 'fill': True}
-    drawBoundary2D(viewport, sensingShape, style)
-    
+    if sensing_area:
+        sensingShape = BallBoundary2D([x, y], robot.sensor.sensingShape.radius)
+        style = {'facecolor': (0, 0, 1, 0.2), 'edgecolor': (0, 0, 1, 0.2),
+                 'fill': True}
+        drawBoundary2D(viewport, sensingShape, style)
+
     style = {'facecolor': 'blue', 'edgecolor':'black'}
     if size == 0:
         plt.plot(x, y, 'o', color=style['facecolor'], zorder=2)
@@ -153,17 +156,16 @@ def drawRobot2D(viewport, robot, size, text='', textStyle=None):
             viewport.text(x, y, text, **textStyle)
         else:
             viewport.text(x, y, text)
-    
 
-def drawGraph(viewport, g):
-    
+def drawGraph(viewport, g, node_color='blue', edge_color='black'):
+
     for u in g.nodes_iter():
-        plt.plot(u.x, u.y, 'o', color='blue')
-    
+        plt.plot(u.x, u.y, 'o', color=node_color)
+
     for u, v in g.edges_iter():
         x = (u.x, v.x)
         y = (u.y, v.y)
-        plt.plot(x, y, color='black')
+        plt.plot(x, y, color=edge_color)
 
 def drawPolicy(viewport, solution, color='black'):
     for u, v in it.izip(solution, solution[1:]):
@@ -176,120 +178,122 @@ class Simulate2D(object):
     '''Management class for planar systems and environments. It implements
     visualization of the workspace, saves images or videos, and support playback
     of computed trajectories.
-    
+
     It also handles the simulation of local requests.
     '''
-    
+
     def __init__(self, workspace, robot, expandedWorkspace=None, config=None):
         self.workspace = workspace
         self.expandedWorkspace = expandedWorkspace
         self.robot = robot
         self.requests = tuple()
-        
+
         if config:
             self.config = config
         else:
             self.config = dict()
         self.__defaultConfiguration()
-        
+
         self.offline = None
         self.online = None
-        
+
+        self.solution = None
+
         self.play_global = True
-    
+
     def __defaultConfiguration(self):
         self.config['x-padding'] = self.config.get('x-padding',
                                                    self.robot.diameter/2)
         self.config['y-padding'] = self.config.get('y-padding',
                                                    self.robot.diameter/2)
         self.config['grid-on'] = self.config.get('grid-on', True)
-        # TODO: for simulation video 0.01)
         self.config['sim-step'] = self.config.get('sim-step', 0.1)
-        
+
         self.config['detected-request-transparency'] = \
                         self.config.get('local-obstacle-transparency', 0.2)
         self.config['request-transparency'] = \
                         self.config.get('request-transparency', 0.5)
-        
+
         self.config['video-file'] = self.config.get('video-file', 'video.mp4')
         self.config['video-interval'] = self.config.get('video-interval', 1000)
         self.config['video-writer'] = self.config.get('video-writer', None)
+        self.config['video-codec'] = self.config.get('video-codec', 'libx264')
         self.config['image-file-template'] = \
           self.config.get('image-file-template', 'frames/frame_{frame:04d}.png')
         self.config['output-dir'] = self.config.get('output-dir', '.')
-    
+
     def loadConfiguration(self, filename):
         pass
-    
+
     def saveConfiguration(self, filename):
         pass
-    
+
     def loadTimeline(self, filename):
         pass
-    
+
     def reset(self):
         pass
-    
+
 #     def makeRequestsRecurrent(self):
 #         '''TODO:
 #         '''
 #         self.requests = self.robot.sensor.requests
-    
+
     def display(self, expanded=False, solution=None, localinfo=None):
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect='equal')
-        
+
         if expanded == 'both':
             self.render(ax, expanded=True, solution=[], localinfo=localinfo)
             self.render(ax, expanded=False, solution=solution,
                         localinfo=localinfo)
         else:
             self.render(ax, expanded, solution, localinfo=localinfo)
-        
+
         plt.show()
-    
+
     def render(self, viewport, expanded=False, solution=None, withtext=True,
-               localinfo=None):
+               localinfo=None, sensing_area=True):
         if expanded:
             wp = self.expandedWorkspace
         else:
             wp = self.workspace
-        
+
         limits = wp.boundary.boundingBox()
         plt.xlim(limits[0] + np.array([-1, 1]) * self.config['x-padding'])
         plt.ylim(limits[1] + np.array([-1, 1]) * self.config['y-padding'])
-        
+
         if self.config.get('grid-on'):
             plt.grid()
-        
+
         if self.config.get('background', None):
             img = plt.imread(self.config['background'])
             img = np.flipud(img)
             plt.imshow(img, origin='lower', extent=limits.flatten(), zorder=0,
 #                        alpha=0.5
                        )
-        
+
         # draw regions
         for r in wp.regions:
             text = None
             if withtext:
                 text = r.text
             drawRegion2D(viewport, r, r.style, text, r.textStyle)
-        
+
         # draw boundary
         drawBoundary2D(viewport, wp.boundary, wp.boundary.style)
-        
+
         # draw robot
-        r = 0 if expanded else self.robot.diameter/2 
-        drawRobot2D(viewport, self.robot, size=r)
-        
+        r = 0 if expanded else self.robot.diameter/2
+        drawRobot2D(viewport, self.robot, size=r, sensing_area=sensing_area)
+
         if solution is not None:
             drawPolicy(viewport, solution)
         else:
             if self.offline is not None:
                 # draw transition system
                 drawGraph(viewport, self.offline.ts.g)
-        
+
         # draw local regions/plans/data
         if self.online is not None:
             for req in self.robot.sensor.requests:
@@ -303,15 +307,15 @@ class Simulate2D(object):
                 else:
                     r.style['facecolor'] = r.style['facecolor'][:3] \
                             + (self.config['detected-request-transparency'],)
-                
+
                 drawRegion2D(viewport, r, r.style, text, r.textStyle)
-            
+
             for r in self.robot.sensor.obstacles:
                 text = None
                 if withtext:
                     text = r.text
                 drawRegion2D(viewport, r, r.style, text, r.textStyle)
-            
+
             if 'tree' in localinfo and self.online.lts:
                 drawGraph(viewport, self.online.lts.g)
             if 'trajectory' in localinfo:
@@ -319,12 +323,12 @@ class Simulate2D(object):
             if 'plan' in localinfo:
                 local_plan = [self.robot.currentConf] + self.online.local_plan
                 drawPolicy(viewport, local_plan, 'blue')
-    
+
     def update(self):
         '''Removes requests serviced by the robot, resets all requests at the
         end of each cycle, and moves them on their paths.
         '''
-        
+
         # update requests and local obstacles
         self.robot.sensor.update()
         # reset requests at the start of a cycle, i.e., reaching a final state
@@ -333,22 +337,25 @@ class Simulate2D(object):
             self.robot.sensor.reset()
             return True
         return False
-    
+
     def simulate(self, loops=2, offline=True):
-        '''Simulates the system along the trajectory induced by the policy 
+        '''Simulates the system along the trajectory induced by the policy
         satisfying the global specification or the trajectory induced by the
         local planner.
         '''
-        assert self.offline.checker.foundPolicy()
         self.cstep = 0
-        
-        prefix, suffix = self.offline.checker.globalPolicy()
-        self.solution = (prefix, suffix[1:])
+
+        if self.solution is None:
+            assert self.offline.checker.foundPolicy()
+            prefix, suffix = self.offline.checker.globalPolicy()
+            self.solution = (prefix, suffix[1:])
+
+        prefix, suffix = self.solution
         if offline:
-            trajectory = it.chain(prefix, *it.repeat(suffix[1:], times=loops))
+            trajectory = it.chain(prefix, *it.repeat(suffix, times=loops))
         else:
             trajectory = iter(self.online.trajectory)
-        
+
         self.path = [trajectory.next()]
         prevConf = self.path[0]
         stepSize = self.config['sim-step']
@@ -356,31 +363,30 @@ class Simulate2D(object):
             d = self.robot.wspace.dist(prevConf, conf)
             n = int(np.ceil(d/float(stepSize)))
             u = (conf.coords - prevConf.coords) * stepSize / d
-            print conf.coords, d, n, u
             self.path.extend([Point2D(prevConf.coords + k*u) for k in range(n)])
             prevConf = conf
         self.path.append(conf)
-    
+
     def play(self, output='video', show=True):
         '''Playbacks the stored path.'''
         assert self.path is not None, 'Run simulation first!'
-        
+
         logging.info('Starting playback...')
-        
+
         self.cstep = 0
         prefix, suffix = self.solution
         policy = prefix + suffix
-        
+
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect='equal')
-        
+
         def init_anim():
             self.render(ax, expanded=True, solution=[],
                         localinfo=('trajectory',))
             self.render(ax, expanded=False, solution=policy,
                         localinfo=('trajectory',))
             return []
-        
+
         def run_anim(frame, *args):
 #             logging.info('Processing frame %s!', frame)
 #             self.draw_time_label(frame, loops_iter.next(), d_fsa.next())
@@ -390,7 +396,7 @@ class Simulate2D(object):
             self.render(ax, expanded=True, solution=[], localinfo=[])
             self.render(ax, expanded=False, solution=policy, localinfo=[])
             return []
-        
+
         if output == 'video':
             self.vehicle_animation = animation.FuncAnimation(fig, run_anim,
                             init_func=init_anim, save_count=len(self.path),
@@ -399,10 +405,10 @@ class Simulate2D(object):
             self.draw_plot = run_anim
         else:
             raise NotImplementedError('Unknown output format!')
-        
+
         if show:
             plt.show()
-    
+
     def save(self, output='video'):
         '''Saves the playback data in the given output format.'''
         if output == 'video':
@@ -411,6 +417,7 @@ class Simulate2D(object):
             logging.info('Saving video to file: %s !', filename)
             self.vehicle_animation.save(filename,
                 writer=self.config['video-writer'],
+                codec=self.config['video-codec'],
                 metadata={'artist': 'Cristian-Ioan Vasile'})
         elif output == 'plots':
             filename = os.path.join(self.config['output-dir'],
@@ -418,14 +425,14 @@ class Simulate2D(object):
             basedir = os.path.dirname(filename)
             if not os.path.isdir(basedir):
                 os.makedirs(basedir)
-            
+
             for frame, _ in enumerate(self.path):
                 self.draw_plot(frame)
                 logging.info('Saving frame %d to file: %s !', frame, filename)
                 plt.savefig(filename.format(frame=frame))
         else:
             raise NotImplementedError('Unknown output format!')
-    
+
     def step(self, steps=1):
         '''Moves the robot along the stored path.'''
         assert self.path is not None, 'Run simulation first!'
