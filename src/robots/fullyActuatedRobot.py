@@ -35,9 +35,7 @@ class FullyActuatedRobot(Robot):
     def __init__(self, name, init=None, wspace=None, stepsize=0.1):
         Robot.__init__(self, name, initConf=init, cspace=wspace, wspace=wspace,
                        controlspace=stepsize)
-        self.isSetup = False
-        self.origin = None
-    
+
     def getSymbols(self, position, local=False):
         '''Returns the symbols satisfied at the given position.
         If `local` is False global symbols are returned, otherwise local ones
@@ -47,12 +45,12 @@ class FullyActuatedRobot(Robot):
             return set([r.name for r in self.sensor.requests
                             if r.region.intersects(position)])
         return self.wspace.getSymbols(position)
-    
+
     def steer(self, start, target, atol=0):
         '''Returns a position that the robot can move to from the start position
         such that it steers closer to the given target position using the
         robot's dynamics.
-        
+
         Note: It simulates the movement.
         '''
         s = start.coords
@@ -61,7 +59,7 @@ class FullyActuatedRobot(Robot):
         if dist <= self.controlspace + atol:
             return target
         return self.initConf.__class__(s + (t-s) * self.controlspace/dist)
-    
+
     def isSimpleSegment(self, u, v):
         '''Returns True if the curve [x, y] = H([u, v]) in the workspace space
         does not intersect other regions than the ones x and y belong to.
@@ -71,13 +69,13 @@ class FullyActuatedRobot(Robot):
         intersects.
         Since the robot is a fully actuate points, the configuration space is
         the same as the workspace and the submersion is the identity map.
-        
-        Note: assumes non-overlapping regions. 
+
+        Note: assumes non-overlapping regions.
         '''
         nrRegUV = len(self.cspace.intersectingRegions(u, v))
         regU = self.cspace.intersectingRegions(u)
         regV = self.cspace.intersectingRegions(v)
-        
+
         # if both endpoints of the segment are in the free space
         if (not regU) and (not regV):
             return nrRegUV == 0
@@ -91,7 +89,7 @@ class FullyActuatedRobot(Robot):
             return nrRegUV == 1
         # if the endpoints belong to two different regions
         return nrRegUV == 2
-    
+
     def collision_free(self, plan, local_obstacles):
         '''Checks if the plan is obstacle free with respect to the locally
         detected ones.
@@ -104,12 +102,12 @@ class FullyActuatedRobot(Robot):
                     return False
             return True
         return True
-    
+
     def collision_free_segment(self, u, v, local_obstacles):
         '''Checks if a line segment is obstacle free.'''
         if local_obstacles:
             return not any([obs.intersects(u, v) for obs in local_obstacles])
         return True
-    
+
     def __str__(self):
         return 'Fully actuated robot'
