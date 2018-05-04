@@ -23,22 +23,4 @@ Package defining finite abstraction models.
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-from algorithms import *
-from model import Model, model_representer, model_constructor
-from ts import TS
-from lomap import Buchi
 from product import IncrementalProduct
-
-# register yaml representers
-try: # try using the libyaml if installed
-    from yaml import CLoader as Loader, CDumper as Dumper
-except ImportError: # else use default PyYAML loader and dumper
-    from yaml import Loader, Dumper
-
-Dumper.add_representer(Model, model_representer)
-Dumper.add_representer(TS, model_representer)
-
-Loader.add_constructor(Model.yaml_tag,
-    lambda loader, model: model_constructor(loader, model, Model))
-Loader.add_constructor(TS.yaml_tag,
-    lambda loader, model: model_constructor(loader, model, TS))
