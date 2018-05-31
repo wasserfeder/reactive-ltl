@@ -48,12 +48,14 @@ to_rgba = colconv.to_rgba
 
 
 def drawPoint2D(viewport, point, color, style=None):
+    '''Draws a point in the planar environment.'''
     if style:
         viewport.plot(point.x, point.y, color=color, **style)
     else:
         viewport.plot(point.x, point.y, color=color)
 
 def drawBoxRegion2D(viewport, region, style, text='', textStyle=None):
+    '''Draws a box region in a planar environment.'''
     x = [region.ranges[0, 0], region.ranges[0, 0],
          region.ranges[0, 1], region.ranges[0, 1]]
     y = [region.ranges[1, 0], region.ranges[1, 1],
@@ -66,6 +68,7 @@ def drawBoxRegion2D(viewport, region, style, text='', textStyle=None):
             viewport.text(mean(x), mean(y), text)
 
 def drawBallRegion2D(viewport, region, style, text='', textStyle=None):
+    '''Draws a ball region in a planar environment.'''
     x, y = region.center
     c = plt.Circle(region.center, region.radius, **style)
     viewport.add_artist(c)
@@ -76,6 +79,7 @@ def drawBallRegion2D(viewport, region, style, text='', textStyle=None):
             viewport.text(x, y, text)
 
 def drawPolygonRegion2D(viewport, region, style, text='', textStyle=None):
+    '''Draws a polygonal region in a planar environment.'''
     x, y = zip(*region.polygon.exterior.coords)
     viewport.fill(x, y, **style)
     if text:
@@ -86,6 +90,7 @@ def drawPolygonRegion2D(viewport, region, style, text='', textStyle=None):
             viewport.text(x, y, text)
 
 def drawRegion2D(viewport, region, style, text='', textStyle=None):
+    '''Draws a region in a planar environment.'''
     if isinstance(region, BoxRegion2D):
         drawBoxRegion2D(viewport, region, style, text, textStyle)
     elif isinstance(region, BallRegion2D):
@@ -96,6 +101,7 @@ def drawRegion2D(viewport, region, style, text='', textStyle=None):
         raise TypeError
 
 def drawBoundary2D(viewport, boundary, style):
+    '''Draws a boundary in a planar environment.'''
     if isinstance(boundary, BoxBoundary2D):
         x, y = zip(*((0, 0), (0, 1), (1, 1), (1, 0), (0, 0)))
         x, y = boundary.xrange()[list(x)], boundary.yrange()[list(y)]
@@ -108,6 +114,7 @@ def drawBoundary2D(viewport, boundary, style):
         viewport.plot(x, y, **style)
 
 def addStyle(region, style=None, withText=True, text=None, textStyle=None):
+    '''Adds style information to the region for rendering.'''
     if style:
         region.style = style
         region.style['facecolor'] = style.get('facecolor', 'white')
@@ -137,6 +144,7 @@ def addStyle(region, style=None, withText=True, text=None, textStyle=None):
 
 def drawRobot2D(viewport, robot, size, text='', textStyle=None,
                 sensing_area=True):
+    '''Draws the robot with its sensing area in the viewport.'''
     x, y = robot.currentConf.coords
     #TODO: make this general
     if sensing_area:
@@ -158,7 +166,7 @@ def drawRobot2D(viewport, robot, size, text='', textStyle=None,
             viewport.text(x, y, text)
 
 def drawGraph(viewport, g, node_color='blue', edge_color='black'):
-
+    '''Plots the given graph in the viewport.'''
     for u in g.nodes_iter():
         plt.plot(u.x, u.y, 'o', color=node_color)
 
@@ -167,10 +175,16 @@ def drawGraph(viewport, g, node_color='blue', edge_color='black'):
         y = (u.y, v.y)
         plt.plot(x, y, color=edge_color)
 
-def drawPolicy(viewport, solution, color='black'):
-    for u, v in it.izip(solution, solution[1:]):
+def drawPolicy(viewport, solution, color='black', alpha_min=1.0):
+    '''Draws the a solution path with a fading effect.'''
+    if alpha_min == 1.0:
+        transparency = it.repeat(1.0)
+    else:
+        transparency = np.linspace(alpha_min, 1.0, len(solution)-1)
+    
+    for u, v, a in it.izip(solution, solution[1:], transparency):
         dx, dy = v.x - u.x, v.y - u.y
-        plt.arrow(u.x, u.y, dx, dy, hold=True, color=color,
+        plt.arrow(u.x, u.y, dx, dy, hold=True, color=color, alpha=a,
                   length_includes_head=True, head_width=0.08)
 
 
@@ -214,6 +228,11 @@ class Simulate2D(object):
         self.config['request-transparency'] = \
                         self.config.get('request-transparency', 0.5)
 
+        self.config['trajectory-history-length'] = 20
+        self.config['trajectory-color'] = 'black'
+        self.config['trajectory-min-transparency'] = 0.2
+        self.config['local-plan-color'] = 'green'
+
         self.config['video-file'] = self.config.get('video-file', 'video.mp4')
         self.config['video-interval'] = self.config.get('video-interval', 1000)
         self.config['video-writer'] = self.config.get('video-writer', None)
@@ -233,11 +252,6 @@ class Simulate2D(object):
 
     def reset(self):
         pass
-
-#     def makeRequestsRecurrent(self):
-#         '''TODO:
-#         '''
-#         self.requests = self.robot.sensor.requests
 
     def display(self, expanded=False, solution=None, localinfo=None):
         fig = plt.figure()
@@ -319,10 +333,16 @@ class Simulate2D(object):
             if 'tree' in localinfo and self.online.lts:
                 drawGraph(viewport, self.online.lts.g)
             if 'trajectory' in localinfo:
-                drawPolicy(viewport, self.online.trajectory)
+                # compute history 
+                history = self.config['trajectory-history-length']
+                start = max(0, len(self.online.trajectory) - history)
+                drawPolicy(viewport, self.online.trajectory[start:],
+                           color=self.config['trajectory-color'],
+                           alpha_min=self.config['trajectory-min-transparency'])
             if 'plan' in localinfo:
-                local_plan = [self.robot.currentConf] + self.online.local_plan
-                drawPolicy(viewport, local_plan, 'blue')
+                local_plan = self.online.local_plan
+                drawPolicy(viewport, local_plan, 
+                           color=self.config['local-plan-color'])
 
     def update(self):
         '''Removes requests serviced by the robot, resets all requests at the
@@ -333,7 +353,7 @@ class Simulate2D(object):
         self.robot.sensor.update()
         # reset requests at the start of a cycle, i.e., reaching a final state
         if (self.online.trajectory[-1] in self.online.ts.g
-                and self.online.potential[-1] == 0):
+                and self.online.potential == 0):
             self.robot.sensor.reset()
             return True
         return False
@@ -367,7 +387,7 @@ class Simulate2D(object):
             prevConf = conf
         self.path.append(conf)
 
-    def play(self, output='video', show=True):
+    def play(self, output='video', show=True, localinfo=dict()):
         '''Playbacks the stored path.'''
         assert self.path is not None, 'Run simulation first!'
 
@@ -380,6 +400,15 @@ class Simulate2D(object):
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect='equal')
 
+        local = 'trajectory' in localinfo
+        rendering_options = ()
+
+        if local:
+            self.traj_step = 0
+            trajectory = localinfo['trajectory']
+            potential = localinfo['potential']
+            rendering_options = ('trajectory', 'plan')
+
         def init_anim():
             self.render(ax, expanded=True, solution=[],
                         localinfo=('trajectory',))
@@ -388,13 +417,26 @@ class Simulate2D(object):
             return []
 
         def run_anim(frame, *args):
-#             logging.info('Processing frame %s!', frame)
-#             self.draw_time_label(frame, loops_iter.next(), d_fsa.next())
-            logging.info('%d/%d', frame, len(self.path))
+
+            if local:
+                if self.path[self.cstep] == trajectory[self.traj_step]:
+                    self.traj_step += 1
+                    self.online.potential = potential[self.traj_step]
+                    self.update()
+                    current_requests = localinfo['requests'][self.traj_step]
+                    self.robot.sensor.requests = [
+                                    r for r in self.robot.sensor.all_requests
+                                        if r in current_requests]
+                    print self.traj_step
+
+                self.online.trajectory = trajectory[:self.traj_step+1]
+                self.online.local_plan = localinfo['plans'][self.traj_step]
+            
             self.step()
             plt.cla()
             self.render(ax, expanded=True, solution=[], localinfo=[])
-            self.render(ax, expanded=False, solution=policy, localinfo=[])
+            self.render(ax, expanded=False, solution=policy,
+                        localinfo=rendering_options)
             return []
 
         if output == 'video':
@@ -438,10 +480,116 @@ class Simulate2D(object):
         assert self.path is not None, 'Run simulation first!'
         if self.cstep < len(self.path)-1:
             self.cstep += 1
-            print('Move to', self.path[self.cstep])
             self.robot.move(self.path[self.cstep])
             return True
         return False
+
+    def save_rrg_process(self, rrg_data, markersize=12,
+                         max_detailed_iteration = 20, endframe_hold=4):
+        '''Saves a video with generation of the RRG transition system.'''
+        fig = plt.figure()
+        ax = fig.add_subplot(111, aspect='equal')
+
+        def init_rrg_anim():
+            self.render(ax, expanded='both')
+            return []
+
+        rrg_display_data = iter(rrg_data + [rrg_data[-1]]*endframe_hold)
+        class LocalContext(object): pass
+        ctx = LocalContext()
+        ctx.phases = ('sampling', 'nearest', 'steering', 'forward', 'backward')
+        ctx.phases_remaning = iter([])
+        ctx.display_data = None
+        ctx.max_detailed_iteration = max_detailed_iteration
+        def run_rrg_anim(frame, *args):
+            plt.cla()
+
+            try:
+                phase = next(ctx.phases_remaning)
+            except StopIteration:
+                ctx.display_data = next(rrg_display_data)
+                ctx.phases_remaning = iter(ctx.phases)
+                phase = next(ctx.phases_remaning)
+            display_data = ctx.display_data
+
+            print 'Iteration:', display_data['iteration'],
+            print 'Frame:', frame, '/', nframes
+
+            if display_data['iteration'] > ctx.max_detailed_iteration:
+                plt.title('iteration: {}'.format(display_data['iteration']))
+                sample = display_data['random configuration']
+                plt.plot(sample.x, sample.y, 'o', color='orange', ms=markersize)
+                self.offline.ts.g.add_edges_from(
+                                            display_data['forward edges added'])
+                self.offline.ts.g.add_edges_from(
+                                        display_data['backward edges added'])
+                self.render(ax, expanded=True, sensing_area=False)
+                ctx.phases_remaning = iter([])
+                return []
+
+            self.render(ax, expanded=True, sensing_area=False)
+            plt.title('iteration: {}, phase: {}'.format(
+                                            display_data['iteration'], phase))
+            if phase in ('sampling', 'nearest', 'steering'):
+                sample = display_data['random configuration']
+                plt.plot(sample.x, sample.y, 'o', color='orange', ms=markersize)
+            if phase in ('nearest', 'steering'):
+                nearest = display_data['nearest state']
+                plt.plot(nearest.x, nearest.y, 'o', color='gray', alpha=.4,
+                         ms=markersize)
+            if phase == 'steering':
+                new_conf = display_data['new configuration']
+                plt.plot(new_conf.x, new_conf.y, 'o', color='green',
+                         ms=markersize)
+                plt.plot([nearest.x, new_conf.x], [nearest.y, new_conf.y],
+                         color='black', linestyle='dashed')
+
+            if phase == 'forward':
+                new_conf = display_data['new configuration']
+                eta = display_data['far'][1:]
+                drawBallRegion2D(ax, BallRegion2D(new_conf.coords, eta[1], set()),
+                                 style={'color':'gray', 'alpha':.2})
+                drawBallRegion2D(ax, BallRegion2D(new_conf.coords, eta[0], set()),
+                                 style={'color':'gray', 'alpha':.2})
+                if display_data['forward state added'] is not None:
+                    plt.plot(new_conf.x, new_conf.y, 'o', color='green',
+                             ms=markersize)
+                    for u, v in display_data['forward edges added']:
+                        dx, dy = v.x - u.x, v.y - u.y
+                        plt.arrow(u.x, u.y, dx, dy, color='black',
+                                  length_includes_head=True, head_width=0.08)
+                else:
+                    plt.plot(new_conf.x, new_conf.y, 'o', color='red',
+                             ms=markersize)
+                self.offline.ts.g.add_edges_from(
+                                            display_data['forward edges added'])
+
+            if phase == 'backward':
+                new_conf = display_data['new configuration']
+                if display_data['forward state added'] is not None:
+                    plt.plot(new_conf.x, new_conf.y, 'o', color='green',
+                             ms=markersize)
+                else:
+                    plt.plot(new_conf.x, new_conf.y, 'o', color='red',
+                             ms=markersize)
+                for u, v in display_data['backward edges added']:
+                    dx, dy = v.x - u.x, v.y - u.y
+                    plt.arrow(u.x, u.y, dx, dy, color='black',
+                              length_includes_head=True, head_width=0.08)
+                self.offline.ts.g.add_edges_from(
+                                        display_data['backward edges added'])
+            return []
+
+        nframes = ((len(ctx.phases)-1) * ctx.max_detailed_iteration
+                    + len(rrg_data) + endframe_hold)
+        rrg_animation = animation.FuncAnimation(fig, run_rrg_anim,
+                            init_func=init_rrg_anim, save_count=nframes,
+                            interval=self.config['video-interval'], blit=False)
+        filename = os.path.join(self.config['output-dir'],
+                                self.config['video-file'])
+        rrg_animation.save(filename, writer=self.config['video-writer'],
+                           codec=self.config['video-codec'],
+                           metadata={'artist': 'Cristian-Ioan Vasile'})
 
 if __name__ == '__main__':
     import doctest

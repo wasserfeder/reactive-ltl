@@ -26,19 +26,20 @@ license_text='''
 '''
 
 import os
+import itertools as it
 
-import matplotlib.pyplot as plt
-import matplotlib.animation as animation
+from lomap import Ts
 
 from spaces.base import Workspace
 from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
-                          expandRegion, BoxBoundary2D, BallBoundary2D, Point2D
+                          expandRegion, BoxBoundary2D, BallBoundary2D, \
+                          PolygonBoundary2D, Point2D
 from robots import FullyActuatedRobot, SimulatedSensor
-from planning import RRGPlanner
-from graphics.planar import addStyle, Simulate2D, to_rgba, drawBallRegion2D
+from planning import RRGPlanner, Request, LocalPlanner
+from graphics.planar import addStyle, Simulate2D, drawBallRegion2D
 
 
-def postprocessing(logfilename, outdir):
+def postprocessing(logfilename, ts_filename, outdir):
     '''Parses log file and generate statistics and figures.'''
 
     if not os.path.isdir(outdir):
@@ -76,14 +77,34 @@ def postprocessing(logfilename, outdir):
         for line in logfile:
             prefix, line_data = line.split('--')
             if prefix.lower().rfind('info') >= 0:
-                if line_data.lower().find('starting playback') >= 0:
+                if line_data.lower().find('end global planning') >= 0:
                     break
                 rrg_stat_data.update(eval(line_data))
 
         assert rrg_stat_data['Iterations'] == len(rrg_data)
 
         # third process data on local planner
-        pass #TODO:
+        rrt_stat_data = dict()
+        for line in logfile:
+            prefix, line_data = line.split('--')
+            if prefix.lower().rfind('info') >= 0:
+                if line_data.lower().find('initialize local planner') >= 0:
+                    break
+                rrt_stat_data.update(eval(line_data))
+
+        rrt_data = []
+        execution_data = dict()
+        for line in logfile:
+            prefix, line_data = line.split('--')
+            if prefix.lower().rfind('info') >= 0:
+                if line_data.lower().find('local online planning finished') >=0:
+                    break
+                if line_data.lower().find('start local planning step') >= 0:
+                    if execution_data is not None:
+                        rrt_data.append(execution_data)
+                    execution_data = dict()
+                execution_data.update(eval(line_data))
+        #TODO: parse tree construction data?
 
     # get workspace
     wspace, style = data['Workspace']
@@ -102,7 +123,6 @@ def postprocessing(logfilename, outdir):
     # create simulation object
     sim = Simulate2D(wspace, robot, ewspace)
     sim.config['output-dir'] = outdir
-    sim.config['video-interval'] = 500
 
     # add regions to workspace
     for key, value in data.iteritems():
@@ -119,9 +139,24 @@ def postprocessing(logfilename, outdir):
             # add expanded region to the expanded workspace
             sim.expandedWorkspace.addRegion(er)
 
-    #TODO: get local requests and obstacles
+    # get local requests and obstacles
+    localSpec = data['Local specification']
     requests = []
     obstacles = []
+    for key, value in data.iteritems():
+        if isinstance(key, tuple) and key[0] == "Local region":
+            r, style, path, is_request = value
+            # add styles to region
+            addStyle(r, style=style)
+            # add path
+            if path:
+                r.path = it.cycle(path)
+            # add to requests or obstacles lists
+            if is_request:
+                name = next(iter(r.symbols))
+                requests.append(Request(r, name, localSpec[name]))
+            else:
+                obstacles.append(r)
 
     # get robot sensor
     robot.sensor = eval(data['Robot sensor constructor'])
@@ -139,115 +174,54 @@ def postprocessing(logfilename, outdir):
 
     # show construction of rrg
     sim.offline = RRGPlanner(robot, None, 1)
-    sim.offline.ts.init[robot.initConf] = 1
-
-    fig = plt.figure()
-    ax = fig.add_subplot(111, aspect='equal')
-
-    def init_rrg_anim():
-        sim.render(ax, expanded='both')
-        return []
-
-    endframe_hold = 4
-    rrg_display_data = iter(rrg_data + [rrg_data[-1]]*endframe_hold)
-    class LocalContext(object): pass
-    ctx = LocalContext()
-    ctx.phases = ('sampling', 'nearest', 'steering', 'forward', 'backward')
-    ctx.phases_remaning = iter([])
-    ctx.display_data = None
-    ctx.max_detailed_iteration = 20
-    def run_rrg_anim(frame, *args):
-        plt.cla()
-
-        try:
-            phase = next(ctx.phases_remaning)
-        except StopIteration:
-            ctx.display_data = next(rrg_display_data)
-            ctx.phases_remaning = iter(ctx.phases)
-            phase = next(ctx.phases_remaning)
-        display_data = ctx.display_data
-
-        print 'Iteration:', display_data['iteration'],
-        print 'Frame:', frame, '/', nframes
-
-        if display_data['iteration'] > ctx.max_detailed_iteration:
-            plt.title('iteration: {}'.format(display_data['iteration']))
-            sample = display_data['random configuration']
-            plt.plot(sample.x, sample.y, 'o', color='orange', markersize=12)
-            sim.offline.ts.g.add_edges_from(display_data['forward edges added'])
-            sim.offline.ts.g.add_edges_from(display_data['backward edges added'])
-            sim.render(ax, expanded=True, sensing_area=False)
-            ctx.phases_remaning = iter([])
-            return []
-
-        sim.render(ax, expanded=True, sensing_area=False)
-        plt.title('iteration: {}, phase: {}'.format(display_data['iteration'],
-                                                    phase))
-        if phase in ('sampling', 'nearest', 'steering'):
-            sample = display_data['random configuration']
-            plt.plot(sample.x, sample.y, 'o', color='orange', markersize=12)
-        if phase in ('nearest', 'steering'):
-            nearest = display_data['nearest state']
-            plt.plot(nearest.x, nearest.y, 'o', color='gray', alpha=.4,
-                     markersize=12)
-        if phase == 'steering':
-            new_conf = display_data['new configuration']
-            plt.plot(new_conf.x, new_conf.y, 'o', color='green', markersize=12)
-            plt.plot([nearest.x, new_conf.x], [nearest.y, new_conf.y],
-                     color='black', linestyle='dashed')
-
-        if phase == 'forward':
-            new_conf = display_data['new configuration']
-            eta = display_data['far'][1:]
-            drawBallRegion2D(ax, BallRegion2D(new_conf.coords, eta[1], set()),
-                             style={'color':'gray', 'alpha':.2})
-            drawBallRegion2D(ax, BallRegion2D(new_conf.coords, eta[0], set()),
-                             style={'color':'gray', 'alpha':.2})
-            if display_data['forward state added'] is not None:
-                plt.plot(new_conf.x, new_conf.y, 'o', color='green',
-                         markersize=12)
-                for u, v in display_data['forward edges added']:
-                    dx, dy = v.x - u.x, v.y - u.y
-                    plt.arrow(u.x, u.y, dx, dy, color='black',
-                              length_includes_head=True, head_width=0.08)
-            else:
-                plt.plot(new_conf.x, new_conf.y, 'o', color='red',
-                         markersize=12)
-            sim.offline.ts.g.add_edges_from(display_data['forward edges added'])
-
-        if phase == 'backward':
-            new_conf = display_data['new configuration']
-            if display_data['forward state added'] is not None:
-                plt.plot(new_conf.x, new_conf.y, 'o', color='green',
-                         markersize=12)
-            else:
-                plt.plot(new_conf.x, new_conf.y, 'o', color='red',
-                         markersize=12)
-            for u, v in display_data['backward edges added']:
-                dx, dy = v.x - u.x, v.y - u.y
-                plt.arrow(u.x, u.y, dx, dy, color='black',
-                          length_includes_head=True, head_width=0.08)
-            sim.offline.ts.g.add_edges_from(display_data['backward edges added'])
-
-        return []
-
-    nframes = ((len(ctx.phases)-1) * ctx.max_detailed_iteration
-                + len(rrg_data) + endframe_hold)
-    rrg_animation = animation.FuncAnimation(fig, run_rrg_anim,
-                            init_func=init_rrg_anim, save_count=nframes,
-                            interval=sim.config['video-interval'], blit=False)
-    filename = os.path.join(sim.config['output-dir'], 'rrg_construction.mp4')
-    rrg_animation.save(filename, writer=sim.config['video-writer'],
-                       codec=sim.config['video-codec'],
-                       metadata={'artist': 'Cristian-Ioan Vasile'})
+    sim.offline.ts.init[initConf] = 1
+    sim.config['video-interval'] = 500
+    sim.config['video-file'] = 'rrg_construction.mp4'
+    sim.save_rrg_process(rrg_data)
 
     # set to global and to save animation
     sim.config['video-interval'] = 30
     sim.config['sim-step'] = 0.01
+    sim.config['video-file'] = 'global_plan.mp4'
     sim.simulate(loops=2, offline=True)
     sim.play(output='video', show=False)
     sim.save()
 
+    # get online trajectory
+    sim.offline.ts = Ts.load(ts_filename)
+    trajectory = [d['new configuration'] for d in rrt_data]
+    local_plans = [d['local plan'] for d in rrt_data] + [[]]
+    potential = [d['potential'] for d in rrt_data] + [0]
+    requests = [d['requests'] for d in rrt_data] + [[]]
+    print len(trajectory), len(local_plans)
+
+    # local plan visualization
+    sim.online = LocalPlanner(None, sim.offline.ts, robot, localSpec)
+    sim.online.trajectory = trajectory
+    sim.config['video-interval'] = 30
+    sim.config['sim-step'] = 0.01
+    sim.config['video-file'] = 'local_plan.mp4'
+    sim.simulate(offline=False)
+    sim.play(output='video', show=False,
+             localinfo={'trajectory': trajectory, 'plans': local_plans,
+                        'potential': potential, 'requests': requests})
+    sim.save()
+    # TODO: local tree visualization
+#         if logging.getLogger().isEnabledFor(logging.DEBUG):
+#             ll = self.local_plan
+#
+#             logging.debug('plan to leaf: %s', plan_to_leaf)
+#             logging.debug('dest state: %s', dest_state)
+#
+#             logging.debug('free movement: %s', self.free_movement(dest_state))
+#
+#             self.local_plan = plan_to_leaf + self.free_movement(dest_state)
+#             self.sim.display(expanded=True, localinfo=('plan', 'trajectory'))
+#             self.local_plan = ll
+
+#                     self.sim.display(expanded=True, localinfo=('tree',))
+
 if __name__ == '__main__':
     postprocessing(logfilename='../data_ijrr/example1/ijrr_example_1.log',
+                   ts_filename='../data_ijrr/example1/ts.yaml',
                    outdir='../data_ijrr/example1')
