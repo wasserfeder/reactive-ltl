@@ -42,7 +42,7 @@ class IncrementalProduct(Model):
 
     def __init__(self, globalSpec):
         '''Constructor'''
-        Model.__init__(self)
+        Model.__init__(self, directed=True, multi=False)
 
         self.globalSpec = globalSpec # global specification
         # construct Buchi automaton from global LTL specification
@@ -61,9 +61,9 @@ class IncrementalProduct(Model):
         # Iterate over the initial states of the Buchi automaton
         init_buchi_states = [s for init_buchi in self.buchi.init
                         for s in self.buchi.next_states(init_buchi, symbols)]
-        init_pa_states = [((node, s), 1) for s in init_buchi_states]
+        init_pa_states = [(node, s) for s in init_buchi_states]
         self.g.add_nodes_from(init_pa_states) # add states to PA
-        self.init.update(init_pa_states) # mark states as initial
+        self.init.update([(p, 1) for p in init_pa_states]) # mark states as initial
         # mark final states in Buchi as final states in PA
         self.final.update([p for p in init_pa_states if p[1] in self.buchi.final])
         self.proj_ts[node] = set(init_buchi_states) # update projection of PA onto K
