@@ -77,7 +77,7 @@ class SimulatedSensor(Sensor):
         obstacles = [intersection(self.sensingShape, o)
                             for o in self.obstacles]
         obstacles = [o for o in obstacles if o is not None]
-        logging.debug('Sensor:sense: sensed obstacles: %s', obstacles)
+        logging.info('"Sensed obstacles": %s', obstacles)
 
         return requests, obstacles
 
