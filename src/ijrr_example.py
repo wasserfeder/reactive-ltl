@@ -162,17 +162,23 @@ def caseStudy():
                  (BallRegion2D([1.6, 2.1], 0.15, ['LO']), None, ('gray', 0.8))]
 
     # add style to local requests and obstacles
-    for r, path, c in requests + obstacles:
+    for k, (r, path, c) in enumerate(requests + obstacles):
         # add styles to region
-        addStyle(r, style={'facecolor': to_rgba(*c)}) #FIMXE: HACK
+        addStyle(r, style={'facecolor': to_rgba(*c)}) #FIXME: HACK
         # create path
+        r_path = path
         if path:
             wps, step = path
             wps = wps + [wps[0]]
             r.path = []
             for a, b in it.izip(wps[:-1], wps[1:]):
                 r.path += line_translate(a, b, step)
+            r_path = map(list, r.path)
             r.path = it.cycle(r.path)
+
+        logging.info('("Local region", %d): (%s, %s, %s, %d)', k, r, r.style,
+                     r_path, k < len(requests))
+
     # create request objects
     reqs = []
     for r, _, _ in requests:
@@ -234,6 +240,7 @@ def caseStudy():
     prefix, suffix = sim.offline.checker.globalPolicy(sim.offline.ts)
     sim.display(expanded='both', solution=prefix+suffix[1:])
     logging.info('"global policy": (%s, %s)', prefix, suffix)
+    logging.info('"End global planning": True')
 
     ############################################################################
     ### Execute on-line path planning algorithm ################################
@@ -252,14 +259,12 @@ def caseStudy():
     sim.online = LocalPlanner(sim.offline.checker, sim.offline.ts, robot,
                               localSpec)
 
-    # TODO: debug code, delete after use
-    sim.online.sim = sim
-
     # define number of surveillance cycles to run
-    cycles = 1
+    cycles = 2
     # execute controller
     cycle = -1 # number of completed cycles, -1 accounts for the prefix
     while cycle < cycles:
+        logging.info('"Start local planning step": True')
         # update the locally sensed requests and obstacles
         requests, obstacles = robot.sensor.sense()
         with Timer(op_name='local planning', template='"%s runtime": %f'):
@@ -274,14 +279,16 @@ def caseStudy():
         if sim.update():
             cycle += 1
 
-    ############################################################################
-    ### Display the local transition systems and the on-line control policy ####
-    ############################################################################
+    logging.info('"Local online planning finished": True')
 
-    # set to local and to save animation
-    sim.simulate(offline=False)
-    sim.play(output='video', show=True)
-#     sim.save() #TODO: uncomment on linux desktop
+#     ############################################################################
+#     ### Display the local transition systems and the on-line control policy ####
+#     ############################################################################
+# 
+#     # set to local and to save animation
+#     sim.simulate(offline=False)
+#     sim.play(output='video', show=True)
+# #     sim.save() #TODO: uncomment on linux desktop
 
 
 if __name__ == '__main__':
