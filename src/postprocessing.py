@@ -1,6 +1,6 @@
 '''
 .. module:: postprocessing.py
-   :synopsis: TODO:
+   :synopsis: Post-processing module of logged simulation data.
 
 .. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
 '''
@@ -28,6 +28,8 @@ license_text='''
 import os
 import itertools as it
 
+import numpy as np
+
 from lomap import Ts
 
 from spaces.base import Workspace
@@ -39,7 +41,7 @@ from planning import RRGPlanner, Request, LocalPlanner
 from graphics.planar import addStyle, Simulate2D, drawBallRegion2D
 
 
-def postprocessing(logfilename, ts_filename, outdir):
+def postprocessing(logfilename, ts_filename, outdir, lts_index, generate=()):
     '''Parses log file and generate statistics and figures.'''
 
     if not os.path.isdir(outdir):
@@ -104,7 +106,6 @@ def postprocessing(logfilename, ts_filename, outdir):
                         rrt_data.append(execution_data)
                     execution_data = dict()
                 execution_data.update(eval(line_data))
-        #TODO: parse tree construction data?
 
     # get workspace
     wspace, style = data['Workspace']
@@ -151,6 +152,7 @@ def postprocessing(logfilename, ts_filename, outdir):
             # add path
             if path:
                 r.path = it.cycle(path)
+                r.original_path = path[:]
             # add to requests or obstacles lists
             if is_request:
                 name = next(iter(r.symbols))
@@ -162,30 +164,35 @@ def postprocessing(logfilename, ts_filename, outdir):
     robot.sensor = eval(data['Robot sensor constructor'])
 
     # display workspace
-    sim.display()
+    if 'workspace' in generate:
+        sim.display()
 
     # display expanded workspace
-    sim.display(expanded=True)
+    if 'expanded workspace' in generate:
+        sim.display(expanded=True)
 
     # display solution for off-line problem
     prefix, suffix = rrg_stat_data['global policy']
     sim.solution = (prefix, suffix[1:])
-    sim.display(expanded='both', solution=prefix+suffix[1:])
+    if 'both workspaces' in generate:
+        sim.display(expanded='both', solution=prefix+suffix[1:])
 
     # show construction of rrg
     sim.offline = RRGPlanner(robot, None, 1)
     sim.offline.ts.init[initConf] = 1
-    sim.config['video-interval'] = 500
-    sim.config['video-file'] = 'rrg_construction.mp4'
-    sim.save_rrg_process(rrg_data)
+    if 'RRG construction' in generate:
+        sim.config['video-interval'] = 500
+        sim.config['video-file'] = 'rrg_construction.mp4'
+        sim.save_rrg_process(rrg_data)
 
     # set to global and to save animation
-    sim.config['video-interval'] = 30
-    sim.config['sim-step'] = 0.01
-    sim.config['video-file'] = 'global_plan.mp4'
-    sim.simulate(loops=2, offline=True)
-    sim.play(output='video', show=False)
-    sim.save()
+    if 'offline plan' in generate:
+        sim.config['video-interval'] = 30
+        sim.config['sim-step'] = 0.01
+        sim.config['video-file'] = 'global_plan.mp4'
+        sim.simulate(loops=2, offline=True)
+        sim.play(output='video', show=False)
+        sim.save()
 
     # get online trajectory
     sim.offline.ts = Ts.load(ts_filename)
@@ -198,30 +205,56 @@ def postprocessing(logfilename, ts_filename, outdir):
     # local plan visualization
     sim.online = LocalPlanner(None, sim.offline.ts, robot, localSpec)
     sim.online.trajectory = trajectory
-    sim.config['video-interval'] = 30
-    sim.config['sim-step'] = 0.01
-    sim.config['video-file'] = 'local_plan.mp4'
-    sim.simulate(offline=False)
-    sim.play(output='video', show=False,
-             localinfo={'trajectory': trajectory, 'plans': local_plans,
-                        'potential': potential, 'requests': requests})
-    sim.save()
-    # TODO: local tree visualization
-#         if logging.getLogger().isEnabledFor(logging.DEBUG):
-#             ll = self.local_plan
-#
-#             logging.debug('plan to leaf: %s', plan_to_leaf)
-#             logging.debug('dest state: %s', dest_state)
-#
-#             logging.debug('free movement: %s', self.free_movement(dest_state))
-#
-#             self.local_plan = plan_to_leaf + self.free_movement(dest_state)
-#             self.sim.display(expanded=True, localinfo=('plan', 'trajectory'))
-#             self.local_plan = ll
+    if 'online plan' in generate:
+        sim.config['video-interval'] = 30
+        sim.config['sim-step'] = 0.01
+        sim.config['video-file'] = 'local_plan.mp4'
+        sim.simulate(offline=False)
+        sim.play(output='video', show=False,
+                 localinfo={'trajectory': trajectory, 'plans': local_plans,
+                            'potential': potential, 'requests': requests})
+        sim.save()
 
-#                     self.sim.display(expanded=True, localinfo=('tree',))
+    msize = np.mean([d['tree size'] for d in rrt_data if d['tree size'] > 0])
+    print 'Mean size:', msize
+    for k, d in enumerate(rrt_data):
+        if d['tree size'] > 0:
+            print (k, d['tree size'])
+
+    idx = lts_index
+    print rrt_data[idx]['tree size']
+
+    lts_data = sorted([v for k, v in rrt_data[idx].items()
+                            if str(k).startswith('lts iteration')],
+                      key=lambda x: x[0])
+    print lts_data
+
+    sim.online.lts = Ts(directed=True, multi=False)
+    sim.online.lts.init[rrt_data[idx-1]['new configuration']] = 1
+    # reset and fast-forward requests' locations
+    for r in sim.robot.sensor.all_requests:
+        aux = it.cycle(r.region.original_path)
+        for _ in range(idx-1):
+            r.region.translate(next(aux))
+    sim.robot.sensor.requests = [r for r in sim.robot.sensor.all_requests
+                                       if r in rrt_data[idx]['requests']]
+    if 'LTS construction' in generate:
+        sim.config['video-interval'] = 500
+        sim.config['video-file'] = 'lts_construction.mp4'
+        sim.save_lts_process(lts_data, endframe_hold=20)
+
 
 if __name__ == '__main__':
     postprocessing(logfilename='../data_ijrr/example1/ijrr_example_1.log',
                    ts_filename='../data_ijrr/example1/ts.yaml',
-                   outdir='../data_ijrr/example1')
+                   outdir='../data_ijrr/example1',
+                   lts_index=126,
+                   generate=[ # Defines what media to generate 
+#                        'workspace',
+#                        'expanded workspace',
+#                        'both workspaces',
+#                        'RRG construction',
+#                        'offline plan',
+#                        'online plan',
+                       'LTS construction',
+                       ])
