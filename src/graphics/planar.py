@@ -491,7 +491,7 @@ class Simulate2D(object):
         ax = fig.add_subplot(111, aspect='equal')
 
         def init_rrg_anim():
-            self.render(ax, expanded='both')
+            self.render(ax, expanded=True)
             return []
 
         rrg_display_data = iter(rrg_data + [rrg_data[-1]]*endframe_hold)
@@ -590,6 +590,114 @@ class Simulate2D(object):
         rrg_animation.save(filename, writer=self.config['video-writer'],
                            codec=self.config['video-codec'],
                            metadata={'artist': 'Cristian-Ioan Vasile'})
+
+    def save_lts_process(self, rrt_data, markersize=10,
+                         max_detailed_iteration = 20, endframe_hold=4):
+        '''Saves a video with generation of the local RRT transition system.'''
+        # move robot to current configuration
+        conf = iter(self.online.lts.init).next()
+        self.robot.move(conf)
+        # reset local transition system
+        self.online.lts.g.clear()
+        self.online.lts.g.add_node(conf)
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, aspect='equal')
+
+        def init_lts_anim():
+            self.render(ax, expanded=True, localinfo=('tree',))
+            return []
+
+        rrt_display_data = iter(rrt_data + [rrt_data[-1]]*endframe_hold)
+        class LocalContext(object): pass
+        ctx = LocalContext()
+        ctx.phases = ('sampling', 'nearest', 'steering', 'check')
+        ctx.phases_remaning = iter([])
+        ctx.display_data = None
+        ctx.max_detailed_iteration = max_detailed_iteration
+        def run_lts_anim(frame, *args):
+            plt.cla()
+
+            try:
+                phase = next(ctx.phases_remaning)
+            except StopIteration:
+                ctx.display_data = next(rrt_display_data)
+                ctx.phases_remaning = iter(ctx.phases)
+                phase = next(ctx.phases_remaning)
+            (iteration, sample, nearest, new_conf, simple_segment, empty_buchi,
+             collision_free, hit, global_target_state) = ctx.display_data
+
+            print 'Iteration:', iteration,
+            print 'Frame:', frame, '/', nframes
+
+            if iteration > ctx.max_detailed_iteration:
+                plt.title('iteration: {}'.format(iteration))
+                if hit and frame > nframes-endframe_hold:
+                    u, v = new_conf, global_target_state
+                    dx, dy = v.x - u.x, v.y - u.y
+                    plt.arrow(u.x, u.y, dx, dy, color='yellow',
+                              length_includes_head=True, head_width=0.02)
+                else:
+                    plt.plot(sample.x, sample.y, 'o', color='orange',
+                             ms=markersize)
+                if collision_free:
+                    self.online.ts.g.add_edge(nearest, new_conf)
+                self.render(ax, expanded=True, localinfo=('tree',))
+                ctx.phases_remaning = iter([])
+                return []
+
+            self.render(ax, expanded=True, localinfo=('tree',))
+            plt.title('iteration: {}, phase: {}'.format(iteration, phase))
+            if phase in ('sampling', 'nearest', 'steering'):
+                plt.plot(sample.x, sample.y, 'o', color='orange', ms=markersize)
+            if phase in ('nearest', 'steering'):
+                plt.plot(nearest.x, nearest.y, 'o', color='gray', alpha=.4,
+                         ms=markersize)
+            if phase == 'steering':
+                plt.plot(new_conf.x, new_conf.y, 'o', color='green',
+                         ms=markersize)
+                plt.plot([nearest.x, new_conf.x], [nearest.y, new_conf.y],
+                         color='black', linestyle='dashed')
+
+            if phase == 'check':
+                if collision_free:
+                    if hit:
+                        color = 'yellow'
+                    else:
+                        color = 'green'
+                    plt.plot(new_conf.x, new_conf.y, 'o', color=color,
+                             ms=markersize)
+                    arrows = [(nearest, new_conf, 'black')]
+                    if hit and frame >= nframes-endframe_hold:
+                        arrows.append((new_conf, global_target_state, 'yellow'))
+                    for u, v, c in arrows:
+                        dx, dy = v.x - u.x, v.y - u.y
+                        plt.arrow(u.x, u.y, dx, dy, color=c,
+                                  length_includes_head=True, head_width=0.02)
+                    self.online.ts.g.add_edge(nearest, new_conf)
+                else:
+                    if not simple_segment:
+                        c = 'violet'
+                    elif not empty_buchi:
+                        c = 'magenta'
+                    else:
+                        c = 'red'
+                    plt.plot(new_conf.x, new_conf.y, 'o', color=c,
+                             ms=markersize)
+
+            return []
+
+        nframes = ((len(ctx.phases)-1) * ctx.max_detailed_iteration
+                    + len(rrt_data) + endframe_hold)
+        rrt_animation = animation.FuncAnimation(fig, run_lts_anim,
+                            init_func=init_lts_anim, save_count=nframes,
+                            interval=self.config['video-interval'], blit=False)
+        filename = os.path.join(self.config['output-dir'],
+                                self.config['video-file'])
+        rrt_animation.save(filename, writer=self.config['video-writer'],
+                           codec=self.config['video-codec'],
+                           metadata={'artist': 'Cristian-Ioan Vasile'})
+
 
 if __name__ == '__main__':
     import doctest
