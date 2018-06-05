@@ -27,6 +27,7 @@
 '''
 
 import logging
+import itertools as it
 from collections import namedtuple
 
 import numpy as np
@@ -113,6 +114,7 @@ class LocalPlanner(object):
         # set max steer step size eta and sensing radius
         self.eta = eta
 
+        self.detailed_logging = False
         logging.info('"initialize local planner": True')
         self.log()
 
@@ -303,7 +305,7 @@ class LocalPlanner(object):
         target = self.tracking_req
 
         # 1. initialize local ts
-        self.lts = Ts()
+        self.lts = Ts(multi=False)
         # add current state to local ts
         global_prop = self.robot.getSymbols(self.robot.currentConf)
         local_prop = self.robot.getSymbols(self.robot.currentConf, local=True)
@@ -312,8 +314,10 @@ class LocalPlanner(object):
                        hit=(target.name in local_prop) if target else False)
 
         dest_state = self.robot.currentConf
+        cnt = it.count()
         # test if solution was found
         while not self.test(dest_state):
+            iteration = cnt.next()
             # 3. generate sample
             random_sample = self.robot.sample(local=True)
             # 4. get nearest neighbor in local ts
@@ -324,15 +328,19 @@ class LocalPlanner(object):
             dest_global_prop = self.robot.getSymbols(dest_state)
             dest_local_prop = self.robot.getSymbols(dest_state, local=True)
 
-            if self.robot.isSimpleSegment(source_state, dest_state):
+            simple_segment = self.robot.isSimpleSegment(source_state, dest_state)
+            empty_buchi = collision_free = hit = None
+            if simple_segment:
                 # 7. compute Buchi states for new sample
                 source_data = self.lts.g.node[source_state]
                 B = monitor(source_data['buchi_states'], self.pa.buchi,
                             source_data['global_prop'], dest_global_prop)
+                empty_buchi = len(B) > 0
 
                 if B:
-                    if self.robot.collision_free_segment(source_state,
-                                                  dest_state, local_obstacles):
+                    collision_free = self.robot.collision_free_segment(
+                                    source_state, dest_state, local_obstacles)
+                    if collision_free:
                         # 8. update local transition system
                         hit = False
                         if target:
@@ -344,10 +352,16 @@ class LocalPlanner(object):
                                             buchi_states=B, hit=hit)
                         self.lts.g.add_edge(source_state, dest_state)
 
+            if self.detailed_logging:
+                logging.info('"lts iteration %d" : '
+                             '(%d, %s, %s, %s, %s, %s, %s, %s, %s)',
+                             iteration, iteration,
+                             random_sample, source_state, dest_state,
+                             simple_segment, empty_buchi, collision_free, hit,
+                             self.global_target_state if hit else None)
+
             if dest_state not in self.lts.g:
                 dest_state = None
-
-            # TODO: save relevant data here
 
         # 11. return local plan
         plan_to_leaf = nx.shortest_path(self.lts.g, self.robot.currentConf,

@@ -258,6 +258,7 @@ def caseStudy():
     # initialize local on-line RRT planner
     sim.online = LocalPlanner(sim.offline.checker, sim.offline.ts, robot,
                               localSpec)
+    sim.online.detailed_logging = True
 
     # define number of surveillance cycles to run
     cycles = 2
