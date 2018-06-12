@@ -104,11 +104,12 @@ class Cozmo(Robot):
         if (not regU) and (not regV):
             return nrRegUV == 0
         # if one endpoint is in the free space
-        if (not regU) or (not regV): # FIXME: assumes convex regions
+        if (not regU) or (not regV): # NOTE: assumes convex regions
             return nrRegUV == 1
         # if both endpoints are in the same region
         if regU[0] == regV[0]:
-            # and regU.contains(u, v): # TODO: uncomment for non-convex regions
+            # NOTE: experimental for non-convex regions
+            # and regU.contains(u, v):
             return nrRegUV == 1
         # if the endpoints belong to two different regions
         return nrRegUV == 2
