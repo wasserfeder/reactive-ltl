@@ -282,15 +282,6 @@ def caseStudy():
 
     logging.info('"Local online planning finished": True')
 
-#     ############################################################################
-#     ### Display the local transition systems and the on-line control policy ####
-#     ############################################################################
-# 
-#     # set to local and to save animation
-#     sim.simulate(offline=False)
-#     sim.play(output='video', show=True)
-# #     sim.save() #TODO: uncomment on linux desktop
-
 
 if __name__ == '__main__':
     np.random.seed(1001)
