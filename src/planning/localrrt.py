@@ -165,9 +165,7 @@ class LocalPlanner(object):
         target = self.tracking_req.name
         for conf in self.local_plan:
             if target in self.robot.getSymbols(conf, local=True):
-#                 logging.debug("local_plan_hit: True!")
                 return True
-#         logging.debug("local_plan_hit: False!")
         return False
 
     def check_local_plan(self):
@@ -201,7 +199,6 @@ class LocalPlanner(object):
         # 2. check that path is collision free
         assert self.local_plan[-1] in self.ts.g # last state is global
         r = self.robot.collision_free(self.local_plan, self.obstacles)
-#         logging.debug('Collision check with local obstacles: %s', r)
         return r
 
     def update(self):
@@ -232,6 +229,46 @@ class LocalPlanner(object):
         opt_next_state, _ = opt_pa_next_state
         return opt_next_state
 
+    def connection_global_state(self, state, B):
+        '''Computes the global state the state of the local TS should connect
+        to. The choice is made to minimize potential first, and then distance.
+        Search radius is given by the currently stored global target state.
+        '''
+        if state is None or not B:
+            return None
+
+        r = max(1, norm(state.coords - self.global_target_state.coords))
+        near_ts_states = [x for x in self.ts.g.nodes_iter()
+                                        if norm(state.coords - x.coords) <= r]
+        assert self.global_target_state in near_ts_states
+
+        global_state = None
+        min_potential = float('inf')
+        min_dist = float('inf')
+        src_global_prop = self.robot.getSymbols(state)
+        for x in near_ts_states:
+            if self.robot.isSimpleSegment(state, x):
+                dist = norm(state.coords - x.coords)
+                dest_global_prop = self.robot.getSymbols(x)
+                B_next = monitor(B, self.pa.buchi,
+                                 src_global_prop, dest_global_prop)
+                potential = get_actual_potential(x, B_next, self.pa)
+                if (global_state is None or potential < min_potential
+                        or (potential == min_potential and dist < min_dist)):
+                    global_state = x
+                    min_potential = potential
+                    min_dist = dist
+
+        # check for progress with respect to global mission specification
+        if min_potential >= self.potential > 0:
+            global_state = None
+
+        if global_state: # check for collision w.r.t. local obstacles 
+            if not self.robot.collision_free_segment(state, global_state,
+                                                 self.obstacles):
+                global_state = None
+        return global_state
+
     def free_movement(self, current_state=None):
         '''Assumes that it can find a solution from the current position to the
         stored target global ts state.
@@ -256,28 +293,6 @@ class LocalPlanner(object):
                         for a in np.arange(0, 1, self.eta/dist)][1:]
         points.append(self.PointCls(final_state))
         return points
-
-    def test(self, state):
-        ''' Test if target was hit and can be connected to global ts.
-        NOTE: state must not be in the global ts.
-        '''
-        if not state: # the state is invalid
-            return False
-        if state in self.ts.g: # local nodes may not be in the global ts
-            return False
-
-        # test if the target was hit
-        target = self.tracking_req
-        if target:
-            if not self.lts.g.node[state]['hit']:
-                return False
-
-        r = self.robot.collision_free_segment(state, self.global_target_state,
-                                              self.obstacles)
-
-        # test if the node can be connected to the global ts
-        return (self.robot.isSimpleSegment(state, self.global_target_state)
-                and r)
 
     def generate_local_plan(self):
         '''Generates the local plan from the current configuration.
@@ -313,10 +328,10 @@ class LocalPlanner(object):
                        buchi_states=self.buchi_states,
                        hit=(target.name in local_prop) if target else False)
 
-        dest_state = self.robot.currentConf
+        done = False
         cnt = it.count()
         # test if solution was found
-        while not self.test(dest_state):
+        while not done:
             iteration = cnt.next()
             # 3. generate sample
             random_sample = self.robot.sample(local=True)
@@ -329,7 +344,7 @@ class LocalPlanner(object):
             dest_local_prop = self.robot.getSymbols(dest_state, local=True)
 
             simple_segment = self.robot.isSimpleSegment(source_state, dest_state)
-            empty_buchi = collision_free = hit = None
+            empty_buchi = collision_free = hit = global_state = None
             if simple_segment:
                 # 7. compute Buchi states for new sample
                 source_data = self.lts.g.node[source_state]
@@ -342,7 +357,7 @@ class LocalPlanner(object):
                                     source_state, dest_state, local_obstacles)
                     if collision_free:
                         # 8. update local transition system
-                        hit = False
+                        hit = True # all samples hit when there are not targets
                         if target:
                             hit = ((target.name in dest_local_prop)
                                                         or source_data['hit'])
@@ -352,16 +367,21 @@ class LocalPlanner(object):
                                             buchi_states=B, hit=hit)
                         self.lts.g.add_edge(source_state, dest_state)
 
+                        if hit:
+                            # test if the node can be connected to the global ts
+                            global_state = self.connection_global_state(
+                                                                dest_state, B)
+                            if global_state:
+                                self.global_target_state = global_state
+                                done = True
+
             if self.detailed_logging:
                 logging.info('"lts iteration %d" : '
                              '(%d, %s, %s, %s, %s, %s, %s, %s, %s)',
                              iteration, iteration,
                              random_sample, source_state, dest_state,
                              simple_segment, empty_buchi, collision_free, hit,
-                             self.global_target_state if hit else None)
-
-            if dest_state not in self.lts.g:
-                dest_state = None
+                             global_state)
 
         # 11. return local plan
         plan_to_leaf = nx.shortest_path(self.lts.g, self.robot.currentConf,
