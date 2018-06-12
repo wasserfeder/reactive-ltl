@@ -143,19 +143,19 @@ def addStyle(region, style=None, withText=True, text=None, textStyle=None):
         region.textStyle = None
 
 def drawRobot2D(viewport, robot, size, text='', textStyle=None,
-                sensing_area=True):
+                sensing_area=True, zorder=2):
     '''Draws the robot with its sensing area in the viewport.'''
     x, y = robot.currentConf.coords
     #TODO: make this general
     if sensing_area:
         sensingShape = BallBoundary2D([x, y], robot.sensor.sensingShape.radius)
         style = {'facecolor': (0, 0, 1, 0.2), 'edgecolor': (0, 0, 1, 0.2),
-                 'fill': True}
+                 'fill': True, 'zorder': zorder}
         drawBoundary2D(viewport, sensingShape, style)
 
-    style = {'facecolor': 'blue', 'edgecolor':'black'}
+    style = {'facecolor': 'blue', 'edgecolor':'black', 'zorder': zorder}
     if size == 0:
-        plt.plot(x, y, 'o', color=style['facecolor'], zorder=2)
+        plt.plot(x, y, 'o', color=style['facecolor'], zorder=zorder)
     else:
         c = plt.Circle(robot.currentConf.coords, size, **style)
         viewport.add_artist(c)
@@ -165,17 +165,17 @@ def drawRobot2D(viewport, robot, size, text='', textStyle=None,
         else:
             viewport.text(x, y, text)
 
-def drawGraph(viewport, g, node_color='blue', edge_color='black'):
+def drawGraph(viewport, g, node_color='blue', edge_color='black', zorder=2):
     '''Plots the given graph in the viewport.'''
     for u in g.nodes_iter():
-        plt.plot(u.x, u.y, 'o', color=node_color)
+        plt.plot(u.x, u.y, 'o', color=node_color, zorder=zorder+1)
 
     for u, v in g.edges_iter():
         x = (u.x, v.x)
         y = (u.y, v.y)
-        plt.plot(x, y, color=edge_color)
+        plt.plot(x, y, color=edge_color, zorder=zorder)
 
-def drawPolicy(viewport, solution, color='black', alpha_min=1.0):
+def drawPolicy(viewport, solution, color='black', alpha_min=1.0, zorder=2):
     '''Draws the a solution path with a fading effect.'''
     if alpha_min == 1.0:
         transparency = it.repeat(1.0)
@@ -185,7 +185,7 @@ def drawPolicy(viewport, solution, color='black', alpha_min=1.0):
     for u, v, a in it.izip(solution, solution[1:], transparency):
         dx, dy = v.x - u.x, v.y - u.y
         plt.arrow(u.x, u.y, dx, dy, hold=True, color=color, alpha=a,
-                  length_includes_head=True, head_width=0.08)
+                  length_includes_head=True, head_width=0.08, zorder=zorder)
 
 
 class Simulate2D(object):
@@ -233,6 +233,8 @@ class Simulate2D(object):
         self.config['trajectory-min-transparency'] = 0.2
         self.config['local-plan-color'] = 'green'
 
+        self.config['background-transparency'] = 1.0
+
         self.config['video-file'] = self.config.get('video-file', 'video.mp4')
         self.config['video-interval'] = self.config.get('video-interval', 1000)
         self.config['video-writer'] = self.config.get('video-writer', None)
@@ -240,6 +242,23 @@ class Simulate2D(object):
         self.config['image-file-template'] = \
           self.config.get('image-file-template', 'frames/frame_{frame:04d}.png')
         self.config['output-dir'] = self.config.get('output-dir', '.')
+
+        self.config['z-order'] = {
+            'background'          : 0,
+            'boundary'            : 1,
+            'global region'       : 2,
+            'global region text'  : 3,
+            'local obstacle'      : 4,
+            'local obstacle text' : 5,
+            'request'             : 6,
+            'request text'        : 7,
+            'global ts'           : 8,
+            'global plan'         : 10,
+            'local ts'            : 11,
+            'trajectory'          : 13,
+            'local plan'          : 14,
+            'robot'               : 15,
+            }
 
     def loadConfiguration(self, filename):
         pass
@@ -268,10 +287,13 @@ class Simulate2D(object):
 
     def render(self, viewport, expanded=False, solution=None, withtext=True,
                localinfo=None, sensing_area=True):
+        zorder = self.config['z-order']
+
         if expanded:
             wp = self.expandedWorkspace
         else:
             wp = self.workspace
+        wp.boundary.style['zorder'] = zorder['boundary']
 
         limits = wp.boundary.boundingBox()
         plt.xlim(limits[0] + np.array([-1, 1]) * self.config['x-padding'])
@@ -283,15 +305,17 @@ class Simulate2D(object):
         if self.config.get('background', None):
             img = plt.imread(self.config['background'])
             img = np.flipud(img)
-            plt.imshow(img, origin='lower', extent=limits.flatten(), zorder=0,
-#                        alpha=0.5
-                       )
+            plt.imshow(img, origin='lower', extent=limits.flatten(),
+                       zorder=zorder['background'],
+                       alpha=self.config['background-transparency'])
 
         # draw regions
         for r in wp.regions:
+            r.style['zorder'] = zorder['global region']
             text = None
             if withtext:
                 text = r.text
+                r.textStyle['zorder'] = zorder['global region text']
             drawRegion2D(viewport, r, r.style, text, r.textStyle)
 
         # draw boundary
@@ -299,23 +323,27 @@ class Simulate2D(object):
 
         # draw robot
         r = 0 if expanded else self.robot.diameter/2
-        drawRobot2D(viewport, self.robot, size=r, sensing_area=sensing_area)
+        drawRobot2D(viewport, self.robot, size=r, sensing_area=sensing_area,
+                    zorder=zorder['robot'])
 
         if solution is not None:
-            drawPolicy(viewport, solution)
+            drawGraph(viewport, self.offline.ts.g, zorder=zorder['global ts'],
+                      node_color='gray', edge_color='gray')
+            drawPolicy(viewport, solution, zorder=zorder['global plan'])
         else:
-            if self.offline is not None:
-                # draw transition system
-                drawGraph(viewport, self.offline.ts.g)
+            if self.offline is not None: # draw transition system
+                drawGraph(viewport, self.offline.ts.g, zorder=zorder['global ts'])
 
         # draw local regions/plans/data
         if self.online is not None:
             for req in self.robot.sensor.requests:
                 r = req.region
+                r.style['zorder'] = zorder['request']
                 text = None
                 if withtext:
-                    text = req.region.text
-                if req in self.online.requests: #FIXME: bug in displaying requests
+                    text = r.text
+                    r.textStyle['zorder'] = zorder['request text']
+                if req in self.online.requests:
                     r.style['facecolor'] = r.style['facecolor'][:3] \
                             + (self.config['request-transparency'],)
                 else:
@@ -325,23 +353,26 @@ class Simulate2D(object):
                 drawRegion2D(viewport, r, r.style, text, r.textStyle)
 
             for r in self.robot.sensor.obstacles:
+                r.style['zorder'] = zorder['local obstacle']
                 text = None
                 if withtext:
                     text = r.text
+                    r.textStyle['zorder'] = zorder['local obstacle text']
                 drawRegion2D(viewport, r, r.style, text, r.textStyle)
 
             if 'tree' in localinfo and self.online.lts:
-                drawGraph(viewport, self.online.lts.g)
+                drawGraph(viewport, self.online.lts.g, zorder=zorder['local ts'])
             if 'trajectory' in localinfo:
                 # compute history 
                 history = self.config['trajectory-history-length']
                 start = max(0, len(self.online.trajectory) - history)
                 drawPolicy(viewport, self.online.trajectory[start:],
                            color=self.config['trajectory-color'],
-                           alpha_min=self.config['trajectory-min-transparency'])
+                           alpha_min=self.config['trajectory-min-transparency'],
+                           zorder=zorder['trajectory'])
             if 'plan' in localinfo:
                 local_plan = self.online.local_plan
-                drawPolicy(viewport, local_plan, 
+                drawPolicy(viewport, local_plan, zorder=zorder['local plan'],
                            color=self.config['local-plan-color'])
 
     def update(self):
@@ -434,8 +465,7 @@ class Simulate2D(object):
             
             self.step()
             plt.cla()
-            self.render(ax, expanded=True, solution=[], localinfo=[])
-            self.render(ax, expanded=False, solution=policy,
+            self.render(ax, expanded=True, solution=policy,
                         localinfo=rendering_options)
             return []
 
