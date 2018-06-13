@@ -8,7 +8,7 @@
 
 '''
     Defines the case study presented in the IJRR journal paper.
-    Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
+    Copyright (C) 2014-2018  Cristian Ioan Vasile <cvasile@bu.edu>
     Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
     Boston University
 
@@ -28,17 +28,17 @@
 
 import os, sys
 import logging
-import itertools as it
 
 import numpy as np
 
-from spaces.base import Workspace, line_translate
+from spaces.base import Workspace
 from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
                           expandRegion, BoxBoundary2D, BallBoundary2D, Point2D
 from robots import Cozmo, CozmoSensor
 
 from planning import RRGPlanner, LocalPlanner, Request
-from models import IncrementalProduct, compute_potentials
+from models import IncrementalProduct
+from lomap import compute_potentials
 from graphics.planar import addStyle, Simulate2D, to_rgba
 from lomap import Timer
 
@@ -52,7 +52,8 @@ def caseStudy():
         os.makedirs(outputdir)
 
     # configure logging
-    fs, dfs = '%(asctime)s %(levelname)s %(message)s', '%m/%d/%Y %I:%M:%S %p'
+    fs = '%(asctime)s [%(levelname)s] -- { %(message)s }'
+    dfs = '%m/%d/%Y %I:%M:%S %p'
     loglevel = logging.DEBUG
     logfile = os.path.join(outputdir, 'ijrr_example_2.log')
     verbose = True
@@ -91,7 +92,15 @@ def caseStudy():
     robot.diameter = robotDiameter
     robot.localObst = 'local_obstacle'
 
-    logging.info('Conf space: %s', robot.cspace)
+    logging.info('"Workspace": (%s, %s)', wspace, boundary.style)
+    logging.info('"Expanded workspace": (%s, %s)', ewspace, eboundary.style)
+    logging.info('"Robot name": "%s"', robot.name)
+    logging.info('"Robot initial configuration": %s', robot.initConf)
+    logging.info('"Robot step size": %f', robot.controlspace)
+    logging.info('"Robot diameter": %f', robot.diameter)
+    logging.info('"Robot constructor": "%s"',
+        'Cozmo(robot_name, init=initConf, wspace=ewspace, stepsize=stepsize)')
+    logging.info('"Local obstacle label": "%s"', robot.localObst)
 
     # create simulation object
     sim = Simulate2D(wspace, robot, ewspace)
@@ -116,7 +125,7 @@ def caseStudy():
     regions = [R1, R2, R3, R4, O1, O2, O3, O4]
 
     # add regions to workspace
-    for r, c in regions:
+    for k, (r, c) in enumerate(regions):
         # add styles to region
         addStyle(r, style={'facecolor': c})
         # add region to workspace
@@ -127,6 +136,8 @@ def caseStudy():
         addStyle(er, style={'facecolor': c})
         # add expanded region to the expanded workspace
         sim.expandedWorkspace.addRegion(er)
+
+        logging.info('("Global region", %d): (%s, %s)', k, r, r.style)
 
     # local  requests
     F1 = (BallRegion2D([3.24, 1.98], 0.2, ['fire']), ('orange', 0.5))
@@ -141,10 +152,13 @@ def caseStudy():
     obstacles = []
 
     # add style to local requests and obstacles
-    for r, c in requests:
+    for k, (r, c) in enumerate(requests + obstacles):
         # add styles to region
         addStyle(r, style={'facecolor': to_rgba(*c)}) #FIMXE: HACK
         r.cube_color = localSpec_cube_color[next(iter(r.symbols))]
+
+        logging.info('("Local region", %d): (%s, %s, %s, %d)', k, r, r.style,
+                     None, k < len(requests))
 
     # create request objects
     reqs = []
@@ -158,6 +172,9 @@ def caseStudy():
     sensingShape = BallBoundary2D([0, 0], 0.5)
     robot.sensor = CozmoSensor(robot, sensingShape, requests, obstacles)
     robot.sensor.reset()
+
+    logging.info('"Robot sensor constructor": "%s"',
+        'CozmoSensor(robot, BallBoundary2D([0, 0], 0.5), requests, obstacles)')
 
     # display workspace
     sim.display()
@@ -182,16 +199,16 @@ def caseStudy():
     sim.offline = RRGPlanner(robot, checker, None, iterations=1000)
     sim.offline.eta = [0.5, 1.0] # good bounds for the planar case study
 
-    with Timer():
-        if sim.offline.solve():
-            logging.info('Found solution!')
-        else:
-            logging.info('No solution found!')
+    logging.info('"Start global planning": True')
+    with Timer(op_name='global planning', template='"%s runtime": %f'):
+        found = sim.offline.solve()
+        logging.info('"Found solution": %s', found)
+        if not found:
             return
 
-    logging.info('Finished in %d iterations!', sim.offline.iteration)
-    logging.info('Size of TS: %s', sim.offline.ts.size())
-    logging.info('Size of PA: %s', sim.offline.checker.size())
+    logging.info('"Iterations": %d', sim.offline.iteration)
+    logging.info('"Size of TS": %s', sim.offline.ts.size())
+    logging.info('"Size of PA": %s', sim.offline.checker.size())
 
     # save global transition system and control policy
     sim.offline.ts.save(os.path.join(outputdir, 'ts.yaml'))
@@ -205,39 +222,31 @@ def caseStudy():
     sim.display(expanded=False, solution=prefix)
     sim.display(expanded=False, solution=suffix)
     sim.display(expanded=False, solution=prefix+suffix[1:])
-
-    # set to global and to save animation
-    sim.simulate(loops=2, offline=True)
-#     sim.play(output='video') # TODO: uncomment on linux desktop, show=False)
-#     sim.save() # TODO: uncomment on linux desktop
+    logging.info('"global policy": (%s, %s)', prefix, suffix)
+    logging.info('"End global planning": True')
 
     # move to start position
     startConf = next(iter(sim.path))
-    logging.info('Moving to start configuration: %s', startConf)
+    logging.debug('Moving to start configuration: %s', startConf)
     sim.robot.move(startConf)
 
-    # execute computed path satisfying the global specification
-#     while sim.step():
-#         pass
-#     return
     ############################################################################
     ### Execute on-line path planning algorithm ################################
     ############################################################################
 
     # compute potential for each state of PA
-    with Timer('Computing potential function'):
+    with Timer(op_name='Computing potential function',
+               template='"%s runtime": %f'):
         if not compute_potentials(sim.offline.checker):
             return
 
-    # FIXME: HACK
+    # set the step size for the local controller
     robot.controlspace = 0.1
 
     # initialize local on-line RRT planner
     sim.online = LocalPlanner(sim.offline.checker, sim.offline.ts, robot,
                               localSpec)
-
-    # TODO: debug code, delete after use
-    sim.online.sim = sim
+    sim.online.detailed_logging = True
 
     # define number of surveillance cycles to run
     cycles = 2
@@ -246,41 +255,24 @@ def caseStudy():
     while cycle < cycles:
         # update the locally sensed requests and obstacles
         requests, obstacles = robot.sensor.sense()
-        with Timer('local planning'):
+        # TODO: sense robot location
+        # TODO: update index in local plan
+        # TODO: add logging marker for start time for planning
+        with Timer(op_name='local planning', template='"%s runtime": %f'):
             # feed data to planner and get next control input
             nextConf = sim.online.execute(requests, obstacles)
+        # TODO: add logging marker for stop time for planning
 
 #         sim.display(expanded=True, localinfo=('plan', 'trajectory'))
 
-        # enforce movement
-        robot.move(nextConf)
+        # enforce movement along plan
+        # FIXME: should pass only plan
+        robot.move([nextConf] + sim.online.local_plan)
         # if completed cycle increment cycle
         if sim.update():
             cycle += 1
 
-    ############################################################################
-    ### Display the local transition systems and the on-line control policy ####
-    ############################################################################
-
-    # save data # TODO: move this to some post-processing function and make it
-    # incremental
-    with open(os.path.join(outputdir, 'trajectory.txt'), 'w') as fout:
-        print>>fout, sim.online.trajectory
-    with open(os.path.join(outputdir, 'buchi_states.txt'), 'w') as fout:
-        print>>fout, sim.online.buchi_states
-    with open(os.path.join(outputdir, 'potential.txt'), 'w') as fout:
-        print>>fout, sim.online.potential
-    with open(os.path.join(outputdir, 'durations.txt'), 'w') as fout:
-        print>>fout, sim.online.durations
-    with open(os.path.join(outputdir, 'sizes.txt'), 'w') as fout:
-        print>>fout, sim.online.sizes
-
-
-#     # set to local and to save animation
-#     sim.simulate(offline=False)
-#     sim.play(output='video', show=True)
-#     sim.save() #TODO: uncomment on linux desktop
-
+    logging.info('"Local online planning finished": True')
 
 if __name__ == '__main__':
     np.random.seed(1002)
