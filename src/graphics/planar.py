@@ -631,6 +631,8 @@ class Simulate2D(object):
         self.online.lts.g.clear()
         self.online.lts.g.add_node(conf)
 
+        zorder = self.config['z-order']
+
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect='equal')
 
@@ -645,6 +647,7 @@ class Simulate2D(object):
         ctx.phases_remaning = iter([])
         ctx.display_data = None
         ctx.max_detailed_iteration = max_detailed_iteration
+
         def run_lts_anim(frame, *args):
             plt.cla()
 
@@ -666,10 +669,11 @@ class Simulate2D(object):
                     u, v = new_conf, global_target_state
                     dx, dy = v.x - u.x, v.y - u.y
                     plt.arrow(u.x, u.y, dx, dy, color='yellow',
-                              length_includes_head=True, head_width=0.02)
+                              length_includes_head=True, head_width=0.02,
+                              zorder=zorder['local ts'])
                 else:
                     plt.plot(sample.x, sample.y, 'o', color='orange',
-                             ms=markersize)
+                             ms=markersize, zorder=zorder['local ts'])
                 if collision_free:
                     self.online.ts.g.add_edge(nearest, new_conf)
                 self.render(ax, expanded=True, localinfo=('tree',))
@@ -679,15 +683,17 @@ class Simulate2D(object):
             self.render(ax, expanded=True, localinfo=('tree',))
             plt.title('iteration: {}, phase: {}'.format(iteration, phase))
             if phase in ('sampling', 'nearest', 'steering'):
-                plt.plot(sample.x, sample.y, 'o', color='orange', ms=markersize)
+                plt.plot(sample.x, sample.y, 'o', color='orange', ms=markersize,
+                         zorder=zorder['local ts'])
             if phase in ('nearest', 'steering'):
                 plt.plot(nearest.x, nearest.y, 'o', color='gray', alpha=.4,
-                         ms=markersize)
+                         ms=markersize, zorder=zorder['local ts'])
             if phase == 'steering':
                 plt.plot(new_conf.x, new_conf.y, 'o', color='green',
                          ms=markersize)
                 plt.plot([nearest.x, new_conf.x], [nearest.y, new_conf.y],
-                         color='black', linestyle='dashed')
+                         color='black', linestyle='dashed',
+                         zorder=zorder['local ts'])
 
             if phase == 'check':
                 if collision_free:
@@ -696,14 +702,15 @@ class Simulate2D(object):
                     else:
                         color = 'green'
                     plt.plot(new_conf.x, new_conf.y, 'o', color=color,
-                             ms=markersize)
+                             ms=markersize, zorder=zorder['local ts'])
                     arrows = [(nearest, new_conf, 'black')]
                     if hit and frame >= nframes-endframe_hold:
                         arrows.append((new_conf, global_target_state, 'yellow'))
                     for u, v, c in arrows:
                         dx, dy = v.x - u.x, v.y - u.y
                         plt.arrow(u.x, u.y, dx, dy, color=c,
-                                  length_includes_head=True, head_width=0.02)
+                                  length_includes_head=True, head_width=0.02,
+                                  zorder=zorder['local ts'])
                     self.online.ts.g.add_edge(nearest, new_conf)
                 else:
                     if not simple_segment:
@@ -713,7 +720,7 @@ class Simulate2D(object):
                     else:
                         c = 'red'
                     plt.plot(new_conf.x, new_conf.y, 'o', color=c,
-                             ms=markersize)
+                             ms=markersize, zorder=zorder['local ts'])
 
             return []
 
