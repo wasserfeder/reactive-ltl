@@ -179,7 +179,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index, generate=()):
 
     # show construction of rrg
     sim.offline = RRGPlanner(robot, None, 1)
-    sim.offline.ts.init[initConf] = 1
+    sim.offline.ts = Ts.load(ts_filename)
     if 'RRG construction' in generate:
         sim.config['video-interval'] = 500
         sim.config['video-file'] = 'rrg_construction.mp4'
@@ -248,13 +248,13 @@ if __name__ == '__main__':
     postprocessing(logfilename='../data_ijrr/example1/ijrr_example_1.log',
                    ts_filename='../data_ijrr/example1/ts.yaml',
                    outdir='../data_ijrr/example1',
-                   lts_index=126,
+                   lts_index=45,
                    generate=[ # Defines what media to generate 
-#                        'workspace',
-#                        'expanded workspace',
-#                        'both workspaces',
-#                        'RRG construction',
-#                        'offline plan',
-#                        'online plan',
-                       'LTS construction',
+#                         'workspace',
+#                         'expanded workspace',
+#                         'both workspaces',
+#                         'RRG construction',
+#                         'offline plan',
+#                         'online plan',
+#                         'LTS construction',
                        ])
