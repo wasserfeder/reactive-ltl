@@ -93,6 +93,7 @@ class BoxRegion(Region):
         if dest:
             diff = dest - src
             low, high = self.ranges.T
+            # add extra dimension for the [0, 1] constraint
             u = zeros((self.dimension + 1,))
             v = ones((self.dimension + 1,))
 
@@ -104,6 +105,8 @@ class BoxRegion(Region):
             indices = ~indices # indices i where src[i] != dest[i]
             u[indices] = (low[indices] - src[indices])/diff[indices]
             v[indices] = (high[indices] - src[indices])/diff[indices]
+            indices = indices & (diff < 0) # indices that require sign change
+            u[indices], v[indices] = v[indices], u[indices]
 
             return np.max(u) <= np.min(v)
 

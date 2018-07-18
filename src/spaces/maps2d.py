@@ -131,8 +131,9 @@ class BoxBoundary2D(Boundary):
         if dest:
             diff = dest - src
             low, high = self.ranges.T
-            u = zeros((2,))
-            v = ones((2,))
+            # add extra dimension for the [0, 1] constraint
+            u = zeros((3,))
+            v = ones((3,))
 
             if abs(diff[0]) < np.finfo(float).eps: # constant along the x-axis
                 if not (self.ranges[0, 0] <= src.x <= self.ranges[0, 1]):
@@ -140,6 +141,8 @@ class BoxBoundary2D(Boundary):
             else:
                 u[0] = (low[0] - src[0])/diff[0]
                 v[0] = (high[0] - src[0])/diff[0]
+                if diff[0] < 0:
+                    u[0], v[0] = v[0], u[0]
 
             if abs(diff[1]) < np.finfo(float).eps: # constant along the y-axis
                 if not (self.ranges[1, 0] <= src.y <= self.ranges[1, 1]):
@@ -147,6 +150,8 @@ class BoxBoundary2D(Boundary):
             else:
                 u[1] = (low[1] - src[1])/diff[1]
                 v[1] = (high[1] - src[1])/diff[1]
+                if diff[1] < 0:
+                    u[1], v[1] = v[1], u[1]
 
             return np.max(u) <= np.min(v)
 
