@@ -26,7 +26,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 '''
 
-import os, sys
+import os, sys, time
 import logging
 
 import numpy as np
@@ -75,7 +75,9 @@ def caseStudy():
     robotDiameter = 0.036
 
     # define boundary
-    boundary = BoxBoundary2D([[0, 4.8], [0, 3.6]])
+    nrow, ncol = 5, 6
+    cell_size = 0.591
+    boundary = BoxBoundary2D([[0, ncol * cell_size], [0, nrow * cell_size]])
     # define boundary style
     boundary.style = {'color' : 'black'}
     # create expanded region
@@ -88,7 +90,8 @@ def caseStudy():
     ewspace = Workspace(boundary=eboundary)
 
     # create robot object
-    robot = Cozmo('Cozmo', init=Point2D((2, 2)), wspace=ewspace, stepsize=0.999)
+    robot = Cozmo('Cozmo', init=Point2D((1.5 * cell_size, 2.5 * cell_size)),
+                  wspace=ewspace, stepsize=0.999)
     robot.diameter = robotDiameter
     robot.localObst = 'local_obstacle'
 
@@ -105,24 +108,22 @@ def caseStudy():
     # create simulation object
     sim = Simulate2D(wspace, robot, ewspace)
     sim.config['output-dir'] = outputdir
-    sim.config['background'] = os.path.abspath('../data_ijrr/imMap.png')
+#     sim.config['background'] = os.path.abspath('../data_ijrr/imMap.png')
 
     # regions of interest
-    R1 = (BoxRegion2D([[1.0, 2.0], [0.2, 0.8]], ['r1']), 'brown')
-    R2 = (BallRegion2D([4.2, 0.7], 0.3, ['r2']), 'green')
-    R3 = (BoxRegion2D([[3.7, 4.5], [1.5, 2.3]], ['r3']), 'red')
-    R4 = (BoxRegion2D([[0.7 , 1.4], [1.8, 2.3]], ['r4']), 'magenta')
+    R1 = (BoxRegion2D(np.array([[1.,2.],[4.,5.]])*cell_size, ['r1']), 'brown')
+    R2 = (BoxRegion2D(np.array([[4.,5.],[1.,2.]])*cell_size, ['r2']), 'green')
+    R3 = (BoxRegion2D(np.array([[0.,1.],[0.,1.]])*cell_size, ['r3']), 'red')
+    R4 = (BoxRegion2D(np.array([[4.,6.],[4.,5.]])*cell_size, ['r4']), 'blue')
     # global obstacles
-    O1 = (PolygonRegion2D([[0.0, 1.6], [0.7, 1.34], [0.7, 1.19], [0.0, 1.34]],
-                          ['o1']), 'gray')
-    O2 = (PolygonRegion2D([[1.3, 1.33], [2.6, 1.2], [2.19, 1.06], [1.3, 1.1]],
-                          ['o2']), 'gray')
-    O3 = (PolygonRegion2D([[3.54, 1.27], [4.8, 1.52], [4.8, 1.3], [3.44, 1.08]],
+    O1 = (BoxRegion2D(np.array([[1.,2.],[1.,2.]])*cell_size, ['o1']), 'gray')
+    O2 = (BoxRegion2D(np.array([[4.,5.],[2.,3.]])*cell_size, ['o2']), 'gray')
+    O3 = (PolygonRegion2D(np.array([[1.,3.],[3.,3.],[3.,5.],
+                                    [2.,5.],[2.,4.],[1.,4.]])*cell_size,
                           ['o3']), 'gray')
-    O4 = (BoxRegion2D([[0, 4.8], [2.5, 3.6]], ['o4']), 'gray')
 
     # add all regions
-    regions = [R1, R2, R3, R4, O1, O2, O3, O4]
+    regions = [R1, R2, R3, R4, O1, O2, O3]
 
     # add regions to workspace
     for k, (r, c) in enumerate(regions):
@@ -140,14 +141,14 @@ def caseStudy():
         logging.info('("Global region", %d): (%s, %s)', k, r, r.style)
 
     # local  requests
-    F1 = (BallRegion2D([3.24, 1.98], 0.2, ['fire']), ('orange', 0.5))
-    F2 = (BallRegion2D([1.26, 0.48], 0.2, ['fire']), ('orange', 0.5))
-    S2 = (BallRegion2D([4.32, 1.48], 0.2, ['survivor']), ('yellow', 0.5))
+    F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']), ('orange', 0.3))
+    F2 = (BallRegion2D([1.26, 0.48], 0.3, ['fire']), ('orange', 0.3))
+    S2 = (BallRegion2D([4.32, 1.48], 0.3, ['survivor']), ('yellow', 0.3))
     requests = [F1, F2, S2]
     # define local specification as a priority function
     localSpec = {'survivor': 0, 'fire': 1}
-    logging.info('Local specification: %s', localSpec)
-    localSpec_cube_color = {'survivor': 3, 'fire': 4}
+    logging.info('"Local specification": %s', localSpec)
+    localSpec_cube_color = {'survivor': 3, 'fire': 2}
     # local obstacles
     obstacles = []
 
@@ -169,7 +170,7 @@ def caseStudy():
     obstacles = [o for o, _, _ in obstacles]
 
     # set the robot's sensor
-    sensingShape = BallBoundary2D([0, 0], 0.5)
+    sensingShape = BallBoundary2D([0, 0], 1.0)
     robot.sensor = CozmoSensor(robot, sensingShape, requests, obstacles)
     robot.sensor.reset()
 
@@ -187,16 +188,16 @@ def caseStudy():
     ############################################################################
 
     globalSpec = ('[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4)'
-                  + ' && !(o1 || o2 || o3 || o4))')
-    logging.info('Global specification: %s', globalSpec)
+                  ' && !(o1 || o2 || o3))')
+    logging.info('"Global specification": "%s"', globalSpec)
 
     # initialize incremental product automaton
     checker = IncrementalProduct(globalSpec) #, specFile='ijrr_globalSpec.txt')
-    logging.info('Buchi size: (%d, %d)', checker.buchi.g.number_of_nodes(),
+    logging.info('"Buchi size": (%d, %d)', checker.buchi.g.number_of_nodes(),
                                          checker.buchi.g.number_of_edges())
 
     # initialize global off-line RRG planner
-    sim.offline = RRGPlanner(robot, checker, None, iterations=1000)
+    sim.offline = RRGPlanner(robot, checker,  iterations=1000)
     sim.offline.eta = [0.5, 1.0] # good bounds for the planar case study
 
     logging.info('"Start global planning": True')
@@ -226,9 +227,8 @@ def caseStudy():
     logging.info('"End global planning": True')
 
     # move to start position
-    startConf = next(iter(sim.path))
-    logging.debug('Moving to start configuration: %s', startConf)
-    sim.robot.move(startConf)
+    logging.debug('Moving to start configuration: %s', robot.initConf)
+    sim.robot.move([robot.initConf])
 
     ############################################################################
     ### Execute on-line path planning algorithm ################################
@@ -240,12 +240,12 @@ def caseStudy():
         if not compute_potentials(sim.offline.checker):
             return
 
-    # set the step size for the local controller
-    robot.controlspace = 0.1
+    # set the step size for the local controller controlspace
+    robot.controlspace = 0.20
 
     # initialize local on-line RRT planner
     sim.online = LocalPlanner(sim.offline.checker, sim.offline.ts, robot,
-                              localSpec)
+                              localSpec, eta=robot.controlspace)
     sim.online.detailed_logging = True
 
     # define number of surveillance cycles to run
@@ -258,16 +258,18 @@ def caseStudy():
         # TODO: sense robot location
         # TODO: update index in local plan
         # TODO: add logging marker for start time for planning
+        logging.info('"plan start time": %f', time.time())
         with Timer(op_name='local planning', template='"%s runtime": %f'):
             # feed data to planner and get next control input
             nextConf = sim.online.execute(requests, obstacles)
         # TODO: add logging marker for stop time for planning
+        logging.info('"plan stop time": %f', time.time())
 
 #         sim.display(expanded=True, localinfo=('plan', 'trajectory'))
 
         # enforce movement along plan
         # FIXME: should pass only plan
-        robot.move([nextConf] + sim.online.local_plan)
+        robot.move([nextConf])# + sim.online.local_plan)
         # if completed cycle increment cycle
         if sim.update():
             cycle += 1
@@ -275,5 +277,5 @@ def caseStudy():
     logging.info('"Local online planning finished": True')
 
 if __name__ == '__main__':
-    np.random.seed(1002)
+    np.random.seed(1001)
     caseStudy()

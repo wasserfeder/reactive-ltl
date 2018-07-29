@@ -283,6 +283,10 @@ class Simulate2D(object):
         else:
             self.render(ax, expanded, solution, localinfo=localinfo)
 
+        if self.config.get('fig-file', None) is not None:
+            filename = os.path.join(self.config['output-dir'],
+                                    self.config['fig-file'])
+            plt.savefig(filename, bbox_inches='tight')
         plt.show()
 
     def render(self, viewport, expanded=False, solution=None, withtext=True,
@@ -332,7 +336,8 @@ class Simulate2D(object):
             drawPolicy(viewport, solution, zorder=zorder['global plan'])
         else:
             if self.offline is not None: # draw transition system
-                drawGraph(viewport, self.offline.ts.g, zorder=zorder['global ts'])
+                drawGraph(viewport, self.offline.ts.g, zorder=zorder['global ts'],
+                          node_color='gray', edge_color='gray')
 
         # draw local regions/plans/data
         if self.online is not None:
