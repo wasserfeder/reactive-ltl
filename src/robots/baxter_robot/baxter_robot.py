@@ -9,29 +9,32 @@ import geometry_msgs.msg
 import rospy
 import time
 
+from robots import Robot
+
 default_config = {
     'baxter_utils_config': {
         'arm': "right",
     }
 }
 
-class BaxterRobot(object):
-    def __init__(self, name, init=None, wspace=None, stepsize=0.1, config={}):
-        # Robot.__init__(self, name, initConf=init, cspace=wspace, wspace=wspace,
-        #                controlspace=stepsize)
+class BaxterRobot(Robot):
+    def __init__(self, name, init=None, cspace=None, wspace=None,
+                 stepsize=0.1, config={}):
+        Robot.__init__(self, name, initConf=init, cspace=cspace, wspace=wspace,
+                       controlspace=stepsize)
 
         self.config = default_config
         self.config.update(config)
         self.baxter_utils = BaxterUtils(self.config['baxter_utils_config'])
-        
-        with open("env_config.json") as f:
+
+        json_filename = self.config.get('json_filename', 'env_config.json')
+        with open(json_filename) as f:
             self.env = json.loads(f.read())
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         time.sleep(3)
-        
-        
+
     def fk(self, joint_angles):
         '''
         joint_angles is a list of length 7
@@ -44,6 +47,20 @@ class BaxterRobot(object):
                 gripper_pose.pose.orientation.y,
                 gripper_pose.pose.orientation.z,
                 gripper_pose.pose.orientation.w]
+
+    def steer(self, start, target, atol=0):
+        '''Returns a position that the robot can move to from the start position
+        such that it steers closer to the given target position using the
+        robot's dynamics.
+
+        Note: It simulates the movement.
+        '''
+        s = start.coords
+        t = target.coords
+        dist = self.cspace.metric(s, t)
+        if dist <= self.controlspace + atol:
+            return target
+        return self.initConf.__class__(s + (t-s) * self.controlspace/dist)
 
     def move(self, joint_angles):
         self.baxter_utils.move_to_joint_position(joint_angles)
@@ -72,38 +89,38 @@ class BaxterRobot(object):
                         gripper_position[1] - (object_pose[1] - value['scale'][1]/2),
                         (object_pose[1] + value['scale'][1]/2) - gripper_position[1],
                     ])
-                    symbols[object_name] = tmp >= 0 and gripper_position[2] > object_pose[2] + 0.3 and gripper_position[2] <= object_pose[2] + 0.6
-                    
+                    symbols[object_name] = tmp >= 0 and gripper_position[2] > object_pose[2] + 0.03 and gripper_position[2] <= object_pose[2] + 0.06
+
                 elif value['marker_type'] == "sphere":
-                    symbols[object_name] = np.linalg.norm(gripper_position[:2] - object_pose[:2]) <= value['scale'][0]/2 and gripper_position[2] > object_pose[2] + 0.3 and gripper_position[2] <= object_pose[2] + 0.6
+                    symbols[object_name] = np.linalg.norm(gripper_position[:2] - object_pose[:2]) <= value['scale'][0]/2 and gripper_position[2] > object_pose[2] + 0.03 and gripper_position[2] <= object_pose[2] + 0.06
                 else:
                     raise ValueError("marker type not supported")
 
         return [symbols[key] for key in symbols.keys()]
-                    
+
     def isSimpleSegment(self, u, v):
 
         u_symbols = np.array(self.getSymbols(u))
         v_symbols = np.array(self.getSymbols(v))
 
         symbols = u_symbols
-        
+
         ep = (list(u_symbols) and list(v_symbols)) or (list(u_symbols) and not list(v_symbols)) or (not list(u_symbols) and list(v_symbols))
-            
+
         start_joints = np.array(u)
         end_joints = np.array(v)
         joints_diff = end_joints - start_joints
         joints_diff_sign = np.sign(joints_diff)
-            
+
         inc = 0.01 # get intermediate joints from start to end in increments of 0.05 radians
         joints_inc = inc * joints_diff_sign
-        
+
         joints = start_joints
         joint_heights_all = []
 
         for _ in range(int(np.max(np.abs(joints_diff/inc)))):
             s = np.array(self.getSymbols(joints))
-            
+
             symbols = np.vstack([symbols,s])
             for i in range(len(joints)):
                 if (joints[i] < end_joints[i] and joints_diff_sign[i] > 0) or \
@@ -122,10 +139,11 @@ class BaxterRobot(object):
                 res.append(np.all(symbols[:,i] == symbols[0,i]))
             i += 1
 
-        return res
-            
+        return all(res)
+
 if __name__ == "__main__":
     baxter = BaxterRobot(name="baxter")
+    baxter.reset()
     #print(baxter.fk([0,0,0,0,0,0,0]))
     #print(baxter.getSymbols([0,0,0,0,0,0,0]))
     print(baxter.isSimpleSegment([0,0,0,0,0,0,0], [0,1,0,0,1,0,1]))
