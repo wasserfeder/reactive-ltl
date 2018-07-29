@@ -188,7 +188,7 @@ class RealMetricSpace(object):
         return -1
 
     def __str__(self):
-        return 'RealMetricSpace(dimension={dim})'.format(dim=self.dim)
+        return 'RealMetricSpace(dimension={dim})'.format(dim=self.dimension)
 
 
 class Workspace(RealMetricSpace):
