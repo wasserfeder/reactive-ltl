@@ -28,15 +28,44 @@
 
 import numpy as np
 from numpy import array, dot, ones, zeros
+from numpy.random import uniform
 from scipy.spatial.distance import euclidean
 
-from base import Region
+from base import Point, Boundary, Region
 
 
 __all__ = ['BoxRegion', 'BallRegion']
 
 
-class BoxRegion(Region):
+class BoxBoundary(Boundary):
+    '''Defines a n-dimensional box boundary.'''
+
+    def __init__(self, ranges):
+        Boundary.__init__(self)
+
+        self.ranges = array(ranges, dtype=np.double)
+        assert self.ranges.shape[1] == 2
+        assert all(self.ranges[:, 0] <= self.ranges[:, 1])
+
+        self.dimension = self.ranges.shape[0]
+
+        self._hash = hash(tuple(self.ranges.flat))
+
+    def intersects(self, src, dest=None):
+        raise NotImplementedError
+
+    def volume(self):
+        return np.prod(self.ranges[:, 0] - self.ranges[:, 1])
+
+    def boundingBox(self):
+        return self.ranges
+
+    def sample(self):
+        low, high = self.ranges.T
+        return Point(low + uniform(size=2)* (high - low))
+
+
+class BoxRegion(BoxBoundary, Region):
     '''
     Defines a labeled box region in a n-dimensional workspace.
 
@@ -126,7 +155,31 @@ class BoxRegion(Region):
         return 'BoxRegion(ranges={0})'.format(map(list, self.ranges))
 
 
-class BallRegion(Region):
+class BallBoundary(Boundary):
+    '''Defines a boundary for a metric space.'''
+    def __init__(self, center, radius):
+        Boundary.__init__(self)
+
+        self.center = array(center).flatten()
+        self.radius = float(radius)
+        self.dimension = len(self.center)
+
+        self._hash =  self._hash = hash(tuple(self.center) + (self.radius))
+
+    def intersects(self, src, dest=None):
+        raise NotImplementedError
+
+    def volume(self):
+        return np.pi*(self.radius**2)
+
+    def boundingBox(self):
+        return array([self.center - self.radius, self.center + self.radius]).T
+
+    def sample(self):
+        raise NotImplementedError
+
+
+class BallRegion(BallBoundary, Region):
     '''
     Defines a labeled ball region in a n-dimensional workspace.
 
@@ -137,7 +190,7 @@ class BallRegion(Region):
         super().__init__(self, symbols)
 
         self.center = array(center).flatten()
-        self.radius = float(self.radius)
+        self.radius = float(radius)
         self.dimension = len(self.center)
 
         self._hash =  self._hash = hash(tuple(self.center) + (self.radius))
