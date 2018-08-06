@@ -181,6 +181,11 @@ class RealMetricSpace(object):
         '''
         return self.dimension
 
+    def getSample(self):
+        if self.boundary:
+            return self.boundary.sample()
+        raise Exception('The space has no boundary!')
+
     def getVolume(self):
         '''Returns the volume delimited by the boundary.'''
         if self.boundary:
