@@ -32,12 +32,19 @@ import itertools as it
 
 import numpy as np
 
+#TODO: remove back to add lomap to python path
+if os.path.pathsep.join(sys.path).find('lomap') < 0:
+    print 'importing lomap'
+    sys.path.append(
+            '/home/cristi/Dropbox/work/workspace_linux_precision5520/lomap/')
+
 from spaces.base import ConfigurationSpace, line_translate, Point
 from spaces.maps_nd import BoxBoundary, BoxRegion
-from robots.baxter_robot import BaxterRobot
+from robots import BaxterRobot
 
 from planning import RRGPlanner, LocalPlanner, Request
 from models import IncrementalProduct
+
 from lomap import compute_potentials
 from lomap import Timer
 
@@ -71,13 +78,7 @@ def caseStudy():
     ############################################################################
 
     # define boundary in 7-dimensional configuration space of the Baxter's arm
-    boundary = BoxBoundary([[0, 1],
-                            [0, 1],
-                            [0, 1],
-                            [0, 1],
-                            [0, 1],
-                            [0, 1],
-                            [0, 1]])
+    boundary = BoxBoundary([[-np.pi, np.pi]]*6)
     # define boundary style
     boundary.style = {'color' : 'black'}
 
@@ -85,10 +86,12 @@ def caseStudy():
     cspace = ConfigurationSpace(boundary=boundary)
 
     # initial configuration
-    init_conf = Point([0, 0, 0, 0, 0, 0, 0])
+    init_conf = Point([0, 0, 0, 0, 0, 0])
     # create robot object
     robot = BaxterRobot(name="baxter", init=init_conf, cspace=cspace,
-                        stepsize=0.1)
+                        stepsize=.99, config={'json-filename':
+        '/home/cristi/Dropbox/work/workspace_linux_precision5520/reactive-ltl/'
+        'src/robots/baxter_robot/env_config.json'})
     robot.localObst = 'local_obstacle'
 
     logging.info('"C-space": (%s, %s)', cspace, boundary.style)
@@ -203,7 +206,8 @@ def caseStudy():
     ### Generate global transition system and off-line control policy ##########
     ############################################################################
 
-    globalSpec = ('[] ( (<> r1) && (<> r2) && (<> r3) && ! o1')
+    globalSpec = ('[] ( (<> region1) && (<> region2) && (<> region3)'
+                  '&& table )')
     logging.info('"Global specification": "%s"', globalSpec)
 
     # initialize incremental product automaton
@@ -212,8 +216,8 @@ def caseStudy():
                                            checker.buchi.g.number_of_edges())
 
     # initialize global off-line RRG planner
-    offline = RRGPlanner(robot, checker, iterations=1000)
-    offline.eta = [0.5, 1.0] # good bounds for the planar case study
+    offline = RRGPlanner(robot, checker, iterations=100)
+    offline.eta = [0.02, 1.0] # good bounds for the planar case study
 
     logging.info('"Start global planning": True')
     with Timer(op_name='global planning', template='"%s runtime": %f'):
