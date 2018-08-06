@@ -122,8 +122,9 @@ class RRGPlanner(object):
                 for state in self.near(newState):
                     st = self.robot.steer(newState, state, atol=1e-8)
                     # if the robot can steer from a new state to another state
-                    if (state == st) and \
-                                    self.robot.isSimpleSegment(newState, state):
+                    if (state == st):
+                            #FIXME: should be symmetric
+#                             and self.robot.isSimpleSegment(newState, state):
                         # check if the new state satisfies the global
                         # specification
                         Ep = self.checker.check(self.ts, newState, state,
