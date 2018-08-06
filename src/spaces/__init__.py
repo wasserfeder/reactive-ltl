@@ -44,3 +44,12 @@ def p2d_constructor(loader, node):
     data = loader.construct_mapping(node)
     return Point2D([data['x'], data['y']])
 Loader.add_constructor(u'!Point2D', p2d_constructor)
+
+def point_representer(dumper, p):
+    return dumper.represent_mapping(tag=u'!Point',
+                               mapping={'coords': [float(x) for x in p.coords]})
+Dumper.add_representer(Point, point_representer)
+def point_constructor(loader, node):
+    data = loader.construct_mapping(node)
+    return Point(data['coords'])
+Loader.add_constructor(u'!Point', point_constructor)
