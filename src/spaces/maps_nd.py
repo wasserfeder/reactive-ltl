@@ -62,7 +62,7 @@ class BoxBoundary(Boundary):
 
     def sample(self):
         low, high = self.ranges.T
-        return Point(low + uniform(size=2)* (high - low))
+        return Point(low + uniform(size=self.dimension)* (high - low))
 
 
 class BoxRegion(BoxBoundary, Region):
@@ -170,7 +170,7 @@ class BallBoundary(Boundary):
         raise NotImplementedError
 
     def volume(self):
-        return np.pi*(self.radius**2)
+        raise NotImplementedError
 
     def boundingBox(self):
         return array([self.center - self.radius, self.center + self.radius]).T
