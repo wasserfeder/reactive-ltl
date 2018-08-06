@@ -10,6 +10,7 @@ import rospy
 import time
 
 from robots import Robot
+from spaces import Point
 
 default_config = {
     'baxter_utils_config': {
@@ -27,13 +28,18 @@ class BaxterRobot(Robot):
         self.config.update(config)
         self.baxter_utils = BaxterUtils(self.config['baxter_utils_config'])
 
-        json_filename = self.config.get('json_filename', 'env_config.json')
+        json_filename = self.config.get('json-filename', 'env_config.json')
         with open(json_filename) as f:
             self.env = json.loads(f.read())
 
         self.tf_buffer = tf2_ros.Buffer()
         self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
         time.sleep(3)
+
+        self.max_cache_size = 25000
+        self.cache = dict()
+        self.fifo = [None] * self.max_cache_size
+        self.cache_index = 0
 
     def fk(self, joint_angles):
         '''
@@ -68,8 +74,18 @@ class BaxterRobot(Robot):
     def reset(self):
         self.baxter_utils.reset()
 
-    def getSymbols(self, position, local=False):
-        joint_angles = position
+    def getSymbols(self, position, local=False, bitmap=False):
+
+#         t0 = time.time()
+
+        if position in self.cache:
+#             print 'Cached result in', 2*(time.time()-t0)*1000, 'ms'
+
+            if bitmap:
+                return self.cache[position][0]
+            return self.cache[position][1]
+
+        joint_angles = tuple(position.coords) + (0,)
         gripper_position = np.array(self.fk(joint_angles)[:3])
 
         symbols = {}
@@ -89,26 +105,43 @@ class BaxterRobot(Robot):
                         gripper_position[1] - (object_pose[1] - value['scale'][1]/2),
                         (object_pose[1] + value['scale'][1]/2) - gripper_position[1],
                     ])
-                    symbols[object_name] = tmp >= 0 and gripper_position[2] > object_pose[2] + 0.03 and gripper_position[2] <= object_pose[2] + 0.06
+                    symbols[object_name] = tmp >= 0 and gripper_position[2] > object_pose[2] + 0.03 and gripper_position[2] <= object_pose[2] + 3.0
 
                 elif value['marker_type'] == "sphere":
-                    symbols[object_name] = np.linalg.norm(gripper_position[:2] - object_pose[:2]) <= value['scale'][0]/2 and gripper_position[2] > object_pose[2] + 0.03 and gripper_position[2] <= object_pose[2] + 0.06
+                    symbols[object_name] = np.linalg.norm(gripper_position[:2] - object_pose[:2]) <= value['scale'][0]/2 and gripper_position[2] > object_pose[2] + 0.03 and gripper_position[2] <= object_pose[2] + 3.0
                 else:
                     raise ValueError("marker type not supported")
 
-        return [symbols[key] for key in symbols.keys()]
+        # cache result
+        b = [symbols[key] for key in symbols.keys()]
+        s = set(key for key in symbols.keys() if symbols[key])
+        # check for cache size
+        if self.fifo[self.cache_index] is not None:
+            del self.cache[self.fifo[self.cache_index]]
+        # add to cache
+        self.cache[position] = (b, s)
+        self.fifo[self.cache_index] = position
+        self.cache_index += 1
+        self.cache_index %= self.max_cache_size
+        assert(len(self.cache) <= self.max_cache_size)
+
+#         print 'Non-cached result in', (time.time()-t0)*1000, 'ms'
+
+        if bitmap:
+            return b
+        return s
 
     def isSimpleSegment(self, u, v):
 
-        u_symbols = np.array(self.getSymbols(u))
-        v_symbols = np.array(self.getSymbols(v))
+        u_symbols = np.array(self.getSymbols(u, bitmap=True))
+        v_symbols = np.array(self.getSymbols(v, bitmap=True))
 
         symbols = u_symbols
 
         ep = (list(u_symbols) and list(v_symbols)) or (list(u_symbols) and not list(v_symbols)) or (not list(u_symbols) and list(v_symbols))
 
-        start_joints = np.array(u)
-        end_joints = np.array(v)
+        start_joints = np.array(u.coords)
+        end_joints = np.array(v.coords)
         joints_diff = end_joints - start_joints
         joints_diff_sign = np.sign(joints_diff)
 
@@ -119,9 +152,9 @@ class BaxterRobot(Robot):
         joint_heights_all = []
 
         for _ in range(int(np.max(np.abs(joints_diff/inc)))):
-            s = np.array(self.getSymbols(joints))
+            s = np.array(self.getSymbols(Point(joints), bitmap=True))
 
-            symbols = np.vstack([symbols,s])
+            symbols = np.vstack([symbols, s])
             for i in range(len(joints)):
                 if (joints[i] < end_joints[i] and joints_diff_sign[i] > 0) or \
                    (joints[i] > end_joints[i] and joints_diff_sign[i] < 0):
@@ -146,4 +179,5 @@ if __name__ == "__main__":
     baxter.reset()
     #print(baxter.fk([0,0,0,0,0,0,0]))
     #print(baxter.getSymbols([0,0,0,0,0,0,0]))
-    print(baxter.isSimpleSegment([0,0,0,0,0,0,0], [0,1,0,0,1,0,1]))
+    print(baxter.isSimpleSegment(Point([0,0,0,0,0,0]),
+                                 Point([0,1,0,0,1,1])))
