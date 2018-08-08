@@ -35,6 +35,11 @@ from itertools import ifilter, imap, tee
 from lomap import Ts
 
 
+# FIXME: HACK to get around ROS logging capture
+logger = logging.getLogger('reactive_ltl.' + __name__)
+logger.addHandler(logging.NullHandler())
+
+
 class RRGPlanner(object):
     '''
     Class implementing the RRG based path planner with LTL constraints.
@@ -73,7 +78,7 @@ class RRGPlanner(object):
     def solve(self):
         '''Try to solve the problem.'''
         for self.iteration in range(1, self.maxIterations+1):
-            logging.info('"iteration": %d', self.iteration)
+            logger.info('"iteration": %d', self.iteration)
             if self.iterate():
                 return True
         return False
@@ -92,9 +97,9 @@ class RRGPlanner(object):
             # set propositions
             newProp = self.robot.getSymbols(newConf)
 
-            logging.info('"random configuration": %s', randomConf)
-            logging.info('"nearest state": %s', nearestState)
-            logging.info('"new configuration": %s', newConf)
+            logger.info('"random configuration": %s', randomConf)
+            logger.info('"nearest state": %s', nearestState)
+            logger.info('"new configuration": %s', newConf)
 
             for state in self.far(newConf):
                 # check if the new state satisfies the global specification
@@ -111,14 +116,14 @@ class RRGPlanner(object):
                 self.ts.g.add_edges_from(Delta)
                 self.checker.update(E)
 
-            logging.info('"forward state added": %s', newState)
-            logging.info('"forward edges added": %s', Delta)
+            logger.info('"forward state added": %s', newState)
+            logger.info('"forward edges added": %s', Delta)
 
             ### Second phase - Backward
             Delta = set()
             E = set()
             if newState: # for newly added state
-#                 logging.info('"near states": %s', list(self.near(newState)))
+#                 logger.info('"near states": %s', list(self.near(newState)))
                 for state in self.near(newState):
                     st = self.robot.steer(newState, state, atol=1e-8)
                     # if the robot can steer from a new state to another state
@@ -133,12 +138,12 @@ class RRGPlanner(object):
                         if Ep:
                             Delta.add((newState, state))
                             E.update(Ep)
-#                             logging.info('("backward edge added", %s): %s',
+#                             logger.info('("backward edge added", %s): %s',
 #                                          state, (newState, state))
 
             self.ts.g.add_edges_from(Delta)
             self.checker.update(E)
-            logging.info('"backward edges added": %s', Delta)
+            logger.info('"backward edges added": %s', Delta)
 
             # uncomment assertion for debugging
 #             assert all([self.checker.buchi.g.has_edge(u[1], v[1])
@@ -163,7 +168,7 @@ class RRGPlanner(object):
         state which is closer to the given configuration p than self.eta[0]
         then the function returns an empty list.
         '''
-        logging.info('"far": (%s, %f, %f)', p, self.eta[0], self.eta[1])
+        logger.info('"far": (%s, %f, %f)', p, self.eta[0], self.eta[1])
         metric = self.robot.cspace.dist
         ret, test = tee(ifilter(lambda v: metric(v, p) < self.eta[1],
                                 self.ts.g.nodes_iter()))
@@ -175,7 +180,7 @@ class RRGPlanner(object):
         '''Return all states in the transition system that fall at distance d,
         0 < d < self.eta[1], away from the given configuration p.
         '''
-        logging.info('("near", %s): %f', p, self.eta[1])
+        logger.info('("near", %s): %f', p, self.eta[1])
         metric = self.robot.cspace.dist
         return ifilter(lambda v: 0 < metric(v, p) < self.eta[1],
                        self.ts.g.nodes_iter())

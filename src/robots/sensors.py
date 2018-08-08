@@ -31,6 +31,10 @@ import numpy as np
 from spaces.maps2d import intersection
 
 
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
+
 class Sensor(object):
     '''Base class for sensors.'''
 
@@ -77,7 +81,7 @@ class SimulatedSensor(Sensor):
         obstacles = [intersection(self.sensingShape, o)
                             for o in self.obstacles]
         obstacles = [o for o in obstacles if o is not None]
-        logging.info('"Sensed obstacles": %s', obstacles)
+        logger.info('"Sensed obstacles": %s', obstacles)
 
         return requests, obstacles
 

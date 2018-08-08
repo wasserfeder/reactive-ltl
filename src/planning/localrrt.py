@@ -39,6 +39,11 @@ from lomap import Ts, Timer
 from spaces import Point2D
 
 
+# FIXME: HACK to get around ROS logging capture
+logger = logging.getLogger('reactive_ltl.' + __name__)
+logger.addHandler(logging.NullHandler())
+
+
 def get_actual_potential(x, B, pa):
     '''Compute potential of a TS node x with Buchi set B from product
     automaton pa.
@@ -115,23 +120,23 @@ class LocalPlanner(object):
         self.eta = eta
 
         self.detailed_logging = False
-        logging.info('"initialize local planner": True')
+        logger.info('"initialize local planner": True')
         self.log()
 
     def log(self, gen_tree=False):
         '''Saves information about the current planner status to log.'''
-        logging.info('"Buchi states": %s', self.buchi_states)
-        logging.info('"potential": %f', self.potential)
-        logging.info('"tree size": %d',
+        logger.info('"Buchi states": %s', self.buchi_states)
+        logger.info('"potential": %f', self.potential)
+        logger.info('"tree size": %d',
                      self.lts.g.number_of_nodes() if gen_tree else 0)
-        logging.info('"tree": %s', self.lts.g.edges() if gen_tree else [])
+        logger.info('"tree": %s', self.lts.g.edges() if gen_tree else [])
         if self.local_plan is None:
-            logging.info('"new configuration": %s', self.robot.currentConf)
-            logging.info('"local plan": %s', [])
+            logger.info('"new configuration": %s', self.robot.currentConf)
+            logger.info('"local plan": %s', [])
         else:
-            logging.info('"new configuration": %s', self.local_plan[0])
-            logging.info('"local plan": %s', self.local_plan)
-        logging.info('"requests": %s', self.robot.sensor.requests)
+            logger.info('"new configuration": %s', self.local_plan[0])
+            logger.info('"local plan": %s', self.local_plan)
+        logger.info('"requests": %s', self.robot.sensor.requests)
 
     def execute(self, requests, obstacles):
         '''Plan locally.'''
@@ -376,7 +381,7 @@ class LocalPlanner(object):
                                 done = True
 
             if self.detailed_logging:
-                logging.info('"lts iteration %d" : '
+                logger.info('"lts iteration %d" : '
                              '(%d, %s, %s, %s, %s, %s, %s, %s, %s)',
                              iteration, iteration,
                              random_sample, source_state, dest_state,

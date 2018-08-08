@@ -32,9 +32,9 @@ import itertools as it
 
 import numpy as np
 
-#TODO: remove back to add lomap to python path
+#TODO: remove hack to add lomap to python path
 if os.path.pathsep.join(sys.path).find('lomap') < 0:
-    print 'importing lomap'
+    print 'adding lomap to python path'
     sys.path.append(
             '/home/cristi/Dropbox/work/workspace_linux_precision5520/lomap/')
 
@@ -62,16 +62,20 @@ def caseStudy():
     dfs = '%m/%d/%Y %I:%M:%S %p'
     loglevel = logging.DEBUG
     logfile = os.path.join(outputdir, 'ijrr_example_3.log')
-    verbose = True
-    logging.basicConfig(filename=logfile, filemode='w', level=loglevel,
-                        format=fs, datefmt=dfs)
+    verbose = False
+    # create logger
+    logger = logging.getLogger('reactive_ltl')
+    logger.setLevel(loglevel)
+    # create formatter
+    fmt = logging.Formatter(fs, dfs)
+    # create handlers and add them to logger
+    handlers = [logging.FileHandler(logfile, mode='w')]
     if verbose:
-        root = logging.getLogger()
-        ch = logging.StreamHandler(sys.stdout)
-        ch.setLevel(loglevel)
-        ch.setFormatter(logging.Formatter(fs, dfs))
-        root.addHandler(ch)
-
+        handlers.append(logging.StreamHandler(sys.stdout))
+    for handler in handlers:
+        handler.setLevel(loglevel)
+        handler.setFormatter(fmt)
+        logger.addHandler(handler)
 
     ############################################################################
     ### Define case study setup (robot parameters, workspace, etc.) ############
@@ -94,14 +98,14 @@ def caseStudy():
         'src/robots/baxter_robot/env_config.json'})
     robot.localObst = 'local_obstacle'
 
-    logging.info('"C-space": (%s, %s)', cspace, boundary.style)
-    logging.info('"Robot name": "%s"', robot.name)
-    logging.info('"Robot initial configuration": %s', robot.initConf)
-    logging.info('"Robot step size": %f', robot.controlspace)
-    logging.info('"Robot constructor": "%s"',
+    logger.info('"C-space": (%s, %s)', cspace, boundary.style)
+    logger.info('"Robot name": "%s"', robot.name)
+    logger.info('"Robot initial configuration": %s', robot.initConf)
+    logger.info('"Robot step size": %f', robot.controlspace)
+    logger.info('"Robot constructor": "%s"',
                  'BaxterRobot(robot_name, init=initConf, cpace=cspace, '
                  'stepsize=stepsize)')
-    logging.info('"Local obstacle label": "%s"', robot.localObst)
+    logger.info('"Local obstacle label": "%s"', robot.localObst)
 
 #     # create simulation object
 #     sim = Simulate2D(wspace, robot, ewspace)
@@ -136,7 +140,7 @@ def caseStudy():
 #         # add expanded region to the expanded workspace
 #         sim.expandedWorkspace.addRegion(er)
 # 
-#         logging.info('("Global region", %d): (%s, %s)', k, r, r.style)
+#         logger.info('("Global region", %d): (%s, %s)', k, r, r.style)
 # 
 #     # local  requests
 #     F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']),
@@ -152,7 +156,7 @@ def caseStudy():
 
     # define local specification as a priority function
     localSpec = {'plate_red': 0, 'plate_blue': 1}
-    logging.info('"Local specification": %s', localSpec)
+    logger.info('"Local specification": %s', localSpec)
     #TODO: create local requests objects and robot sensor
 
 #     # local obstacles #FIXME: defined in expanded workspace not workspace
@@ -177,7 +181,7 @@ def caseStudy():
 #             r_path = map(list, r.path)
 #             r.path = it.cycle(r.path)
 # 
-#         logging.info('("Local region", %d): (%s, %s, %s, %d)', k, r, r.style,
+#         logger.info('("Local region", %d): (%s, %s, %s, %d)', k, r, r.style,
 #                      r_path, k < len(requests))
 # 
 #     # create request objects
@@ -192,7 +196,7 @@ def caseStudy():
 #     sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
 #     robot.sensor = SimulatedSensor(robot, sensingShape, requests, obstacles)
 # 
-#     logging.info('"Robot sensor constructor": "%s"',
+#     logger.info('"Robot sensor constructor": "%s"',
 #         'SimulatedSensor(robot, BallBoundary2D([0, 0], robot.diameter*2.5),'
 #         'requests, obstacles)')
 # 
@@ -208,27 +212,27 @@ def caseStudy():
 
     globalSpec = ('[] ( (<> region1) && (<> region2) && (<> region3)'
                   '&& table )')
-    logging.info('"Global specification": "%s"', globalSpec)
+    logger.info('"Global specification": "%s"', globalSpec)
 
     # initialize incremental product automaton
     checker = IncrementalProduct(globalSpec)
-    logging.info('"Buchi size": (%d, %d)', checker.buchi.g.number_of_nodes(),
+    logger.info('"Buchi size": (%d, %d)', checker.buchi.g.number_of_nodes(),
                                            checker.buchi.g.number_of_edges())
 
     # initialize global off-line RRG planner
-    offline = RRGPlanner(robot, checker, iterations=100)
+    offline = RRGPlanner(robot, checker, iterations=1000)
     offline.eta = [0.02, 1.0] # good bounds for the planar case study
 
-    logging.info('"Start global planning": True')
+    logger.info('"Start global planning": True')
     with Timer(op_name='global planning', template='"%s runtime": %f'):
         found = offline.solve()
-        logging.info('"Found solution": %s', found)
+        logger.info('"Found solution": %s', found)
         if not found:
             return
 
-    logging.info('"Iterations": %d', offline.iteration)
-    logging.info('"Size of TS": %s', offline.ts.size())
-    logging.info('"Size of PA": %s', offline.checker.size())
+    logger.info('"Iterations": %d', offline.iteration)
+    logger.info('"Size of TS": %s', offline.ts.size())
+    logger.info('"Size of PA": %s', offline.checker.size())
 
     # save global transition system and control policy
     offline.ts.save(os.path.join(outputdir, 'ts.yaml'))
@@ -239,8 +243,9 @@ def caseStudy():
 
     # display workspace and global transition system
     prefix, suffix = offline.checker.globalPolicy(offline.ts)
-    logging.info('"global policy": (%s, %s)', prefix, suffix)
-    logging.info('"End global planning": True')
+    logger.info('"global policy": (%s, %s)', prefix, suffix)
+    logger.info('"global policy length": (%d, %d)', len(prefix), len(suffix))
+    logger.info('"End global planning": True')
 
     return #TODO: delete after tests
 
@@ -279,7 +284,7 @@ def caseStudy():
     # execute controller
     cycle = -1 # number of completed cycles, -1 accounts for the prefix
     while cycle < cycles:
-        logging.info('"Start local planning step": True')
+        logger.info('"Start local planning step": True')
         # update the locally sensed requests and obstacles
         requests, obstacles = robot.sensor.sense()
         with Timer(op_name='local planning', template='"%s runtime": %f'):
@@ -292,7 +297,7 @@ def caseStudy():
         if update():
             cycle += 1
 
-    logging.info('"Local online planning finished": True')
+    logger.info('"Local online planning finished": True')
 
 
 if __name__ == '__main__':
