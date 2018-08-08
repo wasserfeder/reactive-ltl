@@ -75,12 +75,7 @@ class BaxterRobot(Robot):
         self.baxter_utils.reset()
 
     def getSymbols(self, position, local=False, bitmap=False):
-
-#         t0 = time.time()
-
         if position in self.cache:
-#             print 'Cached result in', 2*(time.time()-t0)*1000, 'ms'
-
             if bitmap:
                 return self.cache[position][0]
             return self.cache[position][1]
@@ -90,7 +85,9 @@ class BaxterRobot(Robot):
 
         symbols = {}
         for object_name, value in viewitems(self.env):
-            object_pose = self.tf_buffer.lookup_transform(value['parent_frame_id'][1:], value['child_frame_id'][1:], rospy.Time())
+            object_pose = self.tf_buffer.lookup_transform(
+                value['parent_frame_id'][1:], value['child_frame_id'][1:],
+                rospy.Time())
             object_pose = np.array([object_pose.transform.translation.x,
                                     object_pose.transform.translation.y,
                                     object_pose.transform.translation.z])
@@ -99,16 +96,27 @@ class BaxterRobot(Robot):
                 symbols[object_name] = gripper_position[2] > object_pose[2] + 0.03
             else:
                 if value['marker_type'] == "cube":
-                    tmp = np.min([
-                        gripper_position[0] - (object_pose[0] - value['scale'][0]/2),
-                        (object_pose[0] + value['scale'][0]/2) - gripper_position[0],
-                        gripper_position[1] - (object_pose[1] - value['scale'][1]/2),
-                        (object_pose[1] + value['scale'][1]/2) - gripper_position[1],
-                    ])
-                    symbols[object_name] = tmp >= 0 and gripper_position[2] > object_pose[2] + 0.03 and gripper_position[2] <= object_pose[2] + 3.0
+#                     tmp = np.min([
+#                         gripper_position[0] - (object_pose[0] - value['scale'][0]/2),
+#                         (object_pose[0] + value['scale'][0]/2) - gripper_position[0],
+#                         gripper_position[1] - (object_pose[1] - value['scale'][1]/2),
+#                         (object_pose[1] + value['scale'][1]/2) - gripper_position[1],
+#                     ])
+#                     symbols[object_name] = (tmp >= 0
+#                             and gripper_position[2] > object_pose[2] + 0.03
+#                             and gripper_position[2] <= object_pose[2] + 0.3)
+                    l, h = np.zeros((2, 3), dtype=np.float)
+                    h[:2] = np.asarray(value['scale'][:2])/2
+                    l[:2] = -h[:2]
+                    l[3], h[3] = 0.03, 0.3
+                    symbols[object_name] = np.all(
+                                    l <= gripper_position - object_pose <= h)
 
                 elif value['marker_type'] == "sphere":
-                    symbols[object_name] = np.linalg.norm(gripper_position[:2] - object_pose[:2]) <= value['scale'][0]/2 and gripper_position[2] > object_pose[2] + 0.03 and gripper_position[2] <= object_pose[2] + 3.0
+                    dist = np.linalg.norm(gripper_position[:2] - object_pose[:2])
+                    l, h = 0.06, 0.3
+                    symbols[object_name] = (dist<= value['scale'][0]/2
+                              and l < gripper_position[2] - object_pose[2] <= h)
                 else:
                     raise ValueError("marker type not supported")
 
@@ -125,8 +133,6 @@ class BaxterRobot(Robot):
         self.cache_index %= self.max_cache_size
         assert(len(self.cache) <= self.max_cache_size)
 
-#         print 'Non-cached result in', (time.time()-t0)*1000, 'ms'
-
         if bitmap:
             return b
         return s
@@ -138,7 +144,9 @@ class BaxterRobot(Robot):
 
         symbols = u_symbols
 
-        ep = (list(u_symbols) and list(v_symbols)) or (list(u_symbols) and not list(v_symbols)) or (not list(u_symbols) and list(v_symbols))
+        ep = (list(u_symbols) and list(v_symbols)) \
+              or (list(u_symbols) and not list(v_symbols)) \
+              or (not list(u_symbols) and list(v_symbols))
 
         start_joints = np.array(u.coords)
         end_joints = np.array(v.coords)
