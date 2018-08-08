@@ -20,7 +20,13 @@
 
 from robot import Robot
 from fullyActuatedRobot import FullyActuatedRobot
-from baxter_robot import BaxterRobot
 from sensors import Sensor, SimulatedSensor
-from cozmo_robot import Cozmo
-from cozmo_sensor import CozmoSensor
+try:
+    from cozmo_robot import Cozmo
+    from cozmo_sensor import CozmoSensor
+except ImportError:
+    pass
+try:
+    from baxter_robot import BaxterRobot
+except ImportError:
+    pass
