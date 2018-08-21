@@ -69,6 +69,7 @@ class BaxterRobot(Robot):
         return self.initConf.__class__(s + (t-s) * self.controlspace/dist)
 
     def move(self, joint_angles):
+        joint_angles = list(joint_angles) + [0]
         self.baxter_utils.move_to_joint_position(joint_angles)
 
     def reset(self):

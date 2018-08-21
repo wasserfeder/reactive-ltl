@@ -35,8 +35,7 @@ import numpy as np
 #TODO: remove hack to add lomap to python path
 if os.path.pathsep.join(sys.path).find('lomap') < 0:
     print 'adding lomap to python path'
-    sys.path.append(
-            '/home/cristi/Dropbox/work/workspace_linux_precision5520/lomap/')
+sys.path.append('/home/burobotics/Xiao/docker/docker_home/lomap/')
 
 from spaces.base import ConfigurationSpace, line_translate, Point
 from spaces.maps_nd import BoxBoundary, BoxRegion
@@ -44,7 +43,7 @@ from robots import BaxterRobot
 
 from planning import RRGPlanner, LocalPlanner, Request
 from models import IncrementalProduct
-
+print(sys.path)
 from lomap import compute_potentials
 from lomap import Timer
 
@@ -82,7 +81,8 @@ def caseStudy():
     ############################################################################
 
     # define boundary in 7-dimensional configuration space of the Baxter's arm
-    boundary = BoxBoundary([[-np.pi, np.pi]]*6)
+    #boundary = BoxBoundary([[-np.pi, np.pi]]*6)
+    boundary = BoxBoundary([[-1.69, 1.69], [-2.1, 1.], [-3., 3.], [0., 2.6], [-3., 3.], [-1.5, 2.]])    
     # define boundary style
     boundary.style = {'color' : 'black'}
 
@@ -92,10 +92,14 @@ def caseStudy():
     # initial configuration
     init_conf = Point([0, 0, 0, 0, 0, 0])
     # create robot object
+    # robot = BaxterRobot(name="baxter", init=init_conf, cspace=cspace,
+    #                     stepsize=.99, config={'json-filename':
+    #     '/home/cristi/Dropbox/work/workspace_linux_precision5520/reactive-ltl/'
+    #     'src/robots/baxter_robot/env_config.json'})
     robot = BaxterRobot(name="baxter", init=init_conf, cspace=cspace,
                         stepsize=.99, config={'json-filename':
-        '/home/cristi/Dropbox/work/workspace_linux_precision5520/reactive-ltl/'
-        'src/robots/baxter_robot/env_config.json'})
+                                              '/home/burobotics/Xiao/docker/docker_home/reactive-ltl/src/robots/baxter_robot/env_config.json'})
+
     robot.localObst = 'local_obstacle'
 
     logger.info('"C-space": (%s, %s)', cspace, boundary.style)
@@ -246,6 +250,9 @@ def caseStudy():
     logger.info('"global policy": (%s, %s)', prefix, suffix)
     logger.info('"global policy length": (%d, %d)', len(prefix), len(suffix))
     logger.info('"End global planning": True')
+
+    for conf in prefix+suffix:
+        robot.move(conf.coords)
 
     return #TODO: delete after tests
 
