@@ -32,20 +32,22 @@ import itertools as it
 
 import numpy as np
 
-#TODO: remove hack to add lomap to python path
-if os.path.pathsep.join(sys.path).find('lomap') < 0:
+try:
+    import lomap
+    from lomap import compute_potentials
+    from lomap import Timer
+except ImportError:
     print 'adding lomap to python path'
-sys.path.append('/home/burobotics/Xiao/docker/docker_home/lomap/')
+    lomap_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
+                                              '..', '..', 'lomap'))
+    assert os.path.isdir(lomap_path), 'lomap package not found!'
+    sys.path.append(lomap_path)
 
 from spaces.base import ConfigurationSpace, line_translate, Point
 from spaces.maps_nd import BoxBoundary, BoxRegion
 from robots import BaxterRobot
-
 from planning import RRGPlanner, LocalPlanner, Request
 from models import IncrementalProduct
-print(sys.path)
-from lomap import compute_potentials
-from lomap import Timer
 
 
 def caseStudy():
@@ -80,9 +82,10 @@ def caseStudy():
     ### Define case study setup (robot parameters, workspace, etc.) ############
     ############################################################################
 
-    # define boundary in 7-dimensional configuration space of the Baxter's arm
-    #boundary = BoxBoundary([[-np.pi, np.pi]]*6)
-    boundary = BoxBoundary([[-1.69, 1.69], [-2.1, 1.], [-3., 3.], [0., 2.6], [-3., 3.], [-1.5, 2.]])    
+    # define boundary in 6-dimensional configuration space of the Baxter's arm
+    # the joint limits are taken from the Baxter's manual
+    boundary = BoxBoundary([[-1.69, 1.69], [-2.1, 1.], [-3., 3.], [0., 2.6],
+                            [-3., 3.], [-1.5, 2.]])
     # define boundary style
     boundary.style = {'color' : 'black'}
 
@@ -92,13 +95,11 @@ def caseStudy():
     # initial configuration
     init_conf = Point([0, 0, 0, 0, 0, 0])
     # create robot object
-    # robot = BaxterRobot(name="baxter", init=init_conf, cspace=cspace,
-    #                     stepsize=.99, config={'json-filename':
-    #     '/home/cristi/Dropbox/work/workspace_linux_precision5520/reactive-ltl/'
-    #     'src/robots/baxter_robot/env_config.json'})
+    filename = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                            'robots', 'baxter_robot', 'env_config.json')
+    assert os.path.isfile(filename), 'Json environment file not found!'
     robot = BaxterRobot(name="baxter", init=init_conf, cspace=cspace,
-                        stepsize=.99, config={'json-filename':
-                                              '/home/burobotics/Xiao/docker/docker_home/reactive-ltl/src/robots/baxter_robot/env_config.json'})
+                        stepsize=.99, config={'json-filename': filename})
 
     robot.localObst = 'local_obstacle'
 
@@ -127,10 +128,10 @@ def caseStudy():
 #           'gray')
 #     O3 = (PolygonRegion2D([[2.1, 2.7], [2.4, 3], [2.7, 2.7]], ['o3']), 'gray')
 #     O4 = (BoxRegion2D([[1.65, 1.95], [0.45, 0.6]], ['o4']), 'gray')
-# 
+#
 #     # add all regions
 #     regions = [R1, R2, R3, R4, O1, O2, O3, O4]
-# 
+#
 #     # add regions to workspace
 #     for k, (r, c) in enumerate(regions):
 #         # add styles to region
@@ -143,9 +144,9 @@ def caseStudy():
 #         addStyle(er, style={'facecolor': c})
 #         # add expanded region to the expanded workspace
 #         sim.expandedWorkspace.addRegion(er)
-# 
+#
 #         logger.info('("Global region", %d): (%s, %s)', k, r, r.style)
-# 
+#
 #     # local  requests
 #     F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']),
 #           ([[3.24, 1.98], [2.54, 2.28], [3.5, 3], [4.02, 2.28]], 0.05),
@@ -169,7 +170,7 @@ def caseStudy():
 #                  (PolygonRegion2D([[3.2, 1.4], [3, 0.8], [3.4, 0.7]], ['LO']),
 #                   None, ('gray', 0.8)),
 #                  (BallRegion2D([1.6, 2.1], 0.15, ['LO']), None, ('gray', 0.8))]
-# 
+#
 #     # add style to local requests and obstacles
 #     for k, (r, path, c) in enumerate(requests + obstacles):
 #         # add styles to region
@@ -184,10 +185,10 @@ def caseStudy():
 #                 r.path += line_translate(a, b, step)
 #             r_path = map(list, r.path)
 #             r.path = it.cycle(r.path)
-# 
+#
 #         logger.info('("Local region", %d): (%s, %s, %s, %d)', k, r, r.style,
 #                      r_path, k < len(requests))
-# 
+#
 #     # create request objects
 #     reqs = []
 #     for r, _, _ in requests:
@@ -195,18 +196,18 @@ def caseStudy():
 #         reqs.append(Request(r, name, localSpec[name]))
 #     requests = reqs
 #     obstacles = [o for o, _, _ in obstacles]
-# 
+#
 #     # set the robot's sensor
 #     sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
 #     robot.sensor = SimulatedSensor(robot, sensingShape, requests, obstacles)
-# 
+#
 #     logger.info('"Robot sensor constructor": "%s"',
 #         'SimulatedSensor(robot, BallBoundary2D([0, 0], robot.diameter*2.5),'
 #         'requests, obstacles)')
-# 
+#
 #     # display workspace
 #     sim.display()
-# 
+#
 #     # display expanded workspace
 #     sim.display(expanded=True)
 
@@ -250,9 +251,6 @@ def caseStudy():
     logger.info('"global policy": (%s, %s)', prefix, suffix)
     logger.info('"global policy length": (%d, %d)', len(prefix), len(suffix))
     logger.info('"End global planning": True')
-
-    for conf in prefix+suffix:
-        robot.move(conf.coords)
 
     return #TODO: delete after tests
 
