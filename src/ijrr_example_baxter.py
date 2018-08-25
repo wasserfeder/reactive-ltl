@@ -43,6 +43,10 @@ except ImportError:
     assert os.path.isdir(lomap_path), 'lomap package not found!'
     sys.path.append(lomap_path)
 
+import lomap
+from lomap import compute_potentials
+from lomap import Timer
+    
 from spaces.base import ConfigurationSpace, line_translate, Point
 from spaces.maps_nd import BoxBoundary, BoxRegion
 from robots import BaxterRobot

@@ -138,6 +138,8 @@ class BaxterRobot(Robot):
             return b
         return s
 
+            
+        
     def isSimpleSegment(self, u, v):
 
         u_symbols = np.array(self.getSymbols(u, bitmap=True))
@@ -154,13 +156,17 @@ class BaxterRobot(Robot):
         joints_diff = end_joints - start_joints
         joints_diff_sign = np.sign(joints_diff)
 
-        inc = 0.01 # get intermediate joints from start to end in increments of 0.05 radians
-        joints_inc = inc * joints_diff_sign
+        # inc = 0.01 # get intermediate joints from start to end in increments of 0.05 radians
+        # joints_inc = inc * joints_diff_sign
 
+        interval = 100 # divide into 100 steps
+        joints_inc = np.abs(joints_diff/interval) * joints_diff_sign
+        
         joints = start_joints
         joint_heights_all = []
 
-        for _ in range(int(np.max(np.abs(joints_diff/inc)))):
+        #for _ in range(int(np.max(np.abs(joints_diff/inc)))):
+        for _ in range(interval):
             s = np.array(self.getSymbols(Point(joints), bitmap=True))
 
             symbols = np.vstack([symbols, s])
