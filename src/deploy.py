@@ -35,31 +35,54 @@ from robots import BaxterRobot
 import rospy
 from visualization_msgs.msg import *
 from geometry_msgs.msg import Point as RosPoint
+from geometry_msgs.msg import Pose
 import time
 
 def visualize_policy(policy):
-    policy_marker_pub = rospy.Publisher('/policy_marker', Marker, queue_size=1)
-    policy_marker_line_strip_pub = rospy.Publisher('/policy_marker_line', Marker, queue_size=1)
+    policy_marker_pub = rospy.Publisher('/policy_marker', Marker, queue_size=10)
+    policy_marker_line_strip_pub = rospy.Publisher('/policy_marker_line', Marker, queue_size=10)
     
+    
+    # define boundary in 6-dimensional configuration space of the Baxter's arm
+    # the joint limits are taken from the Baxter's manual
+    boundary = BoxBoundary([[-1.69, 1.69], [-2.1, 1.], [-3., 3.], [0., 2.6],
+                            [-3., 3.], [-1.5, 2.]])
+    # create robot's configuration space
+    cspace = ConfigurationSpace(boundary=boundary)
+
+
+    # initial configuration
+    init_conf = Point([0, 0, 0, 0, 0, 0]) # TODO: load from logfile
+    # create robot object
+    filename = os.path.join(os.path.abspath(os.path.dirname(__file__)),
+                            'robots', 'baxter_robot', 'env_config.json')
+    assert os.path.isfile(filename), 'Json environment file not found!'
+    robot = BaxterRobot(name="baxter", init=init_conf, cspace=cspace,
+                        stepsize=.99, config={'json-filename': filename})
+
+    
+    policy_list = []
+    prefix, suffix = policy
+    for conf in prefix + suffix:
+        joint_angles = list(conf.coords) + [0]
+        workspace_coords = robot.fk(joint_angles)[:3]
+        policy_list.append(workspace_coords)
+    
+
     traj_marker = Marker()
-    traj_marker.type = Marker.SPHERE_LIST
+    traj_marker.type = Marker.CUBE_LIST
     traj_marker.action = Marker.ADD
     traj_marker.header.frame_id = "/world"
     traj_marker.header.stamp = rospy.Time(0)
-    
-    
+    traj_marker.pose = Pose()
+        
     traj_marker_line = Marker()
     traj_marker_line.type = Marker.LINE_STRIP
     traj_marker_line.action = Marker.ADD
     traj_marker_line.header.frame_id = "/world"
     traj_marker_line.header.stamp = rospy.Time(0)
+    traj_marker_line.pose = Pose()
   
-    
-    ### for test
-    policy_list = []
-    for i in range(100):
-        policy_list.append([i, i, i])
-    ###
         
     for p in policy_list:
         pt = RosPoint()
@@ -68,25 +91,30 @@ def visualize_policy(policy):
         pt.z = p[2]
         traj_marker.points.append(pt)
         traj_marker_line.points.append(pt)
-        
+
+    traj_marker.ns = "traj_marker"
     traj_marker.scale.x = 0.2
-    traj_marker.color.r = 0
-    traj_marker.color.g = 0
-    traj_marker.color.b = 1
+    traj_marker.color.r = 0.
+    traj_marker.color.g = 0.
+    traj_marker.color.b = 1.
     traj_marker.color.a = 1.0
     traj_marker.id = 3
-    
+
+    traj_marker_line.ns = "traj_marker_line"
     traj_marker_line.scale.x = 0.01
-    traj_marker_line.color.r = 1
-    traj_marker_line.color.g = 0
-    traj_marker_line.color.b = 0
+    traj_marker_line.color.r = 1.
+    traj_marker_line.color.g = 0.
+    traj_marker_line.color.b = 0.
     traj_marker_line.color.a = 1.0
     traj_marker_line.id = 2
+
     
-    for i in range(10000):
-      policy_marker_pub.publish(traj_marker)
-      policy_marker_line_strip_pub.publish(traj_marker_line)
-      time.sleep(0.1)
+    for i in range(100000):
+        # traj_marker.header.stamp = rospy.Time(0)
+        # traj_marker_line.header.stamp = rospy.Time(0)        
+        policy_marker_pub.publish(traj_marker)
+        policy_marker_line_strip_pub.publish(traj_marker_line)
+        time.sleep(0.1)
       
 def load_policy(logfilename):
     '''Parses log file and returns the stored global policy.'''
@@ -134,4 +162,4 @@ if __name__ == '__main__':
 
   # print(type(policy))
   # rospy.init_node("test")
-  # visualize_policy(policy)
+  visualize_policy(policy)
