@@ -41,6 +41,9 @@ class BaxterRobot(Robot):
         self.fifo = [None] * self.max_cache_size
         self.cache_index = 0
 
+    def get_interactive_position(self):
+        return [0,0,0]
+        
     def fk(self, joint_angles):
         '''
         joint_angles is a list of length 7
@@ -70,7 +73,9 @@ class BaxterRobot(Robot):
 
     def move(self, joint_angles):
         joint_angles = list(joint_angles.coords) + [0]
-        self.baxter_utils.move_to_joint_position(joint_angles)
+        # to account for the order difference in fk and move_to_joint_position
+        remapped_joint_angles = [joint_angles[i] for i in [2, 3, 0, 1, 4, 5, 6]]
+        self.baxter_utils.move_to_joint_position(remapped_joint_angles)
 
     def reset(self):
         self.baxter_utils.reset()
@@ -94,7 +99,10 @@ class BaxterRobot(Robot):
                                     object_pose.transform.translation.z])
 
             if object_name == "table":
-                symbols[object_name] = gripper_position[2] > object_pose[2] + 0.03
+                symbols[object_name] = gripper_position[2] > object_pose[2] + 0.03 and \
+                                       gripper_position[2] < object_pose[2] + 0.7 and \
+                                       abs(gripper_position[0] - object_pose[0]) < value['scale'][0] / 2 and \
+                                       abs(gripper_position[1] - object_pose[1]) < value['scale'][1] / 2
             else:
                 if value['marker_type'] == "cube":
 #                     tmp = np.min([
@@ -117,7 +125,9 @@ class BaxterRobot(Robot):
                     dist = np.linalg.norm(gripper_position[:2] - object_pose[:2])
                     l, h = 0.06, 0.3
                     symbols[object_name] = (dist<= value['scale'][0]/2
-                              and l < gripper_position[2] - object_pose[2] <= h)
+                                            and l < gripper_position[2] - object_pose[2] <= h)
+                elif value['marker_type'] == "interactive":
+                    pass
                 else:
                     raise ValueError("marker type not supported")
 

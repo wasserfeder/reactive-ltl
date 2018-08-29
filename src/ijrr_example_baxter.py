@@ -88,7 +88,7 @@ def caseStudy():
 
     # define boundary in 6-dimensional configuration space of the Baxter's arm
     # the joint limits are taken from the Baxter's manual
-    boundary = BoxBoundary([[-1.69, 1.69], [-2.1, 1.], [-3., 3.], [0., 2.6],
+    boundary = BoxBoundary([[-3., 3.], [0., 2.6], [-1.69, 1.69], [-2.1, 1.],
                             [-3., 3.], [-1.5, 2.]])
     # define boundary style
     boundary.style = {'color' : 'black'}
