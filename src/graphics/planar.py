@@ -272,17 +272,22 @@ class Simulate2D(object):
     def reset(self):
         pass
 
-    def display(self, expanded=False, solution=None, localinfo=None):
+    def display(self, expanded=False, solution=None, localinfo=None,
+                save=None):
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect='equal')
 
         if expanded == 'both':
-            self.render(ax, expanded=True, solution=[], localinfo=localinfo)
+            self.render(ax, expanded=True, solution=None, localinfo=localinfo)
             self.render(ax, expanded=False, solution=solution,
                         localinfo=localinfo)
         else:
             self.render(ax, expanded, solution, localinfo=localinfo)
 
+        if save is not None:
+            plt.tight_layout()
+            plt.savefig(os.path.join(self.config['output-dir'], save),
+                        dpi=fig.dpi)
         plt.show()
 
     def render(self, viewport, expanded=False, solution=None, withtext=True,

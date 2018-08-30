@@ -165,17 +165,15 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index, generate=()):
 
     # display workspace
     if 'workspace' in generate:
-        sim.display()
+        sim.display(save='workspace.png')
 
     # display expanded workspace
     if 'expanded workspace' in generate:
-        sim.display(expanded=True)
+        sim.display(expanded=True, save='eworkspace.png')
 
-    # display solution for off-line problem
-    prefix, suffix = rrg_stat_data['global policy']
-    sim.solution = (prefix, suffix[1:])
+    # display both workspaces
     if 'both workspaces' in generate:
-        sim.display(expanded='both', solution=prefix+suffix[1:])
+        sim.display(expanded='both')
 
     # show construction of rrg
     sim.offline = RRGPlanner(robot, None, 1)
@@ -184,6 +182,14 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index, generate=()):
         sim.config['video-interval'] = 500
         sim.config['video-file'] = 'rrg_construction.mp4'
         sim.save_rrg_process(rrg_data)
+
+    # display solution for off-line problem
+    prefix, suffix = rrg_stat_data['global policy']
+    sim.solution = (prefix, suffix[1:])
+    print 'Global policy size:', len(prefix), len(suffix)
+    if 'global solution' in generate:
+        sim.display(expanded=True, solution=prefix+suffix[1:],
+                    save='global_solution.png')
 
     # set to global and to save animation
     if 'offline plan' in generate:
@@ -254,6 +260,7 @@ if __name__ == '__main__':
 #                         'expanded workspace',
 #                         'both workspaces',
 #                         'RRG construction',
+#                         'global solution',
 #                         'offline plan',
 #                         'online plan',
 #                         'LTS construction',
