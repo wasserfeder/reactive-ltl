@@ -41,8 +41,17 @@ class BaxterRobot(Robot):
         self.fifo = [None] * self.max_cache_size
         self.cache_index = 0
 
-    def get_interactive_position(self):
-        return [0,0,0]
+    def get_interactive_object_position(self):
+        for k, v in viewitems(self.env):
+            if v['marker_type'] == "interactive":
+                object_pose = self.tf_buffer.lookup_transform(
+                    value['parent_frame_id'][1:], value['child_frame_id'][1:],
+                    rospy.Time())
+                object_pose = np.array([object_pose.transform.translation.x,
+                                        object_pose.transform.translation.y,
+                                        object_pose.transform.translation.z])
+
+                return object_pose
         
     def fk(self, joint_angles):
         '''
