@@ -15,6 +15,7 @@ from spaces import Point
 default_config = {
     'baxter_utils_config': {
         'arm': "right",
+        'env_json_path': ""
     }
 }
 
@@ -26,9 +27,12 @@ class BaxterRobot(Robot):
 
         self.config = default_config
         self.config.update(config)
-        self.baxter_utils = BaxterUtils(self.config['baxter_utils_config'])
 
         json_filename = self.config.get('json-filename', 'env_config.json')
+        self.config['baxter_utils_config']['env_json_path'] = json_filename
+        
+        self.baxter_utils = BaxterUtils(self.config['baxter_utils_config'])
+
         with open(json_filename) as f:
             self.env = json.loads(f.read())
 

@@ -38,5 +38,15 @@
     "rgba": [0.1, 0.1, 1.0, 0.6],
     "marker_type": "sphere",
     "apply_transform": "T_motive2baxter"
+  },
+  "interactive": {
+    "topic": "/vrpn_client_node/table/pose",
+    "parent_frame_id": "/world",
+    "child_frame_id": "/interactive",
+    "init_pose": [0.7, -0.9, -0.032552694320678892, 0, 0, 0, 1],
+    "scale": [0.3, 0.3, 0.001],
+    "rgba": [0.1, 0.1, 1.0, 0.6],
+    "marker_type": "interactive",
+    "apply_transform": "T_motive2baxter"
   }
 }
