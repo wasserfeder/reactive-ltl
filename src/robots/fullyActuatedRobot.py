@@ -42,7 +42,7 @@ class FullyActuatedRobot(Robot):
         are computed.
         '''
         if local:
-            return set([r.name for r in self.sensor.requests
+            return set([r.name for r in self.sensor.sensed_requests
                             if r.region.intersects(position)])
         return self.wspace.getSymbols(position)
 
