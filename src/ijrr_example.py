@@ -44,11 +44,8 @@ from graphics.planar import addStyle, Simulate2D, to_rgba
 from lomap import Timer
 
 
-def caseStudy():
-    ############################################################################
-    ### Output and debug options ###############################################
-    ############################################################################
-    outputdir = os.path.abspath('../data_ijrr/example1')
+def setup(outputdir='.', logfilename='example.log'):
+    '''Setup logging, and set output and debug options.'''
     if not os.path.isdir(outputdir):
         os.makedirs(outputdir)
 
@@ -56,7 +53,7 @@ def caseStudy():
     fs = '%(asctime)s [%(levelname)s] -- { %(message)s }'
     dfs = '%m/%d/%Y %I:%M:%S %p'
     loglevel = logging.DEBUG
-    logfile = os.path.join(outputdir, 'ijrr_example_1.log')
+    logfile = os.path.join(outputdir, logfilename)
     verbose = True
     logging.basicConfig(filename=logfile, filemode='w', level=loglevel,
                         format=fs, datefmt=dfs)
@@ -67,10 +64,8 @@ def caseStudy():
         ch.setFormatter(logging.Formatter(fs, dfs))
         root.addHandler(ch)
 
-
-    ############################################################################
-    ### Define case study setup (robot parameters, workspace, etc.) ############
-    ############################################################################
+def define_problem(outputdir='.'):
+    '''Define case study setup (robot parameters, workspace, etc.).'''
 
     # define robot diameter (used to compute the expanded workspace)
     robotDiameter = 0.36
@@ -201,13 +196,16 @@ def caseStudy():
     # display expanded workspace
     sim.display(expanded=True)
 
-    ############################################################################
-    ### Generate global transition system and off-line control policy ##########
-    ############################################################################
-
     globalSpec = ('[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4)'
-                  + ' && !(o1 || o2 || o3 || o4 || o5))')
+                  + ' && !(o1 || o2 || o3 || o4 ))')
     logging.info('"Global specification": "%s"', globalSpec)
+
+
+    return robot, sim, globalSpec, localSpec
+
+def generate_global_ts(globalSpec, sim, robot, eta=(0.5, 1.0),
+                       ts_file='ts.yaml', outputdir='.', show=True):
+    '''Generate global transition system and off-line control policy.'''
 
     # initialize incremental product automaton
     checker = IncrementalProduct(globalSpec) #, specFile='ijrr_globalSpec.txt')
@@ -216,35 +214,38 @@ def caseStudy():
 
     # initialize global off-line RRG planner
     sim.offline = RRGPlanner(robot, checker, iterations=1000)
-    sim.offline.eta = [0.5, 1.0] # good bounds for the planar case study
+    sim.offline.eta = eta
 
     logging.info('"Start global planning": True')
     with Timer(op_name='global planning', template='"%s runtime": %f'):
         found = sim.offline.solve()
         logging.info('"Found solution": %s', found)
-        if not found:
-            return
 
     logging.info('"Iterations": %d', sim.offline.iteration)
     logging.info('"Size of TS": %s', sim.offline.ts.size())
     logging.info('"Size of PA": %s', sim.offline.checker.size())
 
     # save global transition system and control policy
-    sim.offline.ts.save(os.path.join(outputdir, 'ts.yaml'))
+    if ts_file is not None:
+        sim.offline.ts.save(os.path.join(outputdir, ts_file))
 
     ############################################################################
     ### Display the global transition system and the off-line control policy ###
     ############################################################################
 
     # display workspace and global transition system
-    prefix, suffix = sim.offline.checker.globalPolicy(sim.offline.ts)
-    sim.display(expanded='both', solution=prefix+suffix[1:])
+    prefix, suffix = [], []
+    if found:
+        prefix, suffix = sim.offline.checker.globalPolicy(sim.offline.ts)
+        if show:
+            sim.display(expanded='both', solution=prefix+suffix[1:])
     logging.info('"global policy": (%s, %s)', prefix, suffix)
     logging.info('"End global planning": True')
 
-    ############################################################################
-    ### Execute on-line path planning algorithm ################################
-    ############################################################################
+    return found
+
+def plan_online(localSpec, sim, robot, iterations=2):
+    '''Execute on-line path planning algorithm.'''
 
     # compute potential for each state of PA
     with Timer(op_name='Computing potential function',
@@ -253,7 +254,7 @@ def caseStudy():
             return
 
     # set the step size for the local controller
-    robot.controlspace = 0.1
+    robot.controlspace = 0.101
 
     # initialize local on-line RRT planner
     sim.online = LocalPlanner(sim.offline.checker, sim.offline.ts, robot,
@@ -261,19 +262,16 @@ def caseStudy():
     sim.online.detailed_logging = True
 
     # define number of surveillance cycles to run
-    cycles = 2
+    cycles = iterations
     # execute controller
     cycle = -1 # number of completed cycles, -1 accounts for the prefix
     while cycle < cycles:
         logging.info('"Start local planning step": True')
         # update the locally sensed requests and obstacles
         requests, obstacles = robot.sensor.sense()
-        with Timer(op_name='local planning', template='"%s runtime": %f'):
+        with Timer(op_name='local planning', template='"%s execution": %f'):
             # feed data to planner and get next control input
             nextConf = sim.online.execute(requests, obstacles)
-
-#         sim.display(expanded=True, localinfo=('plan', 'trajectory'))
-
         # enforce movement
         robot.move(nextConf)
         # if completed cycle increment cycle
@@ -282,7 +280,30 @@ def caseStudy():
 
     logging.info('"Local online planning finished": True')
 
+def global_performance(outputdir, logfilename, trials=20):
+    setup(outputdir, logfilename)
+    robot, sim, globalSpec, _ = define_problem(outputdir)
+    for k in range(trials):
+        np.random.seed(1001 + 100 * k)
+        generate_global_ts(globalSpec, sim, robot, eta=(0.3, 1.0), ts_file=None,
+                           show=False)
+
+def caseStudy(outputdir, logfilename, iterations):
+    setup(outputdir, logfilename)
+    robot, sim, globalSpec, localSpec = define_problem(outputdir)
+    if not generate_global_ts(globalSpec, sim, robot, outputdir=outputdir):
+        return
+    plan_online(localSpec, sim, robot, iterations)
 
 if __name__ == '__main__':
+    outputdir = os.path.abspath('../data_ijrr/example1')
+
+#     global_performance(outputdir, logfilename='ijrr_example_1_global.log',
+#                        trials=100)
+
+#     np.random.seed(1001)
+#     caseStudy(outputdir, logfilename='ijrr_example_1.log', iterations=2)
+
     np.random.seed(1001)
-    caseStudy()
+    caseStudy(outputdir, logfilename='ijrr_example_1_long.log', iterations=100)
+
