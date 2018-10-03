@@ -71,7 +71,7 @@ class SimulatedSensor(Sensor):
         self.sensingShape.translate(v)
         assert np.all(self.sensingShape.center == self.robot.currentConf.coords)
 
-        requests = [r for r in self.requests
+        self.sensed_requests = [r for r in self.requests
                       if self.sensingShape.intersects(r.region.center)]
 
         obstacles = [intersection(self.sensingShape, o)
@@ -79,7 +79,7 @@ class SimulatedSensor(Sensor):
         obstacles = [o for o in obstacles if o is not None]
         logging.info('"Sensed obstacles": %s', obstacles)
 
-        return requests, obstacles
+        return self.sensed_requests, obstacles
 
     def update(self):
         '''Updates requests and local obstacles.'''

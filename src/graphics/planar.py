@@ -176,12 +176,12 @@ def drawGraph(viewport, g, node_color='blue', edge_color='black', zorder=2):
         plt.plot(x, y, color=edge_color, zorder=zorder)
 
 def drawPolicy(viewport, solution, color='black', alpha_min=1.0, zorder=2):
-    '''Draws the a solution path with a fading effect.'''
+    '''Draws the solution path with a fading effect.'''
     if alpha_min == 1.0:
         transparency = it.repeat(1.0)
     else:
         transparency = np.linspace(alpha_min, 1.0, len(solution)-1)
-    
+
     for u, v, a in it.izip(solution, solution[1:], transparency):
         dx, dy = v.x - u.x, v.y - u.y
         plt.arrow(u.x, u.y, dx, dy, hold=True, color=color, alpha=a,
@@ -206,16 +206,20 @@ class Simulate2D(object):
             self.config = config
         else:
             self.config = dict()
-        self.__defaultConfiguration()
+        self.defaultConfiguration()
 
         self.offline = None
         self.online = None
 
         self.solution = None
 
-        self.play_global = True
+    def defaultConfiguration(self, reset=None):
+        '''Sets default values for various parameters.'''
+        if reset: # set all parameters in reset to their default values
+            for key in reset:
+                if key in self.config:
+                    del self.config[key]
 
-    def __defaultConfiguration(self):
         self.config['x-padding'] = self.config.get('x-padding',
                                                    self.robot.diameter/2)
         self.config['y-padding'] = self.config.get('y-padding',
@@ -232,6 +236,11 @@ class Simulate2D(object):
         self.config['trajectory-color'] = 'black'
         self.config['trajectory-min-transparency'] = 0.2
         self.config['local-plan-color'] = 'green'
+        self.config['local-ts-color'] = {'node_color': 'blue',
+                                         'edge_color': 'black'}
+        self.config['global-ts-color'] = {'node_color': 'gray',
+                                          'edge_color': 'gray'}
+        self.config['global-policy-color'] = 'black'
 
         self.config['background-transparency'] = 1.0
 
@@ -272,21 +281,22 @@ class Simulate2D(object):
     def reset(self):
         pass
 
-    def display(self, expanded=False, solution=None, localinfo=None):
+    def display(self, expanded=False, solution=None, localinfo=None,
+                save=None):
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect='equal')
 
         if expanded == 'both':
-            self.render(ax, expanded=True, solution=[], localinfo=localinfo)
+            self.render(ax, expanded=True, solution=None, localinfo=localinfo)
             self.render(ax, expanded=False, solution=solution,
                         localinfo=localinfo)
         else:
             self.render(ax, expanded, solution, localinfo=localinfo)
 
-        if self.config.get('fig-file', None) is not None:
-            filename = os.path.join(self.config['output-dir'],
-                                    self.config['fig-file'])
-            plt.savefig(filename, bbox_inches='tight')
+        if save is not None:
+            plt.tight_layout()
+            plt.savefig(os.path.join(self.config['output-dir'], save),
+                        dpi=fig.dpi)
         plt.show()
 
     def render(self, viewport, expanded=False, solution=None, withtext=True,
@@ -332,12 +342,12 @@ class Simulate2D(object):
 
         if solution is not None:
             drawGraph(viewport, self.offline.ts.g, zorder=zorder['global ts'],
-                      node_color='gray', edge_color='gray')
-            drawPolicy(viewport, solution, zorder=zorder['global plan'])
-        else:
-            if self.offline is not None: # draw transition system
-                drawGraph(viewport, self.offline.ts.g, zorder=zorder['global ts'],
-                          node_color='gray', edge_color='gray')
+                      **self.config['global-ts-color'])
+            drawPolicy(viewport, solution, zorder=zorder['global plan'],
+                       color=self.config['global-policy-color'])
+        elif self.offline is not None: # draw transition system
+            drawGraph(viewport, self.offline.ts.g, zorder=zorder['global ts'],
+                      **self.config['global-ts-color'])
 
         # draw local regions/plans/data
         if self.online is not None:
@@ -366,9 +376,10 @@ class Simulate2D(object):
                 drawRegion2D(viewport, r, r.style, text, r.textStyle)
 
             if 'tree' in localinfo and self.online.lts:
-                drawGraph(viewport, self.online.lts.g, zorder=zorder['local ts'])
+                drawGraph(viewport, self.online.lts.g,
+                    zorder=zorder['local ts'], **self.config['local-ts-color'])
             if 'trajectory' in localinfo:
-                # compute history 
+                # compute history
                 history = self.config['trajectory-history-length']
                 start = max(0, len(self.online.trajectory) - history)
                 drawPolicy(viewport, self.online.trajectory[start:],
@@ -384,7 +395,6 @@ class Simulate2D(object):
         '''Removes requests serviced by the robot, resets all requests at the
         end of each cycle, and moves them on their paths.
         '''
-
         # update requests and local obstacles
         self.robot.sensor.update()
         # reset requests at the start of a cycle, i.e., reaching a final state
@@ -446,14 +456,13 @@ class Simulate2D(object):
             rendering_options = ('trajectory', 'plan')
 
         def init_anim():
-            self.render(ax, expanded=True, solution=[],
+            self.render(ax, expanded=True, solution=policy,
                         localinfo=('trajectory',))
-            self.render(ax, expanded=False, solution=policy,
-                        localinfo=('trajectory',))
+#             self.render(ax, expanded=False, solution=policy,
+#                         localinfo=('trajectory',))
             return []
 
         def run_anim(frame, *args):
-
             if local:
                 if self.path[self.cstep] == trajectory[self.traj_step]:
                     self.traj_step += 1
@@ -467,7 +476,7 @@ class Simulate2D(object):
 
                 self.online.trajectory = trajectory[:self.traj_step+1]
                 self.online.local_plan = localinfo['plans'][self.traj_step]
-            
+
             self.step()
             plt.cla()
             self.render(ax, expanded=True, solution=policy,
@@ -486,7 +495,7 @@ class Simulate2D(object):
         if show:
             plt.show()
 
-    def save(self, output='video'):
+    def save(self, output='video', frames=None):
         '''Saves the playback data in the given output format.'''
         if output == 'video':
             filename = os.path.join(self.config['output-dir'],
@@ -503,10 +512,16 @@ class Simulate2D(object):
             if not os.path.isdir(basedir):
                 os.makedirs(basedir)
 
+            if frames is None:
+                frames = range(len(self.path))
+
             for frame, _ in enumerate(self.path):
                 self.draw_plot(frame)
                 logging.info('Saving frame %d to file: %s !', frame, filename)
-                plt.savefig(filename.format(frame=frame))
+                if frame in frames:
+                    plt.subplots_adjust(left=0.05, bottom=0.05, right=0.98,
+                                        top=0.98, wspace=0, hspace=0)
+                    plt.savefig(filename.format(frame=frame))
         else:
             raise NotImplementedError('Unknown output format!')
 
@@ -519,11 +534,36 @@ class Simulate2D(object):
             return True
         return False
 
+    def save_rrg_iterations(self, rrg_data, iterations,
+                            fileformat='rrg_iteration_{}.png'):
+        '''Saves figures for each requested iteration of the RRG generation.'''
+        fig = plt.figure()
+        ax = fig.add_subplot(111, aspect='equal')
+
+        filename = os.path.join(self.config['output-dir'], fileformat)
+        for display_data in rrg_data:
+            self.offline.ts.g.add_edges_from(
+                                            display_data['forward edges added'])
+            self.offline.ts.g.add_edges_from(
+                                    display_data['backward edges added'])
+
+            iteration = display_data['iteration']
+            if iteration in iterations:
+                plt.cla()
+                plt.title('iteration: {}'.format(iteration))
+                self.render(ax, expanded=True, sensing_area=False)
+                print 'Save iteration', iteration
+                plt.subplots_adjust(left=0.05, bottom=0.05, right=0.98,
+                                    top=0.95, wspace=0, hspace=0)
+                plt.savefig(filename.format(iteration), dpi=fig.dpi)
+
     def save_rrg_process(self, rrg_data, markersize=12,
                          max_detailed_iteration = 20, endframe_hold=4):
         '''Saves a video with generation of the RRG transition system.'''
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect='equal')
+
+        zorder = self.config['z-order']
 
         def init_rrg_anim():
             self.render(ax, expanded=True)
@@ -553,7 +593,8 @@ class Simulate2D(object):
             if display_data['iteration'] > ctx.max_detailed_iteration:
                 plt.title('iteration: {}'.format(display_data['iteration']))
                 sample = display_data['random configuration']
-                plt.plot(sample.x, sample.y, 'o', color='orange', ms=markersize)
+                plt.plot(sample.x, sample.y, 'o', color='orange', ms=markersize,
+                         zorder=zorder['global ts'])
                 self.offline.ts.g.add_edges_from(
                                             display_data['forward edges added'])
                 self.offline.ts.g.add_edges_from(
@@ -567,17 +608,19 @@ class Simulate2D(object):
                                             display_data['iteration'], phase))
             if phase in ('sampling', 'nearest', 'steering'):
                 sample = display_data['random configuration']
-                plt.plot(sample.x, sample.y, 'o', color='orange', ms=markersize)
+                plt.plot(sample.x, sample.y, 'o', color='orange', ms=markersize,
+                         zorder=zorder['global ts'])
             if phase in ('nearest', 'steering'):
                 nearest = display_data['nearest state']
                 plt.plot(nearest.x, nearest.y, 'o', color='gray', alpha=.4,
-                         ms=markersize)
+                         ms=markersize, zorder=zorder['global ts'])
             if phase == 'steering':
                 new_conf = display_data['new configuration']
                 plt.plot(new_conf.x, new_conf.y, 'o', color='green',
-                         ms=markersize)
+                         ms=markersize, zorder=zorder['global ts'])
                 plt.plot([nearest.x, new_conf.x], [nearest.y, new_conf.y],
-                         color='black', linestyle='dashed')
+                         color='black', linestyle='dashed',
+                         zorder=zorder['global ts'])
 
             if phase == 'forward':
                 new_conf = display_data['new configuration']
@@ -588,14 +631,15 @@ class Simulate2D(object):
                                  style={'color':'gray', 'alpha':.2})
                 if display_data['forward state added'] is not None:
                     plt.plot(new_conf.x, new_conf.y, 'o', color='green',
-                             ms=markersize)
+                             ms=markersize, zorder=zorder['global ts'])
                     for u, v in display_data['forward edges added']:
                         dx, dy = v.x - u.x, v.y - u.y
                         plt.arrow(u.x, u.y, dx, dy, color='black',
-                                  length_includes_head=True, head_width=0.08)
+                                  length_includes_head=True, head_width=0.08,
+                                  zorder=zorder['global ts'])
                 else:
                     plt.plot(new_conf.x, new_conf.y, 'o', color='red',
-                             ms=markersize)
+                             ms=markersize, zorder=zorder['global ts'])
                 self.offline.ts.g.add_edges_from(
                                             display_data['forward edges added'])
 
@@ -603,10 +647,10 @@ class Simulate2D(object):
                 new_conf = display_data['new configuration']
                 if display_data['forward state added'] is not None:
                     plt.plot(new_conf.x, new_conf.y, 'o', color='green',
-                             ms=markersize)
+                             ms=markersize, zorder=zorder['global ts'])
                 else:
                     plt.plot(new_conf.x, new_conf.y, 'o', color='red',
-                             ms=markersize)
+                             ms=markersize, zorder=zorder['global ts'])
                 for u, v in display_data['backward edges added']:
                     dx, dy = v.x - u.x, v.y - u.y
                     plt.arrow(u.x, u.y, dx, dy, color='black',
@@ -680,7 +724,7 @@ class Simulate2D(object):
                     plt.plot(sample.x, sample.y, 'o', color='orange',
                              ms=markersize, zorder=zorder['local ts'])
                 if collision_free:
-                    self.online.ts.g.add_edge(nearest, new_conf)
+                    self.online.lts.g.add_edge(nearest, new_conf)
                 self.render(ax, expanded=True, localinfo=('tree',))
                 ctx.phases_remaning = iter([])
                 return []
@@ -716,7 +760,7 @@ class Simulate2D(object):
                         plt.arrow(u.x, u.y, dx, dy, color=c,
                                   length_includes_head=True, head_width=0.02,
                                   zorder=zorder['local ts'])
-                    self.online.ts.g.add_edge(nearest, new_conf)
+                    self.online.lts.g.add_edge(nearest, new_conf)
                 else:
                     if not simple_segment:
                         c = 'violet'
@@ -739,6 +783,43 @@ class Simulate2D(object):
         rrt_animation.save(filename, writer=self.config['video-writer'],
                            codec=self.config['video-codec'],
                            metadata={'artist': 'Cristian-Ioan Vasile'})
+
+    def save_lts_iterations(self, rrt_data, iterations,
+                            fileformat='lts_iteration_{}.png'):
+        '''Saves figures for each requested iteration of the LTS generation.'''
+        # move robot to current configuration
+        conf = iter(self.online.lts.init).next()
+        self.robot.move(conf)
+        # reset local transition system
+        self.online.lts.g.clear()
+        self.online.lts.g.add_node(conf)
+
+        zorder = self.config['z-order']
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111, aspect='equal')
+
+        filename = os.path.join(self.config['output-dir'], fileformat)
+        for display_data in rrt_data:
+            (iteration, _, nearest, new_conf, _, _, collision_free, hit,
+             global_target_state) = display_data
+            if collision_free:
+                    self.online.lts.g.add_edge(nearest, new_conf)
+
+            if iteration in iterations:
+                plt.cla()
+                plt.title('iteration: {}'.format(iteration))
+                if hit:
+                    u, v = new_conf, global_target_state
+                    dx, dy = v.x - u.x, v.y - u.y
+                    plt.arrow(u.x, u.y, dx, dy, color='yellow',
+                              length_includes_head=True, head_width=0.04,
+                              zorder=zorder['local ts'])
+                self.render(ax, expanded=True, localinfo=('tree',))
+                print 'Save iteration', iteration
+                plt.subplots_adjust(left=0.05, bottom=0.05, right=0.98,
+                                    top=0.95, wspace=0, hspace=0)
+                plt.savefig(filename.format(iteration), dpi=fig.dpi)
 
 
 if __name__ == '__main__':

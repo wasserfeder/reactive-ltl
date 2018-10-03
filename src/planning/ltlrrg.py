@@ -32,7 +32,7 @@
 import logging
 from itertools import ifilter, imap, tee
 
-from lomap import Ts
+from lomap import Ts, Timer
 
 
 class RRGPlanner(object):
@@ -99,8 +99,10 @@ class RRGPlanner(object):
             for state in self.far(newConf):
                 # check if the new state satisfies the global specification
                 if self.robot.isSimpleSegment(state, newConf):
-                    Ep = self.checker.check(self.ts, state, newConf, newProp,
-                                            forward=True)
+                    with Timer(op_name='PA check forward',
+                               template='"%s runtime": %f'):
+                        Ep = self.checker.check(self.ts, state, newConf, newProp,
+                                                forward=True)
                     if Ep:
                         newState = newConf
                         Delta.add((state, newConf))
@@ -109,7 +111,9 @@ class RRGPlanner(object):
             if newState:
                 self.ts.g.add_node(newState, prop=newProp)
                 self.ts.g.add_edges_from(Delta)
-                self.checker.update(E)
+                with Timer(op_name='PA update forward',
+                           template='"%s runtime": %f'):
+                    self.checker.update(E)
 
             logging.info('"forward state added": %s', newState)
             logging.info('"forward edges added": %s', Delta)
@@ -126,9 +130,10 @@ class RRGPlanner(object):
                                     self.robot.isSimpleSegment(newState, state):
                         # check if the new state satisfies the global
                         # specification
-                        Ep = self.checker.check(self.ts, newState, state,
-                                                self.ts.g.node[state]['prop'],
-                                                forward=False)
+                        with Timer(op_name='PA check backward',
+                               template='"%s runtime": %f'):
+                            Ep = self.checker.check(self.ts, newState, state,
+                                   self.ts.g.node[state]['prop'], forward=False)
                         if Ep:
                             Delta.add((newState, state))
                             E.update(Ep)
@@ -136,7 +141,9 @@ class RRGPlanner(object):
 #                                          state, (newState, state))
 
             self.ts.g.add_edges_from(Delta)
-            self.checker.update(E)
+            with Timer(op_name='PA update backward',
+                               template='"%s runtime": %f'):
+                self.checker.update(E)
             logging.info('"backward edges added": %s', Delta)
 
             # uncomment assertion for debugging
