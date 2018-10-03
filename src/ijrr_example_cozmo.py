@@ -197,7 +197,7 @@ def caseStudy():
                                          checker.buchi.g.number_of_edges())
 
     # initialize global off-line RRG planner
-    sim.offline = RRGPlanner(robot, checker,  iterations=1000)
+    sim.offline = RRGPlanner(robot, checker, iterations=1000)
     sim.offline.eta = [0.5, 1.0] # good bounds for the planar case study
 
     logging.info('"Start global planning": True')

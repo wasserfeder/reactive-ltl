@@ -388,8 +388,6 @@ class LocalPlanner(object):
                                 self.global_target_state = global_state
                                 done = True
 
-            print([r.region.center for r in self.robot.sensor.requests]) #TODO: delete
-
             if self.detailed_logging:
                 logging.info('"lts iteration %d" : '
                              '(%d, %s, %s, %s, %s, %s, %s, %s, %s)',
