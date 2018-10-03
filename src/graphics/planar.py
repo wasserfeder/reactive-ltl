@@ -294,7 +294,8 @@ class Simulate2D(object):
             self.render(ax, expanded, solution, localinfo=localinfo)
 
         if save is not None:
-            plt.tight_layout()
+            plt.subplots_adjust(left=0.05, bottom=0.05, right=0.98, top=0.98,
+                                wspace=0, hspace=0)
             plt.savefig(os.path.join(self.config['output-dir'], save),
                         dpi=fig.dpi)
         plt.show()
