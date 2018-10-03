@@ -181,7 +181,7 @@ def drawPolicy(viewport, solution, color='black', alpha_min=1.0, zorder=2):
         transparency = it.repeat(1.0)
     else:
         transparency = np.linspace(alpha_min, 1.0, len(solution)-1)
-    
+
     for u, v, a in it.izip(solution, solution[1:], transparency):
         dx, dy = v.x - u.x, v.y - u.y
         plt.arrow(u.x, u.y, dx, dy, hold=True, color=color, alpha=a,
@@ -215,7 +215,7 @@ class Simulate2D(object):
 
     def defaultConfiguration(self, reset=None):
         '''Sets default values for various parameters.'''
-        if reset: # set all parameters in reset to their default values 
+        if reset: # set all parameters in reset to their default values
             for key in reset:
                 if key in self.config:
                     del self.config[key]
@@ -294,7 +294,8 @@ class Simulate2D(object):
             self.render(ax, expanded, solution, localinfo=localinfo)
 
         if save is not None:
-            plt.tight_layout()
+            plt.subplots_adjust(left=0.05, bottom=0.05, right=0.98, top=0.98,
+                                wspace=0, hspace=0)
             plt.savefig(os.path.join(self.config['output-dir'], save),
                         dpi=fig.dpi)
         plt.show()
@@ -379,7 +380,7 @@ class Simulate2D(object):
                 drawGraph(viewport, self.online.lts.g,
                     zorder=zorder['local ts'], **self.config['local-ts-color'])
             if 'trajectory' in localinfo:
-                # compute history 
+                # compute history
                 history = self.config['trajectory-history-length']
                 start = max(0, len(self.online.trajectory) - history)
                 drawPolicy(viewport, self.online.trajectory[start:],
@@ -476,7 +477,7 @@ class Simulate2D(object):
 
                 self.online.trajectory = trajectory[:self.traj_step+1]
                 self.online.local_plan = localinfo['plans'][self.traj_step]
-            
+
             self.step()
             plt.cla()
             self.render(ax, expanded=True, solution=policy,

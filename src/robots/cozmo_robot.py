@@ -5,7 +5,6 @@
 
 .. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
 '''
-
 '''
     Module implements a fully actuated robot (an integrator).
     Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
@@ -31,9 +30,11 @@ import time
 import lcm
 
 from cozmo_messages import cozmo_msg_t
+from cozmo_messages import path_msg_t
 from cozmo_messages import reply_msg_t
 
 from robot import Robot
+from spaces.maps2d import Point2D
 
 
 class Cozmo(Robot):
@@ -45,24 +46,32 @@ class Cozmo(Robot):
         self.setup()
 
     def setup(self):
-        self.move_msg = cozmo_msg_t()
+        self.move_msg = path_msg_t()
         self.lc = lcm.LCM()
 
         def reply_handler(channel, data):
             msg = reply_msg_t.decode(data)
             print('reply from cozmo:', msg.code) # TODO: remove after debug
+            assert  msg.code == 0, 'INTERRUPTED'# TODO: remove after debug
+            if msg.code == 0: # success #FIXME: should use named constant
+                conf = self.path[-1]
+            elif msg.code == 1: # interrupted #FIXME: should use named constant
+                conf = Point2D(msg.position) # TODO: test this
+            super(Cozmo, self).move(conf)
 
         self.lc.subscribe('COZMO_REPLY', reply_handler)
 
-    def move(self, conf):
+    def move(self, path):
+        assert len(path) ==1 # FIXME: delete this after debugging
+
+        self.path = path
         # send move request
         self.move_msg.timestamp = int(time.time() * 1000000)
-        self.move_msg.position = conf.x, conf.y
-        self.lc.publish('COZMO', self.move_msg.encode())
+        self.move_msg.num_poses = len(path)
+        self.move_msg.poses = [(conf.x, conf.y, 0) for conf in path]
+        self.lc.publish('PATH', self.move_msg.encode())
         # await reply
         self.lc.handle()
-
-        super(Cozmo, self).move(conf)
 
     def getSymbols(self, position, local=False):
         if local:
