@@ -82,7 +82,7 @@ class BoxBoundary2D(Boundary):
         self._hash = hash(tuple(self.ranges.flat))
 
     def volume(self):
-        return np.prod(self.ranges[:, 0] - self.ranges[:, 1])
+        return np.prod(self.ranges[:, 1] - self.ranges[:, 0])
 
     def boundingBox(self):
         return self.ranges
