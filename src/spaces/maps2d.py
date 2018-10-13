@@ -129,7 +129,7 @@ class BoxBoundary2D(Boundary):
             \min(1, \min_{i=1,\ldots,n}(\lambda^{u}_i))
         '''
         if dest:
-            diff = dest - src
+            diff = dest.coords - src.coords
             low, high = self.ranges.T
             # add extra dimension for the [0, 1] constraint
             u = zeros((3,))
@@ -139,8 +139,8 @@ class BoxBoundary2D(Boundary):
                 if not (self.ranges[0, 0] <= src.x <= self.ranges[0, 1]):
                     return False
             else:
-                u[0] = (low[0] - src[0])/diff[0]
-                v[0] = (high[0] - src[0])/diff[0]
+                u[0] = (low[0] - src.x)/diff[0]
+                v[0] = (high[0] - src.x)/diff[0]
                 if diff[0] < 0:
                     u[0], v[0] = v[0], u[0]
 
@@ -148,8 +148,8 @@ class BoxBoundary2D(Boundary):
                 if not (self.ranges[1, 0] <= src.y <= self.ranges[1, 1]):
                     return False
             else:
-                u[1] = (low[1] - src[1])/diff[1]
-                v[1] = (high[1] - src[1])/diff[1]
+                u[1] = (low[1] - src.y)/diff[1]
+                v[1] = (high[1] - src.y)/diff[1]
                 if diff[1] < 0:
                     u[1], v[1] = v[1], u[1]
 
@@ -189,7 +189,7 @@ class BoxBoundary2D(Boundary):
     def __eq__(self, other):
         if not isinstance(other, BoxBoundary2D):
             return False
-        return self.ranges == other.ranges
+        return np.all(self.ranges == other.ranges)
 
 #     def __str__(self):
 #         return 'BoxBoundary2D(x={0}, y={1})'.format(*map(list, self.ranges))
