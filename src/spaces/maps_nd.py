@@ -36,7 +36,6 @@ from base import Boundary, Point, Region
 
 __all__ = ['BallBoundary', 'BoxBoundary', 'BallRegion', 'BoxRegion']
 
-#TODO: restructure and clean up module
 
 class BoxBoundary(Boundary):
     '''Defines an n-dimensional hyper-rectangular boundary.
@@ -101,27 +100,28 @@ class BoxBoundary(Boundary):
             \min(1, \min_{i=1,\ldots,n}(\lambda^{u}_i))
         '''
         if dest:
-            diff = dest - src
+            diff = dest.coords - src.coords
             low, high = self.ranges.T
-            # add extra dimension for the [0, 1] constraint
-            u = zeros((self.dimension + 1,))
-            v = ones((self.dimension + 1,))
+            u = zeros((self.dimension,))
+            v = ones((self.dimension,))
 
             # indices i where src[i] == dest[i]
             indices = np.abs(diff) < np.finfo(float).eps
-            if not np.all(self.ranges[indices, 0] <= src[indices]
-                                                    <= self.ranges[indices, 1]):
+            if (np.any(self.ranges[indices, 0] > src.coords[indices])
+                      or np.any(src.coords[indices] > self.ranges[indices, 1])):
                 return False
 
             indices = ~indices # indices i where src[i] != dest[i]
-            u[indices] = (low[indices] - src[indices])/diff[indices]
-            v[indices] = (high[indices] - src[indices])/diff[indices]
+            u[indices] = (low[indices] - src.coords[indices])/diff[indices]
+            v[indices] = (high[indices] - src.coords[indices])/diff[indices]
             indices = indices & (diff < 0) # indices that require sign change
             u[indices], v[indices] = v[indices], u[indices]
 
-            return np.max(u) <= np.min(v)
+            # add extra constraint to [0, 1]
+            return max(np.max(u), 0) <= min(np.min(v), 1)
 
-        return np.all(self.ranges[:, 0] <= src <= self.ranges[:, 1])
+        return (np.all(self.ranges[:, 0] <= src.coords)
+                and np.all(src.coords <= self.ranges[:, 1]))
 
     def contains(self, src, dest):
         '''Returns True if the line segment from src to dest in contained in the
@@ -139,7 +139,7 @@ class BoxBoundary(Boundary):
         self.ranges[:, :] = (self.ranges.T + v).T
 
     def __eq__(self, other):
-        return self.ranges == other.ranges
+        return np.all(self.ranges == other.ranges)
 
     def __repr__(self):
         return 'BoxBoundary(ranges={0})'.format(map(list, self.ranges))
@@ -189,7 +189,7 @@ class BallBoundary(Boundary):
     def sample(self):
         r = self.radius * uniform()
         x = normal(size=self.dimension)
-        return r * x / np.linalg.norm(x)
+        return Point(r * x / np.linalg.norm(x))
 
     def intersects(self, src, dest=None):
         '''
