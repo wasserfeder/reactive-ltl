@@ -32,10 +32,11 @@ import numpy as np
 
 from lomap import Ts
 
-from spaces.base import Workspace
+from spaces.base import Workspace, Point
 from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
                           expandRegion, BoxBoundary2D, BallBoundary2D, \
                           PolygonBoundary2D, Point2D
+from spaces.maps_nd import BallRegion, BoxRegion, BoxBoundary, BallBoundary
 from robots import *
 from planning import RRGPlanner, Request, LocalPlanner
 from graphics.planar import addStyle, Simulate2D, drawBallRegion2D
@@ -85,7 +86,8 @@ def process_rrg_trial(logfile):
                str((rrg_stat_data['Iterations'], len(rrg_data)))
     return data, rrg_data, rrg_stat_data
 
-def postprocessing_global_performance(logfilename, outdir):
+def postprocessing_global_performance(logfilename, outdir,
+                                      outfile='global_performance_stats.txt'):
     '''Parses log file and generates statistics on global TS planning.'''
 
     if not os.path.isdir(outdir):
@@ -113,7 +115,7 @@ def postprocessing_global_performance(logfilename, outdir):
             del rrg_stat_data['global policy']
             trials.append(rrg_stat_data)
 
-    with open(os.path.join(outdir, 'global_performance_stats.txt'), 'w') as f:
+    with open(os.path.join(outdir, outfile), 'w') as f:
         print>>f, 'no trials:', len(trials)
         ops = [np.mean, np.min, np.max, np.std]
         for key in trials[0].keys():
@@ -497,3 +499,11 @@ if __name__ == '__main__':
 #                         'LTS iterations',
 #                         'LTS statistics',
                        ])
+
+    for dim in range(3, 7):
+        postprocessing_global_performance(
+                logfilename='../data_ijrr/example4/'
+                            'ijrr_example_4_global_dim{:02d}.log'.format(dim),
+                outdir='../data_ijrr/example4',
+                outfile = 'global_performance_stats_dim{:02d}.txt'.format(dim))
+
