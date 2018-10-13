@@ -103,6 +103,9 @@ class Point(BasePoint):
     def __geq__(self, other):
         return self.hash >= other.hash
 
+    def __repr__(self):
+        return 'Point({})'.format(tuple(self.coords))
+
     def __hash__(self):
         return self.hash
 
