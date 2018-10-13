@@ -282,16 +282,18 @@ class Simulate2D(object):
         pass
 
     def display(self, expanded=False, solution=None, localinfo=None,
-                save=None):
+                save=None, show_robot=True):
         fig = plt.figure()
         ax = fig.add_subplot(111, aspect='equal')
 
         if expanded == 'both':
-            self.render(ax, expanded=True, solution=None, localinfo=localinfo)
+            self.render(ax, expanded=True, solution=None, localinfo=localinfo,
+                        show_robot=False)
             self.render(ax, expanded=False, solution=solution,
-                        localinfo=localinfo)
+                        localinfo=localinfo, show_robot=show_robot)
         else:
-            self.render(ax, expanded, solution, localinfo=localinfo)
+            self.render(ax, expanded, solution, localinfo=localinfo,
+                        show_robot=show_robot)
 
         if save is not None:
             plt.subplots_adjust(left=0.05, bottom=0.05, right=0.98, top=0.98,
@@ -301,7 +303,7 @@ class Simulate2D(object):
         plt.show()
 
     def render(self, viewport, expanded=False, solution=None, withtext=True,
-               localinfo=None, sensing_area=True):
+               localinfo=None, sensing_area=True, show_robot=True):
         zorder = self.config['z-order']
 
         if expanded:
@@ -336,10 +338,11 @@ class Simulate2D(object):
         # draw boundary
         drawBoundary2D(viewport, wp.boundary, wp.boundary.style)
 
-        # draw robot
-        r = 0 if expanded else self.robot.diameter/2
-        drawRobot2D(viewport, self.robot, size=r, sensing_area=sensing_area,
-                    zorder=zorder['robot'])
+        if show_robot:
+            # draw robot
+            r = 0 if expanded else self.robot.diameter/2
+            drawRobot2D(viewport, self.robot, size=r, sensing_area=sensing_area,
+                        zorder=zorder['robot'])
 
         if solution is not None:
             drawGraph(viewport, self.offline.ts.g, zorder=zorder['global ts'],

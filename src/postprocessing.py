@@ -348,7 +348,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
         sim.online = LocalPlanner(None, sim.offline.ts, robot, localSpec)
         sim.online.trajectory = trajectory
         sim.online.robot.sensor.requests = []
-        sim.display(expanded=True, solution=prefix+suffix[1:],
+        sim.display(expanded=True, solution=prefix+suffix[1:], show_robot=False,
                     localinfo=('trajectory',), save='trajectory.png')
         sim.defaultConfiguration(reset=['trajectory-min-transparency',
                             'trajectory-history-length', 'global-policy-color'])
@@ -492,7 +492,7 @@ if __name__ == '__main__':
 #                         'RRG construction',
 #                         'RRG iterations',
 #                         'offline plan',
-#                         'trajectory,'
+#                         'trajectory',
 #                         'online plan',
 #                         'online trajectory iterations',
 #                         'LTS construction',
