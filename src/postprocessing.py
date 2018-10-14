@@ -29,6 +29,9 @@ import os
 import itertools as it
 
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import pandas as pd
 
 from lomap import Ts
 
@@ -116,10 +119,15 @@ def postprocessing_global_performance(logfilename, outdir,
             trials.append(rrg_stat_data)
 
     with open(os.path.join(outdir, outfile), 'w') as f:
-        print>>f, 'no trials:', len(trials)
+        print>>f, '{'
+        print>>f, '"no trials" :', len(trials), ','
         ops = [np.mean, np.min, np.max, np.std]
         for key in trials[0].keys():
-            print>>f, key, [op([trial[key] for trial in trials]) for op in ops]
+            print>>f, '"{}"'.format(key), ':',
+            print>>f, [op([trial[key] for trial in trials]) for op in ops], ','
+        print>>f, '}'
+
+    return trials
 
 def postprocessing(logfilename, ts_filename, outdir, lts_index,
                    rrg_iterations, lts_iterations,
@@ -453,6 +461,29 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
                     print>>f, key, [op([trial[key] for trial in rrt_data])
                                                                   for op in ops]
 
+def box_plots(data, outfile='stat_{}.png'):
+    '''Saves boxplot figures for various performance parameters.'''
+    sns.set(style="whitegrid")
+    dims = data.keys()
+    xname = 'Dimension'
+    ynames = {
+        'Iterations': 'Iterations',
+        'PA update runtime' : 'Duration of PA update step [ms]',
+        'PA nodes' : 'Number of PA states',
+        'PA edges' : 'Number of PA transitions',
+        'global planning runtime' : 'Duration of global planning [ms]',
+        'TS nodes' : 'Number of TS states',
+        'TS edges' : 'Number of TS edges'
+    }
+    for key in ynames:
+        fig = plt.figure(key)
+        yname = ynames[key]
+        df = pd.concat([pd.DataFrame([(dim, v[key]) for v in data[dim]],
+                                     columns=[xname, yname])
+                        for dim in dims], ignore_index=True)
+        sns.boxplot(x=xname, y=yname, data=df, width=.5)
+        plt.savefig(outfile.format(key.replace(' ', '_')), dpi=fig.dpi)
+
 
 if __name__ == '__main__':
 #     postprocessing_global_performance(
@@ -510,10 +541,12 @@ if __name__ == '__main__':
 #                         'LTS statistics',
                        ])
 
+    data = dict()
     for dim in range(3, 7):
-        postprocessing_global_performance(
+        data[dim] = postprocessing_global_performance(
                 logfilename='../data_ijrr/example4/'
                             'ijrr_example_4_global_dim{:02d}.log'.format(dim),
                 outdir='../data_ijrr/example4',
                 outfile = 'global_performance_stats_dim{:02d}.txt'.format(dim))
 
+    box_plots(data, outfile='../data_ijrr/example4/global_performance_{}.png')
