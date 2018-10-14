@@ -275,7 +275,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
     if any(option in generate for option in
                 ('workspace', 'expanded workspace', 'global solution')):
         # set larger font for saving figures
-        for r in sim.workspace.regions:
+        for r in sim.workspace.regions | sim.expandedWorkspace.regions:
             r.fontsize_orig = r.textStyle.get('fontsize', 12)
             r.textStyle['fontsize'] = 24
 
@@ -341,8 +341,13 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
     print len(trajectory), len(local_plans)
 
     if 'trajectory' in generate:
-        sim.config['trajectory-min-transparency'] = 0.2 # no fading
-        sim.config['trajectory-history-length'] = 252 # entire history
+        # set larger font for saving figures
+        for r in sim.workspace.regions | sim.expandedWorkspace.regions:
+            r.fontsize_orig = r.textStyle.get('fontsize', 12)
+            r.textStyle['fontsize'] = 24
+
+        sim.config['trajectory-min-transparency'] = 0.2 # fading
+        sim.config['trajectory-history-length'] = len(trajectory) # full history
         sim.config['global-policy-color'] = 'orange'
 
         sim.online = LocalPlanner(None, sim.offline.ts, robot, localSpec)
@@ -352,6 +357,11 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
                     localinfo=('trajectory',), save='trajectory.png')
         sim.defaultConfiguration(reset=['trajectory-min-transparency',
                             'trajectory-history-length', 'global-policy-color'])
+
+        # restore original fontsize
+        for r in sim.workspace.regions:
+            r.textStyle['fontsize'] = r.fontsize_orig
+            del r.fontsize_orig
 
     # local plan visualization
     sim.online = LocalPlanner(None, sim.offline.ts, robot, localSpec)
@@ -481,7 +491,7 @@ if __name__ == '__main__':
                    ts_filename='../data_ijrr/example2_good_run_serv_rad_0.3/ts.yaml',
                    outdir='../data_ijrr/example2_good_run_serv_rad_0.3',
                    lts_index=0,
-                   rrg_iterations=[50, 100, 150, -1],
+                   rrg_iterations=[30, 75, 150, -1],
                    lts_iterations=[],
                    local_traj_iterations=[],
                    generate=[ # Defines what media to generate 
