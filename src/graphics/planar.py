@@ -282,8 +282,8 @@ class Simulate2D(object):
         pass
 
     def display(self, expanded=False, solution=None, localinfo=None,
-                save=None, show_robot=True):
-        fig = plt.figure()
+                save=None, show_robot=True, figsize=None):
+        fig = plt.figure(figsize=figsize)
         ax = fig.add_subplot(111, aspect='equal')
 
         if expanded == 'both':
