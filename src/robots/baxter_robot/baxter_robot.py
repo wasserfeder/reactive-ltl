@@ -45,6 +45,16 @@ class BaxterRobot(Robot):
         self.fifo = [None] * self.max_cache_size
         self.cache_index = 0
 
+        self.all_requests = [] # a list of all defined requests
+
+    def sensor_update(self):
+        '''#TODO: Remove/inactivate serviced requests'''
+        pass
+
+    def sensor_reset(self):
+        '''#TODO: Utility function called at the end of a surveillance cycle.'''
+        pass
+
     def get_interactive_object_position(self):
         for k, v in viewitems(self.env):
             if v['marker_type'] == "interactive":
@@ -161,8 +171,6 @@ class BaxterRobot(Robot):
             return b
         return s
 
-            
-        
     def isSimpleSegment(self, u, v):
 
         u_symbols = np.array(self.getSymbols(u, bitmap=True))
