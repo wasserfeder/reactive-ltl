@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 '''
-.. module:: ijrr_example
+.. module:: ijrr_example_baxter
    :synopsis: Defines the case study presented in the IJRR journal paper.
 
 .. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
@@ -28,14 +28,11 @@
 
 import os, sys
 import logging
-import itertools as it
 
 import numpy as np
 
 try:
     import lomap
-    from lomap import compute_potentials
-    from lomap import Timer
 except ImportError:
     print 'adding lomap to python path'
     lomap_path = os.path.abspath(os.path.join(os.path.dirname(__file__),
@@ -43,12 +40,11 @@ except ImportError:
     assert os.path.isdir(lomap_path), 'lomap package not found!'
     sys.path.append(lomap_path)
 
-import lomap
 from lomap import compute_potentials
 from lomap import Timer
     
-from spaces.base import ConfigurationSpace, line_translate, Point
-from spaces.maps_nd import BoxBoundary, BoxRegion
+from spaces.base import ConfigurationSpace, Point
+from spaces.maps_nd import BoxBoundary, BallRegion
 from robots import BaxterRobot
 from planning import RRGPlanner, LocalPlanner, Request
 from models import IncrementalProduct
@@ -116,104 +112,27 @@ def caseStudy():
                  'stepsize=stepsize)')
     logger.info('"Local obstacle label": "%s"', robot.localObst)
 
-#     # create simulation object
-#     sim = Simulate2D(wspace, robot, ewspace)
-#     sim.config['output-dir'] = outputdir
-
-#     # regions of interest
-#     R1 = (BoxRegion2D([[0.45, 0.75], [0.45, 0.6]], ['r1']), 'brown')
-#     R2 = (BallRegion2D([3.9, 1.2], 0.3, ['r2']), 'green')
-#     R3 = (BoxRegion2D([[3.75, 4.05], [2.7, 3]], ['r3']), 'red')
-#     R4 = (PolygonRegion2D([[1.2 , 2.85], [0.9 , 3.15], [0.6 , 2.85],
-#                            [0.9 , 2.55], [1.2 , 2.55]], ['r4']), 'magenta')
-#     # global obstacles
-#     O1 = (BallRegion2D([2.4, 1.5], 0.36, ['o1']), 'gray')
-#     O2 = (PolygonRegion2D([[0.45, 1.2], [1.05, 1.5], [0.45, 1.8]], ['o2']),
-#           'gray')
-#     O3 = (PolygonRegion2D([[2.1, 2.7], [2.4, 3], [2.7, 2.7]], ['o3']), 'gray')
-#     O4 = (BoxRegion2D([[1.65, 1.95], [0.45, 0.6]], ['o4']), 'gray')
-#
-#     # add all regions
-#     regions = [R1, R2, R3, R4, O1, O2, O3, O4]
-#
-#     # add regions to workspace
-#     for k, (r, c) in enumerate(regions):
-#         # add styles to region
-#         addStyle(r, style={'facecolor': c})
-#         # add region to workspace
-#         sim.workspace.addRegion(r)
-#         # create expanded region
-#         er = expandRegion(r, robot.diameter/2)
-#         # add style to the expanded region
-#         addStyle(er, style={'facecolor': c})
-#         # add expanded region to the expanded workspace
-#         sim.expandedWorkspace.addRegion(er)
-#
-#         logger.info('("Global region", %d): (%s, %s)', k, r, r.style)
-#
-#     # local  requests
-#     F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']),
-#           ([[3.24, 1.98], [2.54, 2.28], [3.5, 3], [4.02, 2.28]], 0.05),
-#           ('orange', 0.5))
-#     F2 = (BallRegion2D([1.26, 0.48], 0.18, ['fire']),
-#           ([[1.26, 0.48], [1.1, 1.1], [1.74, 0.92], [0.6, 0.6]], 0.05),
-#           ('orange', 0.5))
-#     S2 = (BallRegion2D([4.32, 1.48], 0.27, ['survivor']),
-#           ([[4.32, 1.48], [3.6, 1.2], [4, 2]], 0.05),
-#           ('yellow', 0.5))
-#     requests = [F1, F2, S2]
+    # local  requests
+    requests = [BallRegion([0, 0, 0, 0, 0, 0], 0.3, ['plate_red']),
+                BallRegion([0, 0, 0, 0, 0, 0], 0.3, ['plate_blue'])]
 
     # define local specification as a priority function
     localSpec = {'plate_red': 0, 'plate_blue': 1}
     logger.info('"Local specification": %s', localSpec)
-    #TODO: create local requests objects and robot sensor
 
-#     # local obstacles #FIXME: defined in expanded workspace not workspace
-#     obstacles = [(BoxRegion2D([[3, 3.5], [2, 2.5]], ['LO']), None,
-#                   ('gray', 0.8)),
-#                  (PolygonRegion2D([[3.2, 1.4], [3, 0.8], [3.4, 0.7]], ['LO']),
-#                   None, ('gray', 0.8)),
-#                  (BallRegion2D([1.6, 2.1], 0.15, ['LO']), None, ('gray', 0.8))]
-#
-#     # add style to local requests and obstacles
-#     for k, (r, path, c) in enumerate(requests + obstacles):
-#         # add styles to region
-#         addStyle(r, style={'facecolor': to_rgba(*c)}) #FIXME: HACK
-#         # create path
-#         r_path = path
-#         if path:
-#             wps, step = path
-#             wps = wps + [wps[0]]
-#             r.path = []
-#             for a, b in it.izip(wps[:-1], wps[1:]):
-#                 r.path += line_translate(a, b, step)
-#             r_path = map(list, r.path)
-#             r.path = it.cycle(r.path)
-#
-#         logger.info('("Local region", %d): (%s, %s, %s, %d)', k, r, r.style,
-#                      r_path, k < len(requests))
-#
-#     # create request objects
-#     reqs = []
-#     for r, _, _ in requests:
-#         name = next(iter(r.symbols))
-#         reqs.append(Request(r, name, localSpec[name]))
-#     requests = reqs
-#     obstacles = [o for o, _, _ in obstacles]
-#
-#     # set the robot's sensor
-#     sensingShape = BallBoundary2D([0, 0], robot.diameter*2.5)
-#     robot.sensor = SimulatedSensor(robot, sensingShape, requests, obstacles)
-#
-#     logger.info('"Robot sensor constructor": "%s"',
-#         'SimulatedSensor(robot, BallBoundary2D([0, 0], robot.diameter*2.5),'
-#         'requests, obstacles)')
-#
-#     # display workspace
-#     sim.display()
-#
-#     # display expanded workspace
-#     sim.display(expanded=True)
+    for k, r in enumerate(requests):
+        logger.info('("Local region", %d): (%s, %s, %s, %d)', k, r, None, None,
+                    k < len(requests))
+
+    # create request objects
+    reqs = []
+    for r, _, _ in requests:
+        name = next(iter(r.symbols))
+        reqs.append(Request(r, name, localSpec[name]))
+    requests = reqs
+
+    # set requests to look for
+    robot.all_requests = requests
 
     ############################################################################
     ### Generate global transition system and off-line control policy ##########
@@ -256,8 +175,6 @@ def caseStudy():
     logger.info('"global policy length": (%d, %d)', len(prefix), len(suffix))
     logger.info('"End global planning": True')
 
-    return #TODO: delete after tests
-
     ############################################################################
     ### Execute on-line path planning algorithm ################################
     ############################################################################
@@ -273,6 +190,7 @@ def caseStudy():
 
     # initialize local on-line RRT planner
     online = LocalPlanner(offline.checker, offline.ts, robot, localSpec)
+    online.PointCls = Point
     online.detailed_logging = True
 
     def update(robot, online):
@@ -281,10 +199,10 @@ def caseStudy():
         '''
 
         # update requests and local obstacles
-        robot.sensor.update()
+        robot.sensor_update()
         # reset requests at the start of a cycle, i.e., reaching a final state
         if (online.trajectory[-1] in online.ts.g and online.potential == 0):
-            robot.sensor.reset()
+            robot.sensor_reset()
             return True
         return False
 
@@ -303,7 +221,7 @@ def caseStudy():
         robot.move(nextConf)
 
         # if completed cycle increment cycle
-        if update():
+        if update(robot, online):
             cycle += 1
 
     logger.info('"Local online planning finished": True')
