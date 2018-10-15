@@ -141,7 +141,7 @@ class LocalPlanner(object):
         else:
             logger.info('"new configuration": %s', self.local_plan[0])
             logger.info('"local plan": %s', self.local_plan)
-        logger.info('"requests": %s', self.robot.sensor.requests)
+#         logger.info('"requests": %s', self.robot.sensor.requests)
 
     def execute(self, requests, obstacles):
         '''Plan locally.'''
