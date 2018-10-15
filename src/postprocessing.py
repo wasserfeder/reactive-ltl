@@ -30,7 +30,6 @@ import itertools as it
 
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
 import pandas as pd
 
 from lomap import Ts
@@ -42,7 +41,7 @@ from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
 from spaces.maps_nd import BallRegion, BoxRegion, BoxBoundary, BallBoundary
 from robots import *
 from planning import RRGPlanner, Request, LocalPlanner
-from graphics.planar import addStyle, Simulate2D, drawBallRegion2D
+from graphics.planar import addStyle, Simulate2D, drawBallRegion2D, to_rgba
 
 
 def process_rrg_trial(logfile):
@@ -484,6 +483,58 @@ def box_plots(data, outfile='stat_{}.png'):
         sns.boxplot(x=xname, y=yname, data=df, width=.5)
         plt.savefig(outfile.format(key.replace(' ', '_')), dpi=fig.dpi)
 
+def workspace_plot(outfile='highdim_workspace.png'):
+    '''Plot planar workspace for the high-dimensional case study.'''
+    # define boundary: unit hypercube
+    boundary = BoxBoundary([[0, 1], [0, 1]])
+    # define boundary style
+    boundary.style = {'color' : 'black'}
+    # create robot's workspace
+    wspace = Workspace(boundary=boundary)
+
+    # create robot object
+    initConf = Point2D((0.1, 0.1)) # start close to the origin 
+    robot = FullyActuatedRobot('Robot-highdim', init=initConf, wspace=wspace)
+    robot.diameter=0
+
+    # create simulation object
+    sim = Simulate2D(wspace, robot, None)
+
+    # regions of interest
+    R1 = (BoxRegion2D([[.00,  .20], [.00,  .20]], ['r1']), 'brown')
+    R2 = (BoxRegion2D([[.25,  .40], [.40,  .55]], ['r2']), 'green')
+    R3 = (BoxRegion2D([[.70, 1.00], [.40,  .60]], ['r3']), 'red')
+    R4 = (BoxRegion2D([[.00,  .50], [.90, 1.00]], ['r4']), 'magenta')
+    # global obstacles
+    O1 = (BoxRegion2D([[.20,  .30], [.30,  .35]], ['o1']), 'gray')
+    O2 = (BoxRegion2D([[.15,  .20], [.40,  .60]], ['o2']), 'gray')
+    O3 = (BoxRegion2D([[.50,  .55], [.30,  .80]], ['o3']), 'gray')
+    # requests
+    F1 = (BallRegion2D([0.25, 0.10], 0.30, ['event1']), to_rgba('orange', .5))
+    F2 = (BallRegion2D([0.10, 0.60], 0.25, ['event1']), to_rgba('orange', .5))
+    S2 = (BallRegion2D([0.50, 0.90], 0.27, ['event2']), to_rgba('yellow', .5))
+    # local obstacles
+    L1 = (BoxRegion2D([[.45,  .50], [.75,  .80]], ['LO']), to_rgba('gray', .6))
+    L2 = (BoxRegion2D([[.90, 1.00], [.50,  .55]], ['LO']), to_rgba('gray', .6))
+    L3 = (BoxRegion2D([[.75,  .80], [.20,  .25]], ['LO']), to_rgba('gray', .6))
+
+    # add all regions
+    regions = [R1, R2, R3, R4, O1, O2, O3, F1, F2, S2, L1, L2, L3]
+
+    # add regions to workspace
+    for r, c in regions:
+        # add styles to region
+        addStyle(r, style={'facecolor': c})
+        r.textStyle['fontsize'] = 24
+        # add region to workspace
+        sim.workspace.addRegion(r)
+
+    # set the robot's sensor
+    sensingShape = BallBoundary([0, 0], 0.25)
+    robot.sensor = BoundingBoxSimulatedSensor(robot, sensingShape, [], [])
+
+    # display workspace
+    sim.display(save=outfile, figsize=(7, 7))
 
 if __name__ == '__main__':
 #     postprocessing_global_performance(
@@ -541,12 +592,17 @@ if __name__ == '__main__':
 #                         'LTS statistics',
                        ])
 
+    workspace_plot(outfile='../data_ijrr/example4/highdim_workspace.png')
+
     data = dict()
     for dim in range(3, 7):
         data[dim] = postprocessing_global_performance(
                 logfilename='../data_ijrr/example4/'
                             'ijrr_example_4_global_dim{:02d}.log'.format(dim),
                 outdir='../data_ijrr/example4',
-                outfile = 'global_performance_stats_dim{:02d}.txt'.format(dim))
+                outfile='global_performance_stats_dim{:02d}.txt'.format(dim))
 
+    # NOTE: this need to be the last thing, since seaborn changes the matplotlib
+    # configuration
+    import seaborn as sns
     box_plots(data, outfile='../data_ijrr/example4/global_performance_{}.png')
