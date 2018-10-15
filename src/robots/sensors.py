@@ -75,7 +75,7 @@ class SimulatedSensor(Sensor):
         self.sensingShape.translate(v)
         assert np.all(self.sensingShape.center == self.robot.currentConf.coords)
 
-        requests = [r for r in self.requests
+        self.sensed_requests = [r for r in self.requests
                       if self.sensingShape.intersects(r.region.center)]
 
         obstacles = [intersection(self.sensingShape, o)
@@ -83,7 +83,7 @@ class SimulatedSensor(Sensor):
         obstacles = [o for o in obstacles if o is not None]
         logger.info('"Sensed obstacles": %s', obstacles)
 
-        return requests, obstacles
+        return self.sensed_requests, obstacles
 
     def update(self):
         '''Updates requests and local obstacles.'''
@@ -99,3 +99,34 @@ class SimulatedSensor(Sensor):
     def reset(self):
         '''Resets requests and local obstacles.'''
         self.requests = self.all_requests
+
+
+class BoundingBoxSimulatedSensor(SimulatedSensor):
+    '''Simulated ideal sensor with bounding box obstacle collision check.'''
+
+    def __init__(self, robot, sensingShape, requests, obstacles):
+        '''Constructor'''
+        SimulatedSensor.__init__(self, robot, sensingShape, requests, obstacles)
+
+    def intersects(self, o):
+        '''Returns true if the sensing radius intersects the obstacle's bounding
+        box.
+        '''
+        p = np.array(self.robot.currentConf.coords)
+        low, high = o.boundingBox().T
+        r = self.sensingShape.radius
+        return np.linalg.norm(np.maximum(np.maximum(low-p, p-high), 0)) < r
+
+    def sense(self):
+        '''Sensing method that returns requests and local obstacles.'''
+        v = np.array(self.robot.currentConf.coords) - self.sensingShape.center
+        self.sensingShape.translate(v)
+        assert np.all(self.sensingShape.center == self.robot.currentConf.coords)
+
+        self.sensed_requests = [r for r in self.requests
+                      if self.sensingShape.intersects(r.region.center)]
+
+        obstacles = [o for o in self.obstacles if self.intersects(o)]
+        logging.info('"Sensed obstacles": %s', obstacles)
+
+        return self.sensed_requests, obstacles

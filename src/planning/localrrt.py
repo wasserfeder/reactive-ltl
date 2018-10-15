@@ -92,7 +92,8 @@ class LocalPlanner(object):
     robot.
     '''
 
-    def __init__(self, pa, ts, robot, local_spec, eta=0.1):
+    def __init__(self, pa, ts, robot, local_spec, eta=0.1,
+                 relax_global_connection=800):
         '''Constructor'''
         self.pa = pa
         self.ts = ts
@@ -118,6 +119,10 @@ class LocalPlanner(object):
 
         # set max steer step size eta and sensing radius
         self.eta = eta
+
+        # the iteration at which the connection to the global TS is relaxed,
+        # i.e., decreasing potential constrained is not enforced anymore
+        self.relax_global_connection = relax_global_connection
 
         self.detailed_logging = False
         logger.info('"initialize local planner": True')
@@ -164,9 +169,11 @@ class LocalPlanner(object):
 
     def local_plan_hit(self):
         '''Checks if the local plan hits the tracked request.'''
+        assert self.tracking_req in self.requests # tracking request is sensed
         if not self.local_plan:
             return False
         assert self.local_plan[-1] in self.ts.g # last state is global
+
         target = self.tracking_req.name
         for conf in self.local_plan:
             if target in self.robot.getSymbols(conf, local=True):
@@ -187,24 +194,21 @@ class LocalPlanner(object):
         # check if target needs to be modified
         if requests:
             highest_priority_req = min(requests, key=lambda req: req.priority)
+            # empty, lower priority, or disappeared tracking request
             if (self.tracking_req is None or
-                    self.tracking_req.priority > highest_priority_req.priority):
+                self.tracking_req.priority > highest_priority_req.priority or
+                self.tracking_req not in requests):
                 self.tracking_req = highest_priority_req
-            return self.local_plan_hit()
-        # there is a target, but it disappeared
-        if self.tracking_req and self.tracking_req not in requests:
-            if requests:
-                self.tracking_req = highest_priority_req # switch target
-                return self.local_plan_hit()
-            else:
-                self.tracking_req = None # reset target
+            if not self.local_plan_hit():
+                return False
+        else: # no sensed requests
+            self.tracking_req = None # reset target
         # no plan
         if not self.local_plan:
             return False
         # 2. check that path is collision free
         assert self.local_plan[-1] in self.ts.g # last state is global
-        r = self.robot.collision_free(self.local_plan, self.obstacles)
-        return r
+        return self.robot.collision_free(self.local_plan, self.obstacles)
 
     def update(self):
         '''Updates the information for the next configuration in the local plan.
@@ -234,10 +238,15 @@ class LocalPlanner(object):
         opt_next_state, _ = opt_pa_next_state
         return opt_next_state
 
-    def connection_global_state(self, state, B):
+    def connection_global_state(self, state, B, relax=False):
         '''Computes the global state the state of the local TS should connect
         to. The choice is made to minimize potential first, and then distance.
-        Search radius is given by the currently stored global target state.
+        Search radius is given by the currently stored global target state. In
+        case ``relax'' flag is set, then a relaxed connection strategy is used,
+        where the decreasing potential constraint is not enforced. The global
+        target state is the local minimizer of potential, and then distance,
+        among the states within the search radius that can be connected to by a
+        collision free path. 
         '''
         if state is None or not B:
             return None
@@ -260,15 +269,18 @@ class LocalPlanner(object):
                 potential = get_actual_potential(x, B_next, self.pa)
                 if (global_state is None or potential < min_potential
                         or (potential == min_potential and dist < min_dist)):
-                    global_state = x
-                    min_potential = potential
-                    min_dist = dist
+                    if not relax or self.robot.collision_free_segment(state,
+                                                             x, self.obstacles):
+                        global_state = x
+                        min_potential = potential
+                        min_dist = dist
 
         # check for progress with respect to global mission specification
-        if min_potential >= self.potential > 0:
+        if min_potential >= self.potential > 0 and not relax:
             global_state = None
 
-        if global_state: # check for collision w.r.t. local obstacles 
+        # check for collision w.r.t. local obstacles
+        if global_state and not relax:
             if not self.robot.collision_free_segment(state, global_state,
                                                  self.obstacles):
                 global_state = None
@@ -338,6 +350,7 @@ class LocalPlanner(object):
         # test if solution was found
         while not done:
             iteration = cnt.next()
+            relax = iteration >= self.relax_global_connection
             # 3. generate sample
             random_sample = self.robot.sample(local=True)
             # 4. get nearest neighbor in local ts
@@ -375,7 +388,7 @@ class LocalPlanner(object):
                         if hit:
                             # test if the node can be connected to the global ts
                             global_state = self.connection_global_state(
-                                                                dest_state, B)
+                                                           dest_state, B, relax)
                             if global_state:
                                 self.global_target_state = global_state
                                 done = True
@@ -387,6 +400,20 @@ class LocalPlanner(object):
                              random_sample, source_state, dest_state,
                              simple_segment, empty_buchi, collision_free, hit,
                              global_state)
+
+            # test samples that hit the request for the relaxed connection
+            # strategy to the gloval TS
+            if iteration == self.relax_global_connection:
+                for s in self.lts.g:
+                    if self.lts.g.node[s]['hit']:
+                        # test if the node can be connected to the global ts
+                        B = self.lts.g.node[s]['buchi_states']
+                        global_state = self.connection_global_state(s, B, relax)
+                        if global_state:
+                            self.global_target_state = global_state
+                            done = True
+                            dest_state = s # make the node the destination
+                            break
 
         # 11. return local plan
         plan_to_leaf = nx.shortest_path(self.lts.g, self.robot.currentConf,

@@ -32,7 +32,7 @@
 import logging
 from itertools import ifilter, imap, tee
 
-from lomap import Ts
+from lomap import Ts, Timer
 
 
 # FIXME: HACK to get around ROS logging capture
@@ -75,6 +75,8 @@ class RRGPlanner(object):
         # should be set based on specific problem
         self.eta = [0.5, 1.0]
 
+        self.detailed_logging = True
+
     def solve(self):
         '''Try to solve the problem.'''
         for self.iteration in range(1, self.maxIterations+1):
@@ -97,15 +99,18 @@ class RRGPlanner(object):
             # set propositions
             newProp = self.robot.getSymbols(newConf)
 
-            logger.info('"random configuration": %s', randomConf)
-            logger.info('"nearest state": %s', nearestState)
-            logger.info('"new configuration": %s', newConf)
+            if self.detailed_logging:
+                logger.info('"random configuration": %s', randomConf)
+                logger.info('"nearest state": %s', nearestState)
+                logger.info('"new configuration": %s', newConf)
 
             for state in self.far(newConf):
                 # check if the new state satisfies the global specification
                 if self.robot.isSimpleSegment(state, newConf):
-                    Ep = self.checker.check(self.ts, state, newConf, newProp,
-                                            forward=True)
+                    with Timer(op_name='PA check forward',
+                               template='"%s runtime": %f'):
+                        Ep = self.checker.check(self.ts, state, newConf, newProp,
+                                                forward=True)
                     if Ep:
                         newState = newConf
                         Delta.add((state, newConf))
@@ -114,10 +119,13 @@ class RRGPlanner(object):
             if newState:
                 self.ts.g.add_node(newState, prop=newProp)
                 self.ts.g.add_edges_from(Delta)
-                self.checker.update(E)
+                with Timer(op_name='PA update forward',
+                           template='"%s runtime": %f'):
+                    self.checker.update(E)
 
-            logger.info('"forward state added": %s', newState)
-            logger.info('"forward edges added": %s', Delta)
+            if self.detailed_logging:
+                logger.info('"forward state added": %s', newState)
+                logger.info('"forward edges added": %s', Delta)
 
             ### Second phase - Backward
             Delta = set()
@@ -132,9 +140,10 @@ class RRGPlanner(object):
 #                             and self.robot.isSimpleSegment(newState, state):
                         # check if the new state satisfies the global
                         # specification
-                        Ep = self.checker.check(self.ts, newState, state,
-                                                self.ts.g.node[state]['prop'],
-                                                forward=False)
+                        with Timer(op_name='PA check backward',
+                               template='"%s runtime": %f'):
+                            Ep = self.checker.check(self.ts, newState, state,
+                                   self.ts.g.node[state]['prop'], forward=False)
                         if Ep:
                             Delta.add((newState, state))
                             E.update(Ep)
@@ -142,8 +151,11 @@ class RRGPlanner(object):
 #                                          state, (newState, state))
 
             self.ts.g.add_edges_from(Delta)
-            self.checker.update(E)
-            logger.info('"backward edges added": %s', Delta)
+            with Timer(op_name='PA update backward',
+                               template='"%s runtime": %f'):
+                self.checker.update(E)
+            if self.detailed_logging:
+                logger.info('"backward edges added": %s', Delta)
 
             # uncomment assertion for debugging
 #             assert all([self.checker.buchi.g.has_edge(u[1], v[1])
@@ -168,7 +180,8 @@ class RRGPlanner(object):
         state which is closer to the given configuration p than self.eta[0]
         then the function returns an empty list.
         '''
-        logger.info('"far": (%s, %f, %f)', p, self.eta[0], self.eta[1])
+        if self.detailed_logging:
+            logger.info('"far": (%s, %f, %f)', p, self.eta[0], self.eta[1])
         metric = self.robot.cspace.dist
         ret, test = tee(ifilter(lambda v: metric(v, p) < self.eta[1],
                                 self.ts.g.nodes_iter()))
@@ -180,7 +193,8 @@ class RRGPlanner(object):
         '''Return all states in the transition system that fall at distance d,
         0 < d < self.eta[1], away from the given configuration p.
         '''
-        logger.info('("near", %s): %f', p, self.eta[1])
+        if self.detailed_logging:
+            logger.info('("near", %s): %f', p, self.eta[1])
         metric = self.robot.cspace.dist
         return ifilter(lambda v: 0 < metric(v, p) < self.eta[1],
                        self.ts.g.nodes_iter())

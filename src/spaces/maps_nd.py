@@ -28,62 +28,42 @@
 
 import numpy as np
 from numpy import array, dot, ones, zeros
-from numpy.random import uniform
-from scipy.spatial.distance import euclidean
+from numpy.random import uniform, normal
+from scipy.spatial.distance import euclidean, sqeuclidean
 
-from base import Point, Boundary, Region
+from base import Boundary, Point, Region
 
 
-__all__ = ['BoxRegion', 'BallRegion']
+__all__ = ['BallBoundary', 'BoxBoundary', 'BallRegion', 'BoxRegion']
 
 
 class BoxBoundary(Boundary):
-    '''Defines a n-dimensional box boundary.'''
+    '''Defines an n-dimensional hyper-rectangular boundary.
 
+    Note: Assumes Euclidean space.
+    '''
     def __init__(self, ranges):
         Boundary.__init__(self)
 
         self.ranges = array(ranges, dtype=np.double)
         assert self.ranges.shape[1] == 2
         assert all(self.ranges[:, 0] <= self.ranges[:, 1])
-
         self.dimension = self.ranges.shape[0]
 
         self._hash = hash(tuple(self.ranges.flat))
 
-    def intersects(self, src, dest=None):
-        raise NotImplementedError
-
     def volume(self):
-        return np.prod(self.ranges[:, 0] - self.ranges[:, 1])
+        return np.prod(self.ranges[:, 1] - self.ranges[:, 0])
 
     def boundingBox(self):
         return self.ranges
 
     def sample(self):
         low, high = self.ranges.T
-        return Point(low + uniform(size=self.dimension)* (high - low))
-
-
-class BoxRegion(BoxBoundary, Region):
-    '''
-    Defines a labeled box region in a n-dimensional workspace.
-
-    Note: Assumes Euclidean space.
-    '''
-    def __init__(self, ranges, symbols):
-        super().__init__(self, symbols)
-
-        self.ranges = array(ranges)
-        assert self.ranges.shape[1] == 2
-
-        self.dimension = self.ranges.shape[0]
-
-        self._hash = hash(tuple(self.ranges.flat))
+        return Point(low + uniform(size=self.dimension) * (high - low))
 
     def intersects(self, src, dest=None):
-        '''
-        It dest is None then it returns true if src is inside the region,
+        '''It dest is None then it returns true if src is inside the region,
         otherwise it returns true if the line segment intersects the region.
 
         .. math ::
@@ -120,54 +100,85 @@ class BoxRegion(BoxBoundary, Region):
             \min(1, \min_{i=1,\ldots,n}(\lambda^{u}_i))
         '''
         if dest:
-            diff = dest - src
+            diff = dest.coords - src.coords
             low, high = self.ranges.T
-            # add extra dimension for the [0, 1] constraint
-            u = zeros((self.dimension + 1,))
-            v = ones((self.dimension + 1,))
+            u = zeros((self.dimension,))
+            v = ones((self.dimension,))
 
             # indices i where src[i] == dest[i]
             indices = np.abs(diff) < np.finfo(float).eps
-            if not np.all(self.ranges[indices, 0] <= src[indices] <= self.ranges[indices, 1]):
+            if (np.any(self.ranges[indices, 0] > src.coords[indices])
+                      or np.any(src.coords[indices] > self.ranges[indices, 1])):
                 return False
 
             indices = ~indices # indices i where src[i] != dest[i]
-            u[indices] = (low[indices] - src[indices])/diff[indices]
-            v[indices] = (high[indices] - src[indices])/diff[indices]
+            u[indices] = (low[indices] - src.coords[indices])/diff[indices]
+            v[indices] = (high[indices] - src.coords[indices])/diff[indices]
             indices = indices & (diff < 0) # indices that require sign change
             u[indices], v[indices] = v[indices], u[indices]
 
-            return np.max(u) <= np.min(v)
+            # add extra constraint to [0, 1]
+            return max(np.max(u), 0) <= min(np.min(v), 1)
 
-        return np.all(self.ranges[:, 0] <= src <= self.ranges[:, 1])
+        return (np.all(self.ranges[:, 0] <= src.coords)
+                and np.all(src.coords <= self.ranges[:, 1]))
 
-    def outputWord(self, traj):
-        raise NotImplementedError
+    def contains(self, src, dest):
+        '''Returns True if the line segment from src to dest in contained in the
+        box boundary.
+        '''
+        return self.intersects(src) and self.intersects(dest)
 
     def coordRange(self, i):
         '''Returns the range of the i-th coordinate.'''
         return self.ranges[i]
 
+    def translate(self, v):
+        '''Translates the object.'''
+        v = np.asarray(v)
+        self.ranges[:, :] = (self.ranges.T + v).T
+
     def __eq__(self, other):
-        return self.ranges == other.ranges
+        return np.all(self.ranges == other.ranges)
 
     def __repr__(self):
-        return 'BoxRegion(ranges={0})'.format(map(list, self.ranges))
+        return 'BoxBoundary(ranges={0})'.format(map(list, self.ranges))
+
+
+class BoxRegion(BoxBoundary, Region):
+    '''Defines a labeled box region in a n-dimensional workspace.
+
+    Note: Assumes Euclidean space.
+    '''
+    def __init__(self, ranges, symbols):
+        Region.__init__(self, symbols)
+        BoxBoundary.__init__(self, ranges)
+
+    def outputWord(self, traj):
+        raise NotImplementedError
+
+    def __repr__(self):
+        return 'BoxRegion(ranges={0}, symbols={1})'.format(
+                                        map(list, self.ranges), self.symbols)
+
+    __str__ = __repr__
 
 
 class BallBoundary(Boundary):
-    '''Defines a boundary for a metric space.'''
+    '''
+    Defines a labeled ball region in a n-dimensional workspace.
+
+    Note: Assumes Euclidean space.
+    '''
+
     def __init__(self, center, radius):
         Boundary.__init__(self)
 
-        self.center = array(center).flatten()
+        self.center = array(center, dtype=np.double).flatten()
         self.radius = float(radius)
         self.dimension = len(self.center)
 
-        self._hash =  self._hash = hash(tuple(self.center) + (self.radius))
-
-    def intersects(self, src, dest=None):
-        raise NotImplementedError
+        self._hash =  self._hash = hash(tuple(self.center) + (self.radius, ))
 
     def volume(self):
         raise NotImplementedError
@@ -176,24 +187,9 @@ class BallBoundary(Boundary):
         return array([self.center - self.radius, self.center + self.radius]).T
 
     def sample(self):
-        raise NotImplementedError
-
-
-class BallRegion(BallBoundary, Region):
-    '''
-    Defines a labeled ball region in a n-dimensional workspace.
-
-    Note: Assumes Euclidean space.
-    '''
-
-    def __init__(self, center, radius, symbols):
-        super().__init__(self, symbols)
-
-        self.center = array(center).flatten()
-        self.radius = float(radius)
-        self.dimension = len(self.center)
-
-        self._hash =  self._hash = hash(tuple(self.center) + (self.radius))
+        r = self.radius * uniform()
+        x = normal(size=self.dimension)
+        return Point(r * x / np.linalg.norm(x))
 
     def intersects(self, src, dest=None):
         '''
@@ -206,27 +202,63 @@ class BallRegion(BallBoundary, Region):
 
             u = (x_1 - x_0)/norm(x_1 - x_0)
 
-            d = abs(w - (w \cdot u) u)
+            d = norm(w - (w \cdot u) u)
 
             return \ d <= radius
 
         '''
-        if dest:
-            w = self.center - src.coords
-            u = (dest.coords - src.coords)/euclidean(src.coords, dest.coords)
-            dist = euclidean(w - dot(w, u)*u, 0)
-            return dist <= self.radius
-        return euclidean(self.center, src.coords) <= self.radius
+        if isinstance(src, Point):
+            src = src.coords
 
-    def outputWord(self, traj):
-        raise NotImplementedError
+        if dest:
+            if isinstance(dest, Point):
+                dest = dest.coords
+
+            w = self.center - src
+            u = (dest - src)
+            lambd = dot(w, u)/sqeuclidean(u, 0)
+            lambd = min(max(lambd, 0), 1)
+            dist = euclidean(w - lambd*u, 0)
+            return dist <= self.radius
+        return euclidean(self.center, src) <= self.radius
+
+    def contains(self, src, dest):
+        '''Returns True if the line segment from src to dest in contained in the
+        ball boundary.
+        '''
+        return self.intersects(src) and self.intersects(dest)
+
+    def translate(self, v):
+        '''Translates the object.'''
+        self.center += np.asarray(v)
 
     def __eq__(self, other):
-        return (self.center == other.center) and (self.radius == other.radius)
+        return np.all(self.center == other.center) and (self.radius == other.radius)
 
     def __repr__(self):
         return 'BallRegion(center={0}, radius={1})'.format(list(self.center),
                                                            self.radius)
+
+
+class BallRegion(BallBoundary, Region):
+    '''
+    Defines a labeled ball region in a n-dimensional workspace.
+
+    Note: Assumes Euclidean space.
+    '''
+
+    def __init__(self, center, radius, symbols):
+        Region.__init__(self, symbols)
+        BallBoundary.__init__(self, center, radius)
+
+    def outputWord(self, traj):
+        raise NotImplementedError
+
+    def __repr__(self):
+        return 'BallRegion(center={0}, radius={1}), symbols={2}'.format(
+                list(self.center), self.radius, self.symbols)
+
+    __str__ = __repr__
 
 
 if __name__ == '__main__':
