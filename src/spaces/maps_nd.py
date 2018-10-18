@@ -236,8 +236,8 @@ class BallBoundary(Boundary):
         return np.all(self.center == other.center) and (self.radius == other.radius)
 
     def __repr__(self):
-        return 'BallRegion(center={0}, radius={1})'.format(list(self.center),
-                                                           self.radius)
+        return 'BallBoundary(center={0}, radius={1})'.format(list(self.center),
+                                                             self.radius)
 
 
 class BallRegion(BallBoundary, Region):
@@ -255,7 +255,7 @@ class BallRegion(BallBoundary, Region):
         raise NotImplementedError
 
     def __repr__(self):
-        return 'BallRegion(center={0}, radius={1}), symbols={2}'.format(
+        return 'BallRegion(center={0}, radius={1}, symbols={2})'.format(
                 list(self.center), self.radius, self.symbols)
 
     __str__ = __repr__
