@@ -96,7 +96,7 @@ def caseStudy():
     init_conf = Point([0, 0, 0, 0, 0, 0])
     # create robot object
     filename = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                            'robots', 'baxter_robot', 'env_config.json')
+                            'robots', 'baxter_robot', 'env_config_with_interactive_marker.json')
     assert os.path.isfile(filename), 'Json environment file not found!'
     robot = BaxterRobot(name="baxter", init=init_conf, cspace=cspace,
                         stepsize=.99, config={'json-filename': filename})
@@ -113,11 +113,10 @@ def caseStudy():
     logger.info('"Local obstacle label": "%s"', robot.localObst)
 
     # local  requests
-    requests = [BallRegion([0, 0, 0, 0, 0, 0], 0.3, ['plate_red']),
-                BallRegion([0, 0, 0, 0, 0, 0], 0.3, ['plate_blue'])]
+    requests = [BallRegion([0, 0, 0], 0.3, ['interactive'])]
 
     # define local specification as a priority function
-    localSpec = {'plate_red': 0, 'plate_blue': 1}
+    localSpec = {'interactive': 0}
     logger.info('"Local specification": %s', localSpec)
 
     for k, r in enumerate(requests):
@@ -132,7 +131,7 @@ def caseStudy():
     requests = reqs
 
     # set requests to look for
-    robot.all_requests = requests
+    robot.request = requests[0]
 
     ############################################################################
     ### Generate global transition system and off-line control policy ##########
@@ -215,7 +214,7 @@ def caseStudy():
     while cycle < cycles:
         logger.info('"Start local planning step": True')
         # update the locally sensed requests and obstacles
-        requests, obstacles = robot.sensor.sense()
+        requests, obstacles = robot.sensor_sense()
         with Timer(op_name='local planning', template='"%s runtime": %f'):
             # feed data to planner and get next control input
             nextConf = online.execute(requests, obstacles)

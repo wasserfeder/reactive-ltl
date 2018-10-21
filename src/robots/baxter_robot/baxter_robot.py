@@ -16,7 +16,7 @@ from spaces import Point
 default_config = {
     'baxter_utils_config': {
         'arm': "right",
-        'env_json_path': os.path.join(os.getcwd(), "env_config.json") 
+        'env_json_path': os.path.join(os.getcwd(), "env_config_with_interactive_marker.json") 
     }
 }
 
@@ -29,7 +29,8 @@ class BaxterRobot(Robot):
         self.config = default_config
         self.config.update(config)
 
-        json_filename = self.config.get('json-filename', 'env_config.json')
+        json_filename = os.path.join(os.getcwd(), "env_config_with_interactive_marker.json") 
+        # json_filename = self.config.get('json-filename', 'env_config.json')
         self.config['baxter_utils_config']['env_json_path'] = json_filename
         
         self.baxter_utils = BaxterUtils(self.config['baxter_utils_config'])
@@ -46,25 +47,51 @@ class BaxterRobot(Robot):
         self.fifo = [None] * self.max_cache_size
         self.cache_index = 0
 
-        self.all_requests = [] # a list of all defined requests
+        self.request = None # a list of all defined requests
 
+        self.event_active = True
+        
+        
     def sensor_update(self):
-        '''#TODO: Remove/inactivate serviced requests'''
-        pass
+        '''Remove/inactivate serviced requests'''
+        if 'interactive' in self.getSymbols(self.currentConf, local=True):
+            self.event_active = False
 
     def sensor_reset(self):
-        '''#TODO: Utility function called at the end of a surveillance cycle.'''
-        pass
+        '''Utility function called at the end of a surveillance cycle.'''
+        self.event_active = True
+
+    def sensor_sense(self):
+        object_position = self.get_interactive_object_position()
+        table_pos = self.tf_buffer.lookup_transform("world", "Robot_a", rospy.Time())
+        table_pos = np.array([table_pos.transform.translation.x,
+                              table_pos.transform.translation.y,
+                              table_pos.transform.translation.z])
+
+        visible = (table_pos[2] < object_position[2]
+                   and object_position[2] < table_pos[2] + 0.2
+                   and table_pos[0] - 0.3 <= object_position[0] <= table_pos[0] + 0.3
+                   and table_pos[1] - 0.3 <= object_position[1] <= table_pos[1] + 0.3)
+
+        print(table_pos)
+        print(object_position)
+        print(visible)
+        if visible:
+            print(self.request)
+            print("------")
+            return [self.request], []
+        return [], []
 
     def get_interactive_object_position(self):
         for k, v in viewitems(self.env):
             if v['marker_type'] == "interactive":
                 object_pose = self.tf_buffer.lookup_transform(
-                    value['parent_frame_id'][1:], value['child_frame_id'][1:],
+                    v['parent_frame_id'][1:], v['child_frame_id'][1:],
                     rospy.Time())
                 object_pose = np.array([object_pose.transform.translation.x,
                                         object_pose.transform.translation.y,
                                         object_pose.transform.translation.z])
+
 
                 return object_pose
 
@@ -105,7 +132,32 @@ class BaxterRobot(Robot):
     def reset(self):
         self.baxter_utils.reset()
 
+    def getLocalSymbol(self, position):
+        joint_angles = tuple(position.coords) + (0,)
+        gripper_position = np.array(self.fk(joint_angles)[:3])
+        object_position = self.get_interactive_object_position()
+        req = self.all_requests[0]
+
+        table_pos = self.tf_buffer.lookup_transform("world", "Robot_a", rospy.Time())
+        table_pos = np.array([table_pos.transform.translation.x,
+                              table_pos.transform.translation.y,
+                              table_pos.transform.translation.z])
+
+        visible = (table_pos[2] < object_position[2]
+                   and object_position[2] < table_pos[2] + 0.2
+                   and table_pos[0] - 0.3 <= object_position[0] <= table_pos[0] + 0.3
+                   and table_pos[1] - 0.3 <= object_position[1] <= table_pos[1] + 0.3)
+        
+        if (np.linalg.norm(gripper_position, object_position) < req.region.radius
+            and self.event_active and visible):
+            return {req.name}
+        return {}
+
+
     def getSymbols(self, position, local=False, bitmap=False):
+        if local:
+            return self.getLocalSymbol()
+
         if position in self.cache:
             if bitmap:
                 return self.cache[position][0]
@@ -230,4 +282,4 @@ if __name__ == "__main__":
     # print(baxter.isSimpleSegment(Point([0,0,0,0,0,0]),
     #                              Point([0,1,0,0,1,1])))
     while True:
-        baxter.get_interactive_object_position()
+        baxter.sensor_sense()
