@@ -38,5 +38,15 @@
     "rgba": [0.1, 0.1, 1.0, 0.6],
     "marker_type": "sphere",
     "apply_transform": "T_motive2baxter"
+  },
+  "reactive_region": {
+    "topic": "/vrpn_client_node/hand/pose",
+    "parent_frame_id": "/world",
+    "child_frame_id": "/Reactive",
+    "init_pose": [0.725, 0.3789, -0.05, 0, 0, 0, 1],
+    "scale": [0.3, 0.3, 0.3],
+    "rgba": [1.0, 1.0, 0.1, 0.6],
+    "marker_type": "sphere",
+    "apply_transform": "T_motive2baxter"
   }
 }

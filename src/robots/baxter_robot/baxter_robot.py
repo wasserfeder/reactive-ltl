@@ -8,6 +8,7 @@ import tf2_ros
 import geometry_msgs.msg
 import rospy
 import time
+import os
 
 from robots import Robot
 from spaces import Point
@@ -15,7 +16,7 @@ from spaces import Point
 default_config = {
     'baxter_utils_config': {
         'arm': "right",
-        'env_json_path': ""
+        'env_json_path': os.path.join(os.getcwd(), "env_config.json") 
     }
 }
 
@@ -66,6 +67,7 @@ class BaxterRobot(Robot):
                                         object_pose.transform.translation.z])
 
                 return object_pose
+
         
     def fk(self, joint_angles):
         '''
@@ -225,5 +227,7 @@ if __name__ == "__main__":
     baxter.reset()
     #print(baxter.fk([0,0,0,0,0,0,0]))
     #print(baxter.getSymbols([0,0,0,0,0,0,0]))
-    print(baxter.isSimpleSegment(Point([0,0,0,0,0,0]),
-                                 Point([0,1,0,0,1,1])))
+    # print(baxter.isSimpleSegment(Point([0,0,0,0,0,0]),
+    #                              Point([0,1,0,0,1,1])))
+    while True:
+        baxter.get_interactive_object_position()

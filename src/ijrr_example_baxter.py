@@ -3,7 +3,7 @@
 .. module:: ijrr_example_baxter
    :synopsis: Defines the case study presented in the IJRR journal paper.
 
-.. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
+ .. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
 '''
 
 '''
@@ -126,7 +126,7 @@ def caseStudy():
 
     # create request objects
     reqs = []
-    for r, _, _ in requests:
+    for r in requests:
         name = next(iter(r.symbols))
         reqs.append(Request(r, name, localSpec[name]))
     requests = reqs
@@ -175,6 +175,8 @@ def caseStudy():
     logger.info('"global policy length": (%d, %d)', len(prefix), len(suffix))
     logger.info('"End global planning": True')
 
+    return
+    
     ############################################################################
     ### Execute on-line path planning algorithm ################################
     ############################################################################
