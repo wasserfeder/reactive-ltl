@@ -29,8 +29,8 @@ class BaxterRobot(Robot):
         self.config = default_config
         self.config.update(config)
 
-        json_filename = os.path.join(os.getcwd(), "env_config_with_interactive_marker.json") 
-        # json_filename = self.config.get('json-filename', 'env_config.json')
+        #json_filename = os.path.join(os.getcwd(), "env_config_with_interactive_marker.json") 
+        json_filename = self.config.get('json-filename', 'env_config.json')
         self.config['baxter_utils_config']['env_json_path'] = json_filename
         
         self.baxter_utils = BaxterUtils(self.config['baxter_utils_config'])
@@ -49,11 +49,11 @@ class BaxterRobot(Robot):
 
         self.request = None # a list of all defined requests
 
-        self.event_active = True
-        
+        self.event_active = True        
         
     def sensor_update(self):
         '''Remove/inactivate serviced requests'''
+        #print(self.getSymbols(self.currentConf, local=True))
         if 'interactive' in self.getSymbols(self.currentConf, local=True):
             self.event_active = False
 
@@ -69,16 +69,11 @@ class BaxterRobot(Robot):
                               table_pos.transform.translation.z])
 
         visible = (table_pos[2] < object_position[2]
-                   and object_position[2] < table_pos[2] + 0.2
+                   and object_position[2] < table_pos[2] + 0.4
                    and table_pos[0] - 0.3 <= object_position[0] <= table_pos[0] + 0.3
                    and table_pos[1] - 0.3 <= object_position[1] <= table_pos[1] + 0.3)
 
-        print(table_pos)
-        print(object_position)
-        print(visible)
         if visible:
-            print(self.request)
-            print("------")
             return [self.request], []
         return [], []
 
@@ -136,7 +131,7 @@ class BaxterRobot(Robot):
         joint_angles = tuple(position.coords) + (0,)
         gripper_position = np.array(self.fk(joint_angles)[:3])
         object_position = self.get_interactive_object_position()
-        req = self.all_requests[0]
+        req = self.request[0]
 
         table_pos = self.tf_buffer.lookup_transform("world", "Robot_a", rospy.Time())
         table_pos = np.array([table_pos.transform.translation.x,
@@ -144,9 +139,11 @@ class BaxterRobot(Robot):
                               table_pos.transform.translation.z])
 
         visible = (table_pos[2] < object_position[2]
-                   and object_position[2] < table_pos[2] + 0.2
+                   and object_position[2] < table_pos[2] + 0.4
                    and table_pos[0] - 0.3 <= object_position[0] <= table_pos[0] + 0.3
                    and table_pos[1] - 0.3 <= object_position[1] <= table_pos[1] + 0.3)
+
+        
         
         if (np.linalg.norm(gripper_position, object_position) < req.region.radius
             and self.event_active and visible):
@@ -156,7 +153,7 @@ class BaxterRobot(Robot):
 
     def getSymbols(self, position, local=False, bitmap=False):
         if local:
-            return self.getLocalSymbol()
+            return self.getLocalSymbol(position)
 
         if position in self.cache:
             if bitmap:
@@ -282,4 +279,5 @@ if __name__ == "__main__":
     # print(baxter.isSimpleSegment(Point([0,0,0,0,0,0]),
     #                              Point([0,1,0,0,1,1])))
     while True:
-        baxter.sensor_sense()
+        #baxter.sensor_sense()
+        baxter.sensor_update()

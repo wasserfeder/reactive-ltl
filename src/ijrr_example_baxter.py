@@ -173,9 +173,7 @@ def caseStudy():
     logger.info('"global policy": (%s, %s)', prefix, suffix)
     logger.info('"global policy length": (%d, %d)', len(prefix), len(suffix))
     logger.info('"End global planning": True')
-
-    return
-    
+  
     ############################################################################
     ### Execute on-line path planning algorithm ################################
     ############################################################################
