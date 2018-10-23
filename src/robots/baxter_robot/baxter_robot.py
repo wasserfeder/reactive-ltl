@@ -13,12 +13,14 @@ import os
 from robots import Robot
 from spaces import Point
 
+
 default_config = {
     'baxter_utils_config': {
         'arm': "right",
         'env_json_path': os.path.join(os.getcwd(), "env_config_with_interactive_marker.json") 
     }
 }
+
 
 class BaxterRobot(Robot):
     def __init__(self, name, init=None, cspace=None, wspace=None,
@@ -47,10 +49,9 @@ class BaxterRobot(Robot):
         self.fifo = [None] * self.max_cache_size
         self.cache_index = 0
 
-        self.request = None # a list of all defined requests
+        self.request = None # the tracked request
+        self.event_active = True
 
-        self.event_active = True        
-        
     def sensor_update(self):
         '''Remove/inactivate serviced requests'''
         #print(self.getSymbols(self.currentConf, local=True))
@@ -131,7 +132,7 @@ class BaxterRobot(Robot):
         joint_angles = tuple(position.coords) + (0,)
         gripper_position = np.array(self.fk(joint_angles)[:3])
         object_position = self.get_interactive_object_position()
-        req = self.request[0]
+        req = self.request
 
         table_pos = self.tf_buffer.lookup_transform("world", "Robot_a", rospy.Time())
         table_pos = np.array([table_pos.transform.translation.x,
@@ -143,9 +144,7 @@ class BaxterRobot(Robot):
                    and table_pos[0] - 0.3 <= object_position[0] <= table_pos[0] + 0.3
                    and table_pos[1] - 0.3 <= object_position[1] <= table_pos[1] + 0.3)
 
-        
-        
-        if (np.linalg.norm(gripper_position, object_position) < req.region.radius
+        if (np.linalg.norm(gripper_position - object_position) < req.region.radius
             and self.event_active and visible):
             return {req.name}
         return {}
@@ -272,12 +271,21 @@ class BaxterRobot(Robot):
         return all(res)
 
 if __name__ == "__main__":
-    baxter = BaxterRobot(name="baxter")
+    baxter = BaxterRobot(name="baxter",
+            config={'json-filename':
+                    '/home/cristi/Dropbox/work/workspace_linux_precision5520/'
+                    'reactive-ltl/src/robots/baxter_robot/'
+                    'env_config_with_interactive_marker.json'})
     baxter.reset()
     #print(baxter.fk([0,0,0,0,0,0,0]))
     #print(baxter.getSymbols([0,0,0,0,0,0,0]))
     # print(baxter.isSimpleSegment(Point([0,0,0,0,0,0]),
     #                              Point([0,1,0,0,1,1])))
-    while True:
-        #baxter.sensor_sense()
-        baxter.sensor_update()
+    from planning.localrrt import Request
+    from spaces import BallRegion
+    baxter.request = Request(region=BallRegion([0, 0, 0], 0.3, ['interactive']),
+                             name='interactive', priority=0)
+    baxter.getLocalSymbol(Point([0, 1, 0, 0, 1, 1]))
+#     while True:
+#         #baxter.sensor_sense()
+#         baxter.sensor_update()
