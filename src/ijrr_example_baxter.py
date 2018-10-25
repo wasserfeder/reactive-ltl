@@ -41,7 +41,7 @@ except ImportError:
     sys.path.append(lomap_path)
 
 from lomap import compute_potentials
-from lomap import Timer
+from lomap import Timer, Ts
     
 from spaces.base import ConfigurationSpace, Point
 from spaces.maps_nd import BoxBoundary, BallRegion
@@ -50,11 +50,8 @@ from planning import RRGPlanner, LocalPlanner, Request
 from models import IncrementalProduct
 
 
-def caseStudy():
-    ############################################################################
-    ### Output and debug options ###############################################
-    ############################################################################
-    outputdir = os.path.abspath('../data_ijrr/example3')
+def setup(outputdir='.', logfilename='example.log'):
+    '''Setup logging, and set output and debug options.'''
     if not os.path.isdir(outputdir):
         os.makedirs(outputdir)
 
@@ -62,7 +59,7 @@ def caseStudy():
     fs = '%(asctime)s [%(levelname)s] -- { %(message)s }'
     dfs = '%m/%d/%Y %I:%M:%S %p'
     loglevel = logging.DEBUG
-    logfile = os.path.join(outputdir, 'ijrr_example_3.log')
+    logfile = os.path.join(outputdir, logfilename)
     verbose = False
     # create logger
     logger = logging.getLogger('reactive_ltl')
@@ -77,10 +74,10 @@ def caseStudy():
         handler.setLevel(loglevel)
         handler.setFormatter(fmt)
         logger.addHandler(handler)
+    return logger
 
-    ############################################################################
-    ### Define case study setup (robot parameters, workspace, etc.) ############
-    ############################################################################
+def define_problem(logger, outputdir='.'):
+    '''Define case study setup (robot parameters, workspace, etc.).'''
 
     # define boundary in 6-dimensional configuration space of the Baxter's arm
     # the joint limits are taken from the Baxter's manual
@@ -96,20 +93,21 @@ def caseStudy():
     init_conf = Point([0, 0, 0, 0, 0, 0])
     # create robot object
     filename = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                            'robots', 'baxter_robot', 'env_config_with_interactive_marker.json')
+                            'robots', 'baxter_robot',
+                            'env_config_with_interactive_marker.json')
     assert os.path.isfile(filename), 'Json environment file not found!'
     robot = BaxterRobot(name="baxter", init=init_conf, cspace=cspace,
                         stepsize=.99, config={'json-filename': filename})
-
     robot.localObst = 'local_obstacle'
 
     logger.info('"C-space": (%s, %s)', cspace, boundary.style)
     logger.info('"Robot name": "%s"', robot.name)
     logger.info('"Robot initial configuration": %s', robot.initConf)
     logger.info('"Robot step size": %f', robot.controlspace)
+    logger.info('"Robot config": %s', robot.config)
     logger.info('"Robot constructor": "%s"',
                  'BaxterRobot(robot_name, init=initConf, cpace=cspace, '
-                 'stepsize=stepsize)')
+                 'stepsize=stepsize, config=config)')
     logger.info('"Local obstacle label": "%s"', robot.localObst)
 
     # local  requests
@@ -133,22 +131,35 @@ def caseStudy():
     # set requests to look for
     robot.request = requests[0]
 
-    ############################################################################
-    ### Generate global transition system and off-line control policy ##########
-    ############################################################################
-
     globalSpec = ('[] ( (<> region1) && (<> region2) && (<> region3)'
                   '&& table )')
     logger.info('"Global specification": "%s"', globalSpec)
 
+    return robot, globalSpec, localSpec
+
+def generate_global_ts(logger, globalSpec, robot, eta=(0.02, 1.0), load=True):
+    '''Generate global transition system and off-line control policy.'''
+    ts_file = os.path.join(outputdir, 'ts.yaml')
+    pa_file = os.path.join(outputdir, 'pa.yaml')
+    if load and os.path.isfile(ts_file) and os.path.isfile(pa_file):
+        checker = IncrementalProduct.load(pa_file)
+        logger.info('"Buchi size": %s', checker.buchi.size())
+        offline = RRGPlanner(robot, checker, iterations=1000)
+        offline.eta = eta
+        offline.ts = Ts.load(ts_file)
+        prefix, suffix = offline.checker.globalPolicy(offline.ts)
+        logger.info('"global policy": (%s, %s)', prefix, suffix)
+        logger.info('"global policy length": (%d, %d)', len(prefix), len(suffix))
+        logger.info('"End global planning": True')
+        return True, offline
+
     # initialize incremental product automaton
     checker = IncrementalProduct(globalSpec)
-    logger.info('"Buchi size": (%d, %d)', checker.buchi.g.number_of_nodes(),
-                                           checker.buchi.g.number_of_edges())
+    logger.info('"Buchi size": %s', checker.buchi.size())
 
     # initialize global off-line RRG planner
     offline = RRGPlanner(robot, checker, iterations=1000)
-    offline.eta = [0.02, 1.0] # good bounds for the planar case study
+    offline.eta = eta
 
     logger.info('"Start global planning": True')
     with Timer(op_name='global planning', template='"%s runtime": %f'):
@@ -162,21 +173,38 @@ def caseStudy():
     logger.info('"Size of PA": %s', offline.checker.size())
 
     # save global transition system and control policy
-    offline.ts.save(os.path.join(outputdir, 'ts.yaml'))
+    offline.ts.save(ts_file)
+    # save product automaton
+    offline.checker.save(pa_file)
 
     ############################################################################
     ### Display the global transition system and the off-line control policy ###
     ############################################################################
 
     # display workspace and global transition system
-    prefix, suffix = offline.checker.globalPolicy(offline.ts)
+    prefix, suffix = [], []
+    if found:
+        prefix, suffix = offline.checker.globalPolicy(offline.ts)
     logger.info('"global policy": (%s, %s)', prefix, suffix)
     logger.info('"global policy length": (%d, %d)', len(prefix), len(suffix))
     logger.info('"End global planning": True')
-  
-    ############################################################################
-    ### Execute on-line path planning algorithm ################################
-    ############################################################################
+
+    return found, offline
+
+def update(robot, online):
+    '''Removes requests serviced by the robot, resets all requests at the end of
+    each cycle, and moves them on their paths.
+    '''
+    # update requests and local obstacles
+    robot.sensor_update()
+    # reset requests at the start of a cycle, i.e., reaching a final state
+    if (online.trajectory[-1] in online.ts.g and online.potential == 0):
+        robot.sensor_reset()
+        return True
+    return False
+
+def plan_online(logger, localSpec, offline, robot, iterations=2):
+    '''Execute on-line path planning algorithm.'''
 
     # compute potential for each state of PA
     with Timer(op_name='Computing potential function',
@@ -192,40 +220,34 @@ def caseStudy():
     online.PointCls = Point
     online.detailed_logging = True
 
-    def update(robot, online):
-        '''Removes requests serviced by the robot, resets all requests at the
-        end of each cycle, and moves them on their paths.
-        '''
-
-        # update requests and local obstacles
-        robot.sensor_update()
-        # reset requests at the start of a cycle, i.e., reaching a final state
-        if (online.trajectory[-1] in online.ts.g and online.potential == 0):
-            robot.sensor_reset()
-            return True
-        return False
-
     # define number of surveillance cycles to run
-    cycles = 2
+    cycles = iterations
     # execute controller
     cycle = -1 # number of completed cycles, -1 accounts for the prefix
     while cycle < cycles:
         logger.info('"Start local planning step": True')
         # update the locally sensed requests and obstacles
         requests, obstacles = robot.sensor_sense()
-        with Timer(op_name='local planning', template='"%s runtime": %f'):
+        with Timer(op_name='local planning', template='"%s execution": %f'):
             # feed data to planner and get next control input
             nextConf = online.execute(requests, obstacles)
         # enforce movement
         robot.move(nextConf)
-
         # if completed cycle increment cycle
         if update(robot, online):
             cycle += 1
 
     logger.info('"Local online planning finished": True')
 
+def caseStudy(outputdir, logfilename, iterations):
+    logger = setup(outputdir, logfilename)
+    robot, globalSpec, localSpec = define_problem(logger, outputdir)
+    found, offline = generate_global_ts(logger, globalSpec, robot)
+    if not found:
+        return
+    plan_online(logger, localSpec, offline, robot, iterations)
 
 if __name__ == '__main__':
     np.random.seed(1001)
-    caseStudy()
+    outputdir=os.path.abspath('../data_ijrr/example3')
+    caseStudy(outputdir, logfilename='ijrr_example_3.log', iterations=2)
