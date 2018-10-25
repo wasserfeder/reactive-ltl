@@ -62,6 +62,9 @@ class BaxterRobot(Robot):
         '''Utility function called at the end of a surveillance cycle.'''
         self.event_active = True
 
+    def collision_free(self, local_plan, obstacles):
+        return True # NOTE: assumes that there are no local obstacles
+
     def sensor_sense(self):
         object_position = self.get_interactive_object_position()
         table_pos = self.tf_buffer.lookup_transform("world", "Robot_a", rospy.Time())
@@ -88,10 +91,8 @@ class BaxterRobot(Robot):
                                         object_pose.transform.translation.y,
                                         object_pose.transform.translation.z])
 
-
                 return object_pose
 
-        
     def fk(self, joint_angles):
         '''
         joint_angles is a list of length 7
