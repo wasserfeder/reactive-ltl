@@ -28,10 +28,19 @@
 
 import networkx as nx
 
+from yaml import load, dump
+# register yaml representers
+try: # try using the libyaml if installed
+    from yaml import CLoader as Loader, CDumper as Dumper
+except ImportError: # else use default PyYAML loader and dumper
+    from yaml import Loader, Dumper
+
+
 from lomap.algorithms.dijkstra import source_to_target_dijkstra
 
 from lomap import Model, Buchi
 from util.scc import scc, initNodes
+import spaces
 
 
 class IncrementalProduct(Model):
@@ -192,3 +201,45 @@ class IncrementalProduct(Model):
 
         prefix, suffix = policy
         return [v[0] for v in prefix], [v[0] for v in suffix]
+
+    def save(self, filename):
+        '''Saves product automaton to a file in YAML format.'''
+        data = {
+            'name': self.name,
+            'init': self.init,
+            'current': self.current,
+            'final': self.final,
+            'directed': self.directed,
+            'multi': self.multi,
+            'states': self.g.nodes(data=True),
+            'transitions': self.g.edges(data=True),
+            'globalSpec': self.globalSpec,
+            'buchi': self.buchi,
+            'proj_ts': self.proj_ts,
+            'scc': self.scc
+        }
+        with open(filename, 'w') as fout:
+            dump(data, fout, Dumper=Dumper)
+
+    @classmethod
+    def load(cls, filename):
+        '''Loads a product automaton from a YAML document.'''
+        with open(filename, 'r') as fin:
+            data = load(fin, Loader=Loader)
+
+        pa = IncrementalProduct(data['globalSpec'])
+        assert pa.directed == data['directed']
+        assert pa.multi == data['multi']
+
+        pa.name = data['name']
+        pa.init = data['init']
+        pa.current = data['current']
+        pa.final = data['final']
+        pa.g.add_nodes_from(data['states'])
+        pa.g.add_edges_from(data['transitions'])
+
+        assert pa.buchi == data['buchi']
+        pa.proj_ts = data['proj_ts']
+        pa.scc = data['scc']
+
+        return pa

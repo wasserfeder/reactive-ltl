@@ -41,7 +41,7 @@ def p2d_representer(dumper, p):
                                     mapping={'x': float(p.x), 'y': float(p.y)})
 Dumper.add_representer(Point2D, p2d_representer)
 def p2d_constructor(loader, node):
-    data = loader.construct_mapping(node)
+    data = loader.construct_mapping(node, deep=True)
     return Point2D([data['x'], data['y']])
 Loader.add_constructor(u'!Point2D', p2d_constructor)
 
@@ -50,6 +50,6 @@ def point_representer(dumper, p):
                                mapping={'coords': [float(x) for x in p.coords]})
 Dumper.add_representer(Point, point_representer)
 def point_constructor(loader, node):
-    data = loader.construct_mapping(node)
+    data = loader.construct_mapping(node, deep=True)
     return Point(data['coords'])
 Loader.add_constructor(u'!Point', point_constructor)
