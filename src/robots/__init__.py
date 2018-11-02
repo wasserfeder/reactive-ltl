@@ -21,5 +21,5 @@
 from robot import Robot
 from fullyActuatedRobot import FullyActuatedRobot
 from sensors import Sensor, SimulatedSensor, BoundingBoxSimulatedSensor
-from cozmo_robot import Cozmo
-from cozmo_sensor import CozmoSensor
+# from cozmo_robot import Cozmo
+# from cozmo_sensor import CozmoSensor
