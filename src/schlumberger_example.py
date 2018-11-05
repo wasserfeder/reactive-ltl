@@ -203,8 +203,12 @@ def define_problem(outputdir='.'):
     # display expanded workspace
     sim.display(expanded=True)
 
-    globalSpec = ('[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4)'
-                  + ' && !(o1 || o2 || o3 || o4 ))')
+    # globalSpec = ('[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4)'
+    #               + ' && !(o1 || o2 || o3 || o4 ))')
+    globalSpec = ('[] ( (<> tr0) && (<> tr1) && (<> tr2) && (<> tr3)  && (<> tr4)' +
+                  ' && (<> tl0) && (<> tl1) && (<> tl2) && (<> tl3)  && (<> tl4)' +
+                  ' && (<> missle) )')
+  
     logging.info('"Global specification": "%s"', globalSpec)
 
 
@@ -305,8 +309,8 @@ def caseStudy(outputdir, logfilename, iterations):
 if __name__ == '__main__':
     outputdir = os.path.abspath('../data_ijrr/example1')
 
-#     global_performance(outputdir, logfilename='ijrr_example_1_global.log',
-#                        trials=100)
+    global_performance(outputdir, logfilename='ijrr_example_1_global.log',
+                       trials=100)
 
 #     np.random.seed(1001)
 #     caseStudy(outputdir, logfilename='ijrr_example_1.log', iterations=2)
