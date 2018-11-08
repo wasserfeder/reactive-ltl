@@ -85,7 +85,7 @@ def define_problem(outputdir='.'):
 
     # create robot object
     robot = FullyActuatedRobot('Drone', init=Point2D((2, 2)), wspace=ewspace,
-                               stepsize=0.999)
+                               stepsize=3.999)
     robot.diameter = robotDiameter
     robot.localObst = 'local_obstacle'
 
@@ -214,7 +214,7 @@ def define_problem(outputdir='.'):
 
     return robot, sim, globalSpec, localSpec
 
-def generate_global_ts(globalSpec, sim, robot, eta=(0.5, 1.0),
+def generate_global_ts(globalSpec, sim, robot, eta=(2.5, 4.0),
                        ts_file='ts.yaml', outputdir='.', show=True):
     '''Generate global transition system and off-line control policy.'''
 
@@ -224,7 +224,7 @@ def generate_global_ts(globalSpec, sim, robot, eta=(0.5, 1.0),
                                            checker.buchi.g.number_of_edges())
 
     # initialize global off-line RRG planner
-    sim.offline = RRGPlanner(robot, checker, iterations=1000)
+    sim.offline = RRGPlanner(robot, checker, iterations=5000)
     sim.offline.eta = eta
 
     logging.info('"Start global planning": True')
@@ -302,19 +302,19 @@ def global_performance(outputdir, logfilename, trials=20):
 def caseStudy(outputdir, logfilename, iterations):
     setup(outputdir, logfilename)
     robot, sim, globalSpec, localSpec = define_problem(outputdir)
-    # if not generate_global_ts(globalSpec, sim, robot, outputdir=outputdir):
-    #     return
+    if not generate_global_ts(globalSpec, sim, robot, outputdir=outputdir):
+        return
     # plan_online(localSpec, sim, robot, iterations)
 
 if __name__ == '__main__':
-    outputdir = os.path.abspath('../data_ijrr/example1')
+    outputdir = os.path.abspath('../data_ijrr/schlumberger')
 
-    global_performance(outputdir, logfilename='ijrr_example_1_global.log',
-                       trials=100)
-
-#     np.random.seed(1001)
-#     caseStudy(outputdir, logfilename='ijrr_example_1.log', iterations=2)
+    # global_performance(outputdir, logfilename='ijrr_example_1_global.log',
+    #                   trials=100)
 
     np.random.seed(1001)
-    caseStudy(outputdir, logfilename='ijrr_example_1_long.log', iterations=100)
+    caseStudy(outputdir, logfilename='ijrr_schlumberger.log', iterations=2)
+
+    # np.random.seed(1001)
+    # caseStudy(outputdir, logfilename='ijrr_example_1_long.log', iterations=100)
 
