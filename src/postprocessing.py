@@ -128,6 +128,78 @@ def postprocessing_global_performance(logfilename, outdir,
 
     return trials
 
+def postprocessing_local_performace(logfilename, outdir,
+                                    outfile='local_performance_stats.txt'):
+    '''Parses log file and generates statistics on local planning.'''
+
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
+
+    with open(logfilename, 'r') as logfile:
+        for line in logfile:
+            prefix, line_data = line.split('--')
+            if prefix.lower().rfind('info') >= 0:
+                if line_data.lower().find('end global planning') >= 0:
+                    break
+
+        # third process data on local planner
+        rrt_stat_data = dict()
+        for line in logfile:
+            prefix, line_data = line.split('--')
+            if prefix.lower().rfind('info') >= 0:
+                if line_data.lower().find('initialize local planner') >= 0:
+                    break
+                rrt_stat_data.update(eval(line_data))
+        print 'rrt_stat_data:', len(rrt_stat_data)
+
+        rrt_data = []
+        execution_data = dict()
+        for line in logfile:
+            prefix, line_data = line.split('--')
+            if prefix.lower().rfind('info') >= 0:
+                if line_data.lower().find('local online planning finished') >=0:
+                    rrt_data.append(execution_data)
+                    break
+                # NOTE: second condition is for compatibility with Cozmo logs
+                if (line_data.lower().find('start local planning step') >= 0
+                    or line_data.lower().find('plan start time') >= 0):
+                    rrt_data.append(execution_data)
+                    execution_data = dict()
+                execution_data.update(eval(line_data))
+        print 'rrt data:', len(rrt_data)
+
+    metrics = [('tree size', True), ('local planning runtime', False),
+               ('local planning execution', False)]
+    rrt_data = rrt_data[1:]
+    # NOTE: This is for compatibility with the Cozmo logs
+    if 'local planning execution' not in rrt_data[0]:
+        for d in rrt_data:
+            duration = (d['plan stop time'] - d['plan start time'])*1000
+            d['local planning execution'] = duration
+
+    data = [len(d['requests']) for d in rrt_data]
+    serviced = sum(n1 - n2 for n1, n2 in it.izip(data, data[1:]) if n1 > n2)
+
+#     with open(os.path.join(outdir, outfile), 'w') as f:
+#         print>>f, 'no trials:', len(rrt_data)
+#         print>>f, 'no requests serviced', serviced
+#         ops = [np.mean, np.min, np.max, np.std]
+#         for key, positive in metrics:
+#             if positive:
+#                 print>>f, key, [op([trial[key] for trial in rrt_data
+#                                           if trial[key] > 0]) for op in ops]
+#             else:
+#                 print>>f, key, [op([trial[key] for trial in rrt_data])
+#                                                               for op in ops]
+
+    ret = {'No trials': len(rrt_data), 'No requests serviced': serviced}
+    for key, positive in metrics:
+        if positive:
+            ret[key] = [trial[key] for trial in rrt_data if trial[key] > 0]
+        else:
+            ret[key] = [trial[key] for trial in rrt_data]
+    return ret
+
 def postprocessing(logfilename, ts_filename, outdir, lts_index,
                    rrg_iterations, lts_iterations,
                    local_traj_iterations, generate=()):
@@ -193,7 +265,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
                 if line_data.lower().find('local online planning finished') >=0:
                     rrt_data.append(execution_data)
                     break
-                # NOTE: second condition is for compatibility with Cozmo logs 
+                # NOTE: second condition is for compatibility with Cozmo logs
                 if (line_data.lower().find('start local planning step') >= 0
                     or line_data.lower().find('plan start time') >= 0):
                     rrt_data.append(execution_data)
@@ -412,12 +484,12 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
         idx = lts_index
         print rrt_data[idx]['tree size']
         print 'current state:', rrt_data[idx-1]['new configuration']
-    
+
         lts_data = sorted([v for k, v in rrt_data[idx].items()
                                 if str(k).startswith('lts iteration')],
                           key=lambda x: x[0])
     #     print lts_data
-    
+
         sim.online.lts = Ts(directed=True, multi=False)
         sim.online.lts.init[rrt_data[idx-1]['new configuration']] = 1
         # reset and fast-forward requests' locations
@@ -431,7 +503,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
             sim.config['video-interval'] = 500
             sim.config['video-file'] = 'lts_construction.mp4'
             sim.save_lts_process(lts_data, endframe_hold=20)
-    
+
         if 'LTS iterations' in generate:
             lts_iterations = [i + (i==-1)*len(lts_data) for i in lts_iterations]
             sim.save_lts_iterations(lts_data, lts_iterations)
@@ -441,7 +513,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
                    ('local planning execution', False)]
         rrt_data = rrt_data[1:]
         # NOTE: This is for compatibility with the Cozmo logs
-        if rrt_data[0].get('local planning execution', False):
+        if 'local planning execution' not in rrt_data[0]:
             for d in rrt_data:
                 duration = (d['plan stop time'] - d['plan start time'])*1000
                 d['local planning execution'] = duration
@@ -467,11 +539,11 @@ def box_plots(data, outfile='stat_{}.png'):
     dims = data.keys()
     xname = 'Dimension'
     ynames = {
-        'Iterations': 'Iterations',
-        'PA update runtime' : 'Duration of PA update step [ms]',
+        'Iterations' : 'Iterations',
+        'PA update runtime' : 'Duration of PA update step [s]',
         'PA nodes' : 'Number of PA states',
         'PA edges' : 'Number of PA transitions',
-        'global planning runtime' : 'Duration of global planning [ms]',
+        'global planning runtime' : 'Duration of global planning [s]',
         'TS nodes' : 'Number of TS states',
         'TS edges' : 'Number of TS edges'
     }
@@ -481,7 +553,11 @@ def box_plots(data, outfile='stat_{}.png'):
         df = pd.concat([pd.DataFrame([(dim, v[key]) for v in data[dim]],
                                      columns=[xname, yname])
                         for dim in dims], ignore_index=True)
-        sns.boxplot(x=xname, y=yname, data=df, width=.5)
+        if key in ('PA update runtime', 'global planning runtime'):
+            df[yname] /= 1000
+        bp = sns.boxplot(x=xname, y=yname, data=df, width=.5)
+        if key in ('Iterations', 'global planning runtime'):
+            bp.set_yscale('log')
         plt.savefig(outfile.format(key.replace(' ', '_')), dpi=fig.dpi)
 
 def workspace_plot(outfile='highdim_workspace.png'):
@@ -494,7 +570,7 @@ def workspace_plot(outfile='highdim_workspace.png'):
     wspace = Workspace(boundary=boundary)
 
     # create robot object
-    initConf = Point2D((0.1, 0.1)) # start close to the origin 
+    initConf = Point2D((0.1, 0.1)) # start close to the origin
     robot = FullyActuatedRobot('Robot-highdim', init=initConf, wspace=wspace)
     robot.diameter=0
 
@@ -537,6 +613,42 @@ def workspace_plot(outfile='highdim_workspace.png'):
     # display workspace
     sim.display(save=outfile, figsize=(7, 7))
 
+def plot_local_performance(data, outfile='local_stat_{}.png'):
+    '''Generates and plots local performance graphs.'''
+
+    sns.set(style="whitegrid")
+    dims = data.keys()
+    xname = 'Dimension'
+    ynames = {
+        'No trials' : 'No trials',
+        'No requests serviced' : 'No requests serviced',
+#         'tree size' : 'Tree size',
+        'local planning runtime' : 'Duration of local planning [s]',
+    }
+    for key in ynames:
+        fig = plt.figure(key)
+        yname = ynames[key]
+        if key in ('No trials', 'No requests serviced'):
+            df = pd.DataFrame([(dim, data[dim][key]) for dim in dims],
+                          columns=[xname, yname])
+            plt.plot(df[xname], df[yname], 'o', color='black')
+            plt.xlabel(xname)
+            plt.ylabel(yname)
+            plt.xticks(dims)
+            plt.xlim(dims[0]-1, dims[-1]+1)
+        else:
+            df = pd.concat([pd.DataFrame([(dim, v) for v in data[dim][key]],
+                                         columns=[xname, yname])
+                            for dim in dims], ignore_index=True)
+            if key in ('local planning runtime',):
+                df[yname] = df[yname] / 1000.0
+            bp = sns.boxplot(x=xname, y=yname, data=df, width=.5)
+            if key in ('local planning runtime',):
+                bp.set_yscale('log')
+        plt.savefig(outfile.format(key.replace(' ', '_')), dpi=fig.dpi)
+        plt.show()
+
+
 if __name__ == '__main__':
 
     postprocessing(logfilename='../data_ijrr/schlumberger/ijrr_schlumberger.log',
@@ -560,5 +672,4 @@ if __name__ == '__main__':
 #                         'LTS iterations',
 #                         'LTS statistics',
                         ])
-
 
