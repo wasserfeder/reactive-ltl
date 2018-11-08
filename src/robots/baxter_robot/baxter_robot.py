@@ -17,7 +17,7 @@ from spaces import Point
 default_config = {
     'baxter_utils_config': {
         'arm': "right",
-        'env_json_path': os.path.join(os.getcwd(), "env_config_with_interactive_marker.json") 
+        'env_json_path': os.path.join(os.getcwd(), "env_config.json")
     }
 }
 
@@ -31,10 +31,10 @@ class BaxterRobot(Robot):
         self.config = default_config
         self.config.update(config)
 
-        #json_filename = os.path.join(os.getcwd(), "env_config_with_interactive_marker.json") 
+        #json_filename = os.path.join(os.getcwd(), "env_config_with_interactive_marker.json")
         json_filename = self.config.get('json-filename', 'env_config.json')
         self.config['baxter_utils_config']['env_json_path'] = json_filename
-        
+
         self.baxter_utils = BaxterUtils(self.config['baxter_utils_config'])
 
         with open(json_filename) as f:
@@ -65,6 +65,9 @@ class BaxterRobot(Robot):
     def collision_free(self, local_plan, obstacles):
         return True # NOTE: assumes that there are no local obstacles
 
+    def collision_free_segment(self, source_state, dest_state, local_obstacles):
+        return True
+        
     def sensor_sense(self):
         object_position = self.get_interactive_object_position()
         table_pos = self.tf_buffer.lookup_transform("world", "Robot_a", rospy.Time())
@@ -121,6 +124,7 @@ class BaxterRobot(Robot):
         return self.initConf.__class__(s + (t-s) * self.controlspace/dist)
 
     def move(self, joint_angles):
+        Robot.move(self, joint_angles)
         joint_angles = list(joint_angles.coords) + [0]
         # to account for the order difference in fk and move_to_joint_position
         remapped_joint_angles = [joint_angles[i] for i in [2, 3, 0, 1, 4, 5, 6]]
@@ -223,7 +227,7 @@ class BaxterRobot(Robot):
         return s
 
     def isSimpleSegment(self, u, v):
-
+        # FIXME: this is not symmetrical
         u_symbols = np.array(self.getSymbols(u, bitmap=True))
         v_symbols = np.array(self.getSymbols(v, bitmap=True))
 
@@ -243,7 +247,7 @@ class BaxterRobot(Robot):
 
         interval = 100 # divide into 100 steps
         joints_inc = np.abs(joints_diff/interval) * joints_diff_sign
-        
+
         joints = start_joints
         joint_heights_all = []
 

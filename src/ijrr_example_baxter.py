@@ -42,7 +42,7 @@ except ImportError:
 
 from lomap import compute_potentials
 from lomap import Timer, Ts
-    
+
 from spaces.base import ConfigurationSpace, Point
 from spaces.maps_nd import BoxBoundary, BallRegion
 from robots import BaxterRobot
@@ -94,7 +94,7 @@ def define_problem(logger, outputdir='.'):
     # create robot object
     filename = os.path.join(os.path.abspath(os.path.dirname(__file__)),
                             'robots', 'baxter_robot',
-                            'env_config_with_interactive_marker.json')
+                            'env_config.json')
     assert os.path.isfile(filename), 'Json environment file not found!'
     robot = BaxterRobot(name="baxter", init=init_conf, cspace=cspace,
                         stepsize=.99, config={'json-filename': filename})
@@ -111,10 +111,10 @@ def define_problem(logger, outputdir='.'):
     logger.info('"Local obstacle label": "%s"', robot.localObst)
 
     # local  requests
-    requests = [BallRegion([0, 0, 0], 0.3, ['interactive'])]
+    requests = [BallRegion([0, 0, 0], 0.3, ['reactive_region'])]
 
     # define local specification as a priority function
-    localSpec = {'interactive': 0}
+    localSpec = {'reactive_region': 0}
     logger.info('"Local specification": %s', localSpec)
 
     for k, r in enumerate(requests):
@@ -213,10 +213,11 @@ def plan_online(logger, localSpec, offline, robot, iterations=2):
             return
 
     # set the step size for the local controller
-    robot.controlspace = 0.1
+    robot.controlspace = 0.5
 
     # initialize local on-line RRT planner
-    online = LocalPlanner(offline.checker, offline.ts, robot, localSpec)
+    online = LocalPlanner(offline.checker, offline.ts, robot, localSpec,
+                          eta=robot.controlspace)
     online.PointCls = Point
     online.detailed_logging = True
 
@@ -224,15 +225,21 @@ def plan_online(logger, localSpec, offline, robot, iterations=2):
     cycles = iterations
     # execute controller
     cycle = -1 # number of completed cycles, -1 accounts for the prefix
+    k = 0
+    robot.move(robot.initConf)
     while cycle < cycles:
+        k+=1
+
         logger.info('"Start local planning step": True')
         # update the locally sensed requests and obstacles
         requests, obstacles = robot.sensor_sense()
+        print("requests: {}".format(requests))
         with Timer(op_name='local planning', template='"%s execution": %f'):
             # feed data to planner and get next control input
             nextConf = online.execute(requests, obstacles)
         # enforce movement
         robot.move(nextConf)
+        print("nextConf: {}, k: {}".format(nextConf, k))
         # if completed cycle increment cycle
         if update(robot, online):
             cycle += 1

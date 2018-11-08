@@ -46,7 +46,7 @@
     "init_pose": [0.725, 0.3789, 0.15, 0, 0, 0, 1],
     "scale": [0.2, 0.2, 0.2],
     "rgba": [1.0, 1.0, 0.1, 0.6],
-    "marker_type": "sphere",
+    "marker_type": "interactive",
     "apply_transform": "T_motive2baxter"
   }
 }

@@ -246,7 +246,7 @@ class LocalPlanner(object):
         where the decreasing potential constraint is not enforced. The global
         target state is the local minimizer of potential, and then distance,
         among the states within the search radius that can be connected to by a
-        collision free path. 
+        collision free path.
         '''
         if state is None or not B:
             return None
@@ -298,8 +298,9 @@ class LocalPlanner(object):
 
         final_state = self.global_target_state
         # check if it can be connected
-        if not self.robot.isSimpleSegment(current_state, final_state):
-            return []
+        # FIXME: hack because isSimpleSegment is not symmetrical
+        # if not self.robot.isSimpleSegment(current_state, final_state):
+        #     return []
 
         # generate straight path to the node
         current_state = np.array(current_state.coords)
@@ -329,8 +330,16 @@ class LocalPlanner(object):
                 assert self.robot.isSimpleSegment(state, self.global_target_state)
                 collision_free = self.robot.collision_free_segment(state,
                                      self.global_target_state, local_obstacles)
+            print 'local plan: col={}'.format(collision_free)
             if collision_free:
                 local_plan = self.free_movement()
+                print 'local plan: plan={}'.format(local_plan)
+                print 'local plan: global state={}'.format(self.global_target_state)
+                print 'local plan: simple_segment({}, {})={}'.format(
+                  self.robot.currentConf, self.global_target_state,
+                  self.robot.isSimpleSegment(self.robot.currentConf, self.global_target_state)
+                  )
+                print ''
                 if local_plan:
                     return local_plan, False
 
@@ -352,7 +361,7 @@ class LocalPlanner(object):
             iteration = cnt.next()
             relax = iteration >= self.relax_global_connection
             # 3. generate sample
-            random_sample = self.robot.sample(local=True)
+            random_sample = self.robot.sample(local=False)
             # 4. get nearest neighbor in local ts
             source_state = nearest(self.lts, random_sample)
             # 5. steer robot towards random sample
