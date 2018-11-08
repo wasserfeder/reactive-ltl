@@ -214,8 +214,8 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
         pre, suff = rrg_stat_data['global policy']
         print>>f, 'Global policy size :', (len(pre), len(suff))
 
-        key = 'Computing potential function runtime'
-        print>>f, key, ':', rrt_stat_data[key]
+        # key = 'Computing potential function runtime'
+        # print>>f, key, ':', rrt_stat_data[key]
 
     # get workspace
     wspace, style = data['Workspace']
@@ -338,6 +338,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
         sim.simulate(loops=1, offline=True)
         sim.play(output='video', show=False)
         sim.save()
+
 
     # get online trajectory
     sim.offline.ts = Ts.load(ts_filename)
@@ -537,25 +538,22 @@ def workspace_plot(outfile='highdim_workspace.png'):
     sim.display(save=outfile, figsize=(7, 7))
 
 if __name__ == '__main__':
-#     postprocessing_global_performance(
-#                 logfilename='../data_ijrr/example1/ijrr_example_1_global.log',
-#                 outdir='../data_ijrr/example1')
 
-    postprocessing(logfilename='../data_ijrr/example1/ijrr_example_1.log',
-                   ts_filename='../data_ijrr/example1/ts.yaml',
-                   outdir='../data_ijrr/example1',
+    postprocessing(logfilename='../data_ijrr/schlumberger/ijrr_schlumberger.log',
+                   ts_filename='../data_ijrr/schlumberger/ts.yaml',
+                   outdir='../data_ijrr/schlumberger',
                    lts_index=48,
                    rrg_iterations=[30, 75, 150, -1],
                    lts_iterations=[15, 30, 45, -1],
                    local_traj_iterations=[155, 187, 273, 329, 749, 1191],
                    generate=[ # Defines what media to generate 
-#                         'workspace',
-#                         'expanded workspace',
-#                         'global solution',
+                         'workspace',
+                         'expanded workspace',
+                         'global solution',
 #                         'both workspaces',
 #                         'RRG construction',
 #                         'RRG iterations',
-#                         'offline plan',
+                         'offline plan',
 #                         'online plan',
 #                         'online trajectory iterations',
 #                         'LTS construction',
@@ -563,46 +561,4 @@ if __name__ == '__main__':
 #                         'LTS statistics',
                         ])
 
-#     postprocessing(logfilename='../data_ijrr/example1/ijrr_example_1_long.log',
-#                    ts_filename='../data_ijrr/example1/ts.yaml',
-#                    outdir='../data_ijrr/example1',
-#                    lts_index=0, local_traj_iterations=None,
-#                    generate=['LTS statistics'])
 
-    postprocessing(logfilename='../data_ijrr/example2_good_run_serv_rad_0.3/ijrr_example_2.log',
-                   ts_filename='../data_ijrr/example2_good_run_serv_rad_0.3/ts.yaml',
-                   outdir='../data_ijrr/example2_good_run_serv_rad_0.3',
-                   lts_index=0,
-                   rrg_iterations=[30, 75, 150, -1],
-                   lts_iterations=[],
-                   local_traj_iterations=[],
-                   generate=[ # Defines what media to generate 
-#                         'workspace',
-#                         'expanded workspace',
-#                         'global solution',
-#                         'both workspaces',
-#                         'RRG construction',
-#                         'RRG iterations',
-#                         'offline plan',
-#                         'trajectory',
-#                         'online plan',
-#                         'online trajectory iterations',
-#                         'LTS construction',
-#                         'LTS iterations',
-#                         'LTS statistics',
-                       ])
-
-    workspace_plot(outfile='../data_ijrr/example4/highdim_workspace.png')
-
-    data = dict()
-    for dim in range(3, 7):
-        data[dim] = postprocessing_global_performance(
-                logfilename='../data_ijrr/example4/'
-                            'ijrr_example_4_global_dim{:02d}.log'.format(dim),
-                outdir='../data_ijrr/example4',
-                outfile='global_performance_stats_dim{:02d}.txt'.format(dim))
-
-    # NOTE: this need to be the last thing, since seaborn changes the matplotlib
-    # configuration
-    import seaborn as sns
-    box_plots(data, outfile='../data_ijrr/example4/global_performance_{}.png')
