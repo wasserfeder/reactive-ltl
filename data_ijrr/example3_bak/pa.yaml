@@ -1,0 +1,3529 @@
+buchi: !Buchi
+  final: !!set {accept_init: null}
+  graph:
+    edges:
+    - !!python/tuple
+      - T0_S3
+      - T0_S3
+      - guard: ((!(region1)) && (table))
+        input: !!set {8: null, 9: null, 10: null, 11: null}
+        label: ((!(region1)) && (table))
+        weight: 0
+    - !!python/tuple
+      - T0_S3
+      - accept_init
+      - guard: ((region1) && (table))
+        input: !!set {12: null, 13: null, 14: null, 15: null}
+        label: ((region1) && (table))
+        weight: 0
+    - !!python/tuple
+      - T0_S2
+      - T0_S3
+      - guard: ((!(region1)) && (region2) && (table))
+        input: !!set {10: null, 11: null}
+        label: ((!(region1)) && (region2) && (table))
+        weight: 0
+    - !!python/tuple
+      - T0_S2
+      - T0_S2
+      - guard: ((!(region2)) && (table))
+        input: !!set {8: null, 9: null, 12: null, 13: null}
+        label: ((!(region2)) && (table))
+        weight: 0
+    - !!python/tuple
+      - T0_S2
+      - accept_init
+      - guard: ((region1) && (region2) && (table))
+        input: !!set {14: null, 15: null}
+        label: ((region1) && (region2) && (table))
+        weight: 0
+    - !!python/tuple
+      - accept_init
+      - T0_S3
+      - guard: ((!(region1)) && (region2) && (region3) && (table))
+        input: !!set {11: null}
+        label: ((!(region1)) && (region2) && (region3) && (table))
+        weight: 0
+    - !!python/tuple
+      - accept_init
+      - T0_S2
+      - guard: ((!(region2)) && (region3) && (table))
+        input: !!set {9: null, 13: null}
+        label: ((!(region2)) && (region3) && (table))
+        weight: 0
+    - !!python/tuple
+      - accept_init
+      - accept_init
+      - guard: ((region1) && (region2) && (region3) && (table))
+        input: !!set {15: null}
+        label: ((region1) && (region2) && (region3) && (table))
+        weight: 0
+    - !!python/tuple
+      - accept_init
+      - T0_S1
+      - guard: ((!(region3)) && (table))
+        input: !!set {8: null, 10: null, 12: null, 14: null}
+        label: ((!(region3)) && (table))
+        weight: 0
+    - !!python/tuple
+      - T0_S1
+      - T0_S3
+      - guard: ((!(region1)) && (region2) && (region3) && (table))
+        input: !!set {11: null}
+        label: ((!(region1)) && (region2) && (region3) && (table))
+        weight: 0
+    - !!python/tuple
+      - T0_S1
+      - T0_S2
+      - guard: ((!(region2)) && (region3) && (table))
+        input: !!set {9: null, 13: null}
+        label: ((!(region2)) && (region3) && (table))
+        weight: 0
+    - !!python/tuple
+      - T0_S1
+      - accept_init
+      - guard: ((region1) && (region2) && (region3) && (table))
+        input: !!set {15: null}
+        label: ((region1) && (region2) && (region3) && (table))
+        weight: 0
+    - !!python/tuple
+      - T0_S1
+      - T0_S1
+      - guard: ((!(region3)) && (table))
+        input: !!set {8: null, 10: null, 12: null, 14: null}
+        label: ((!(region3)) && (table))
+        weight: 0
+    nodes:
+      T0_S1: {}
+      T0_S2: {}
+      T0_S3: {}
+      accept_init: {}
+  init: {accept_init: 1}
+  multi: true
+  name: 'Buchi corresponding to the formula: [] ( (<> region1) && (<> region2) &&
+    (<> region3)&& table )'
+  props: {region1: 4, region2: 2, region3: 1, table: 8}
+current: null
+directed: true
+final: !!set
+  ? !!python/tuple
+  - &id001 !Point
+    coords: [0.31693266618910076, 1.9802200255346438, -0.014355011551203396, -0.7691868240453416,
+      -2.1586099043882525, -0.9533282332053544]
+  - accept_init
+  : null
+globalSpec: '[] ( (<> region1) && (<> region2) && (<> region3)&& table )'
+init:
+  ? &id148 !!python/tuple
+  - &id002 !Point
+    coords: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+  - T0_S1
+  : 1
+multi: false
+name: Unnamed model
+proj_ts:
+  ? &id034 !Point
+    coords: [1.5301354929302642, 1.7299312353947922, -0.7953839588763696, 0.5107405122051174,
+      0.870346161105154, 0.894524992500703]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id049 !Point
+    coords: [-0.8113353272785231, 1.4899479708390613, 1.2157060004480669, -0.2764090999898432,
+      -0.0817978846950298, -0.34446194215759174]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id058 !Point
+    coords: [-1.810826535671579, 0.9103975034805329, 1.1774635314981539, 0.27590733846037035,
+      -1.6100529206222738, 0.8013045761284865]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id056 !Point
+    coords: [-1.752222703150796, 1.3448196195705977, 0.603891436149124, -0.6579851144533648,
+      -1.9265262124872722, -1.0387885634718073]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id035 !Point
+    coords: [1.2034910479379362, 2.2385584640317884, -0.6262022704235571, -0.1279419313626029,
+      0.7648026654369189, 0.4858385455301024]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id064 !Point
+    coords: [1.5038515176151375, 2.2827614343823495, -1.2449506941501907, -1.4595556705361015,
+      -1.6367698330970373, 0.7921945255063805]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id066 !Point
+    coords: [-0.4851289180594978, 1.002956969801928, 0.598915903938098, -0.47925685132899976,
+      -0.8597185378066887, 1.0000450018122113]
+  : !!set {T0_S2: null, T0_S3: null}
+  ? &id008 !Point
+    coords: [0.7092866903429575, 1.6943266365993506, -0.8065155637340238, -1.1659483686953225,
+      1.6152575618764389, -0.29464141463831417]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id047 !Point
+    coords: [-0.8683796424386397, 1.42746127845174, 0.6870775562045829, -0.43436333703866714,
+      2.2652178678689237, -0.5132124833985451]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id019 !Point
+    coords: [1.8856959591308422, 0.3235150600813905, 0.8856030606610585, 0.38054847405960257,
+      1.262862066709892, 1.3341099906762564]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id060 !Point
+    coords: [0.542771980597273, 2.049901541049837, -0.4725548196253411, -1.5381853199582551,
+      -1.1340469645450753, -0.04846069427832134]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id045 !Point
+    coords: [-2.0438680036627783, 0.44808629391208044, 0.30041952639551806, -0.31247882180175846,
+      1.50342658943774, 0.8017933452138503]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id028 !Point
+    coords: [1.3564388286461477, 1.2916707233295903, 0.06989192284369494, -0.10446298796915461,
+      -2.0342530637169527, 0.09864540686711315]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id007 !Point
+    coords: [1.4321981875988177, 1.7721883040376534, -0.6625269110025117, -0.7644463510219193,
+      1.266378032966566, 0.08978413065673074]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id037 !Point
+    coords: [0.4592572363739261, 1.7693862811873073, -1.08851094994539, 0.5625322260755066,
+      0.25130884909096374, 1.2226893892769533]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id041 !Point
+    coords: [-0.21329182306214842, 0.8091858561397566, 0.5180246696676934, -0.4267065950287327,
+      0.9302041798992413, -1.0585323805041629]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id003 !Point
+    coords: [1.072918419273058, 2.103223473348387, -0.748670546025872, -0.19574176570731594,
+      2.1252815291097353, 0.7684361714392993]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id036 !Point
+    coords: [1.3659376948063127, 1.943630633909073, -1.1350120902766303, 0.29899745443736403,
+      0.03660056692549907, 1.1229052547840799]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id011 !Point
+    coords: [1.9398904189400985, 0.6218169443077011, 0.4810722782096949, 0.5230301268443731,
+      1.53072614466466, -0.4093224051786994]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id009 !Point
+    coords: [1.6099551846423699, 1.2458866484913411, -0.5749228519941922, -0.03505388706011753,
+      1.312256020055595, 0.44994574720259034]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id014 !Point
+    coords: [2.6291916412787764, 0.6690768526804364, -0.04656240467538719, 0.24685127238129959,
+      2.311076148786366, -0.5490808847603432]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id025 !Point
+    coords: [1.0198589636767679, 1.8940608244076713, -0.2710714101591545, -0.8789035480750049,
+      -0.935712405761548, -0.5106479565184966]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id067 !Point
+    coords: [-1.6683813411748782, 1.4863878220831312, 1.0142668363640888, -0.11749084521209356,
+      1.4586088095562015, 0.9554465158461576]
+  : !!set {T0_S2: null, T0_S3: null}
+  ? &id039 !Point
+    coords: [-0.3152184283869074, 0.20716549999844114, 0.13695072139449868, -0.1072833905937612,
+      0.7571674742916334, -0.48399585525368444]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id006 !Point
+    coords: [0.7658369116398287, 2.042397266886471, 0.2874246060598994, -0.9926889937438604,
+      2.112846785443695, 1.0548191989840003]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  *id001: !!set {T0_S1: null, T0_S2: null, accept_init: null}
+  ? &id013 !Point
+    coords: [2.0887188336528175, 1.4616711131705369, -0.04882581514428283, 0.4396037091018707,
+      2.445365221926005, -0.4813217348122206]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id022 !Point
+    coords: [1.569011595268682, 0.4442808626869843, 0.1512939305456035, 0.4622468373001525,
+      -1.4002729982967503, -0.48925062923424695]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id051 !Point
+    coords: [-0.3731522571141953, 0.38492245306750555, 0.2637939603760651, -0.19724708728805343,
+      -0.6447239106743866, 0.41052345872713675]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id061 !Point
+    coords: [0.9835371131617152, 1.9295545319683172, -0.010360512594403626, -1.3828093144866698,
+      -0.9703156651571216, 0.6634167364590212]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id046 !Point
+    coords: [-1.4663072397809964, 0.9748832615763312, 0.6633811514093764, 0.08118418913374104,
+      1.954479146739052, -0.27901939463335035]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id017 !Point
+    coords: [1.3568328779084917, 0.6209381700047539, -0.11953257779871856, 0.24290696312565935,
+      0.15961652694669481, 0.483783009913508]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id021 !Point
+    coords: [0.7317291902744636, 0.12780396777841038, 0.34966443638059314, 0.3930076275400927,
+      -1.069385696858863, -0.33028768616306936]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id004 !Point
+    coords: [1.4120121947227142, 2.000770855182448, -0.7802952183504622, 0.2158734935364905,
+      2.453699369000705, 1.5276023939371186]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id020 !Point
+    coords: [0.8708594390074507, 0.015894279937931702, 0.2089917141352043, 0.2687321242646543,
+      -0.265858269440311, 0.1867514357056491]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id062 !Point
+    coords: [1.1419281113232524, 1.5368852084875542, -0.7664088254266267, -1.2625744889907344,
+      -1.3215364891864851, 0.965743649366552]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id024 !Point
+    coords: [1.041037578428317, 1.1596751786675903, -0.7884970467126834, -0.49206923801333835,
+      -0.9083891323803552, -0.6596867284409602]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id055 !Point
+    coords: [-1.4457741086860483, 0.9855490647588108, 1.2964226370524758, -0.1848273183793071,
+      -1.8021162392321899, -0.843447011977552]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id042 !Point
+    coords: [0.19087561640298792, 1.4322112391413224, 0.7988187697400482, -0.6809682065361362,
+      0.742411126463184, -0.5587048818895666]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id038 !Point
+    coords: [0.3993871175559842, 1.3649580314582226, -0.8379384312160818, 0.3125802166879997,
+      1.044262521985957, 1.465414003185252]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id052 !Point
+    coords: [0.05418555752449011, 0.09268001876928694, 0.5239819942398971, -0.1173694194468753,
+      -1.400753916779219, 0.6682386636699941]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id010 !Point
+    coords: [1.8840209822545497, 0.9162617073119315, -0.27523502151841206, 0.42979717322943645,
+      1.8724956848786292, 0.029746329422124407]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id054 !Point
+    coords: [-0.8042117448189521, 0.8596519251406902, 0.7319831674598597, -0.4447444185363922,
+      -1.703223944995512, -0.4475693239755846]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id063 !Point
+    coords: [1.7801753664594173, 1.883148834798901, -0.7757687880684097, -1.4924941195018726,
+      -1.783379563205176, 0.5337803731603459]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id029 !Point
+    coords: [1.405297004698844, 0.854939310655819, 0.3543172314870426, -0.38824974726581074,
+      -2.7116871631757737, -0.30955664084728823]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id030 !Point
+    coords: [0.8080938422647294, 1.6399922800489861, -0.00956904893451982, -0.6386651863267925,
+      -2.4356679181641923, -0.22580790086447589]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id053 !Point
+    coords: [-0.9816554607126787, 0.5551068384233887, 0.24810736054260948, -0.038844225992158476,
+      -1.0749335582599406, -0.19811703403905662]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  *id002: !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id026 !Point
+    coords: [0.40878413832811666, 2.117879790868134, -0.26569189593371795, -0.8160140794598177,
+      -0.42037505681301357, -1.0464053833642473]
+  : !!set {T0_S1: null, T0_S3: null}
+  ? &id033 !Point
+    coords: [0.6342450950378409, 0.1896277196161069, 0.7744091656566373, -0.06539240091039761,
+      -1.5563912425792017, -0.9125776501767493]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id057 !Point
+    coords: [-1.7219763907623418, 0.6018982506581694, 0.7981922349950794, 0.04080814212781121,
+      -1.1090669723342896, 0.14790684586895925]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id048 !Point
+    coords: [-1.1472321851593117, 1.1658237553959767, 0.9358526560371956, 0.1257642511652762,
+      0.6403358030430537, -0.3184152128864245]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id023 !Point
+    coords: [1.291067051933097, 0.7454935132028653, -0.4386671858425978, -0.18163900835766467,
+      -1.5552039072771193, -0.3296540053564456]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id043 !Point
+    coords: [-1.0312665522897388, 0.48584449875190466, 0.488447951201017, -0.08343025821405334,
+      1.101895625146646, -0.10090797051820272]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id005 !Point
+    coords: [1.3928939922425214, 1.989659336007386, -0.36679588465931545, -0.9902786060334852,
+      1.8293478219428443, 0.7796170813308841]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id027 !Point
+    coords: [0.986911555505579, 1.8076913530898089, -0.977689382540135, -0.09824644410783545,
+      -0.686470602241283, -1.0907868911700316]
+  : !!set {T0_S2: null, T0_S3: null}
+  ? &id050 !Point
+    coords: [-0.9298465798511792, 0.7448267391529768, 1.357471054719543, -0.23542910918133095,
+      1.0131922413928285, -0.873717265497873]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id065 !Point
+    coords: [1.5933851696054402, 2.020189959900676, -0.11280767242359996, 0.43628134178817285,
+      -2.265335991589632, 0.21710747515118653]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id059 !Point
+    coords: [1.4373091993926472, 2.1681212568608936, -0.10822652730949556, -0.9038979882359299,
+      -0.6777209738425451, -0.9584783935663423]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id015 !Point
+    coords: [2.1424288877885656, 0.42808027102993096, -0.5258683954053641, 0.3084968798739963,
+      2.693567632170031, -1.1015738900677177]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id044 !Point
+    coords: [-1.3902280655908859, 0.9830504425979255, 0.4630126232346274, -0.0724286135123245,
+      1.6832574676917371, 0.414148625702459]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id040 !Point
+    coords: [-0.09904899996718797, 0.14543104608428062, 0.35814932187986726, 0.027035539250718,
+      0.9129706268903606, -0.10619818750510346]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id012 !Point
+    coords: [2.0530290620649936, 1.0542342637899362, 0.33396573456753265, 0.15707322169994253,
+      0.9764575258402376, -0.972826101550684]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id032 !Point
+    coords: [2.7847453497523027, 0.16221633789928724, 0.6217782767207192, 0.08447415905697804,
+      -0.4613820196141084, -0.8103251219614924]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id031 !Point
+    coords: [2.4597955389835837, 0.4142260588582257, 0.249446638841808, 0.20903949970816643,
+      -1.271754639483247, -0.7981774747464551]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id018 !Point
+    coords: [1.9544064175162914, 0.5766812055370297, 0.2307739261744043, 0.30675204675992274,
+      0.7017187470567267, 0.931422962753226]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+  ? &id016 !Point
+    coords: [1.8213651488232625, 1.0906274481644316, -0.46307745430157105, 0.4201736408491892,
+      0.5941610061548628, 0.030543239319828608]
+  : !!set {T0_S1: null, T0_S2: null, T0_S3: null}
+scc:
+- - &id068 !!python/tuple
+    - *id003
+    - T0_S2
+  - &id082 !!python/tuple
+    - *id004
+    - T0_S2
+  - &id250 !!python/tuple
+    - *id005
+    - T0_S2
+  - &id096 !!python/tuple
+    - *id006
+    - T0_S2
+  - &id273 !!python/tuple
+    - *id007
+    - T0_S2
+  - &id147 !!python/tuple
+    - *id008
+    - T0_S2
+  - &id280 !!python/tuple
+    - *id009
+    - T0_S2
+  - &id210 !!python/tuple
+    - *id010
+    - T0_S2
+  - &id229 !!python/tuple
+    - *id011
+    - T0_S2
+  - &id174 !!python/tuple
+    - *id012
+    - T0_S2
+  - &id187 !!python/tuple
+    - *id013
+    - T0_S2
+  - &id217 !!python/tuple
+    - *id014
+    - T0_S2
+  - &id111 !!python/tuple
+    - *id015
+    - T0_S2
+  - &id258 !!python/tuple
+    - *id016
+    - T0_S2
+  - &id278 !!python/tuple
+    - *id017
+    - T0_S2
+  - &id133 !!python/tuple
+    - *id018
+    - T0_S2
+  - &id142 !!python/tuple
+    - *id019
+    - T0_S2
+  - &id279 !!python/tuple
+    - *id020
+    - T0_S2
+  - &id192 !!python/tuple
+    - *id021
+    - T0_S2
+  - &id173 !!python/tuple
+    - *id022
+    - T0_S2
+  - &id224 !!python/tuple
+    - *id023
+    - T0_S2
+  - &id098 !!python/tuple
+    - *id024
+    - T0_S2
+  - &id200 !!python/tuple
+    - *id025
+    - T0_S2
+  - &id233 !!python/tuple
+    - *id026
+    - T0_S3
+  - &id146 !!python/tuple
+    - *id025
+    - T0_S3
+  - &id153 !!python/tuple
+    - *id024
+    - T0_S3
+  - &id075 !!python/tuple
+    - *id027
+    - T0_S3
+  - &id094 !!python/tuple
+    - *id023
+    - T0_S3
+  - &id083 !!python/tuple
+    - *id028
+    - T0_S3
+  - &id237 !!python/tuple
+    - *id029
+    - T0_S3
+  - &id230 !!python/tuple
+    - *id030
+    - T0_S3
+  - &id162 !!python/tuple
+    - *id001
+    - accept_init
+  - &id270 !!python/tuple
+    - *id030
+    - T0_S1
+  - &id255 !!python/tuple
+    - *id028
+    - T0_S1
+  - &id110 !!python/tuple
+    - *id029
+    - T0_S1
+  - &id269 !!python/tuple
+    - *id023
+    - T0_S1
+  - &id276 !!python/tuple
+    - *id022
+    - T0_S1
+  - &id160 !!python/tuple
+    - *id031
+    - T0_S1
+  - &id124 !!python/tuple
+    - *id032
+    - T0_S1
+  - &id274 !!python/tuple
+    - *id021
+    - T0_S1
+  - &id242 !!python/tuple
+    - *id033
+    - T0_S1
+  - &id266 !!python/tuple
+    - *id020
+    - T0_S1
+  - &id222 !!python/tuple
+    - *id017
+    - T0_S1
+  - &id151 !!python/tuple
+    - *id018
+    - T0_S1
+  - &id196 !!python/tuple
+    - *id019
+    - T0_S1
+  - &id216 !!python/tuple
+    - *id016
+    - T0_S1
+  - &id201 !!python/tuple
+    - *id009
+    - T0_S1
+  - &id231 !!python/tuple
+    - *id034
+    - T0_S1
+  - &id169 !!python/tuple
+    - *id035
+    - T0_S1
+  - &id091 !!python/tuple
+    - *id036
+    - T0_S1
+  - &id172 !!python/tuple
+    - *id037
+    - T0_S1
+  - &id145 !!python/tuple
+    - *id038
+    - T0_S1
+  - &id185 !!python/tuple
+    - *id007
+    - T0_S1
+  - &id183 !!python/tuple
+    - *id008
+    - T0_S1
+  - &id215 !!python/tuple
+    - *id005
+    - T0_S1
+  - &id118 !!python/tuple
+    - *id003
+    - T0_S1
+  - &id095 !!python/tuple
+    - *id004
+    - T0_S1
+  - &id152 !!python/tuple
+    - *id006
+    - T0_S1
+  - &id194 !!python/tuple
+    - *id010
+    - T0_S1
+  - &id158 !!python/tuple
+    - *id013
+    - T0_S1
+  - &id181 !!python/tuple
+    - *id014
+    - T0_S1
+  - &id168 !!python/tuple
+    - *id015
+    - T0_S1
+  - &id144 !!python/tuple
+    - *id011
+    - T0_S1
+  - &id122 !!python/tuple
+    - *id012
+    - T0_S1
+  - &id253 !!python/tuple
+    - *id002
+    - T0_S1
+  - &id135 !!python/tuple
+    - *id039
+    - T0_S1
+  - &id163 !!python/tuple
+    - *id040
+    - T0_S1
+  - &id208 !!python/tuple
+    - *id041
+    - T0_S1
+  - &id199 !!python/tuple
+    - *id042
+    - T0_S1
+  - &id214 !!python/tuple
+    - *id043
+    - T0_S1
+  - &id134 !!python/tuple
+    - *id044
+    - T0_S1
+  - &id127 !!python/tuple
+    - *id045
+    - T0_S1
+  - &id137 !!python/tuple
+    - *id046
+    - T0_S1
+  - &id126 !!python/tuple
+    - *id047
+    - T0_S1
+  - &id197 !!python/tuple
+    - *id048
+    - T0_S1
+  - &id239 !!python/tuple
+    - *id049
+    - T0_S1
+  - &id117 !!python/tuple
+    - *id050
+    - T0_S1
+  - &id131 !!python/tuple
+    - *id051
+    - T0_S1
+  - &id191 !!python/tuple
+    - *id052
+    - T0_S1
+  - &id203 !!python/tuple
+    - *id053
+    - T0_S1
+  - &id119 !!python/tuple
+    - *id054
+    - T0_S1
+  - &id108 !!python/tuple
+    - *id055
+    - T0_S1
+  - &id101 !!python/tuple
+    - *id056
+    - T0_S1
+  - &id112 !!python/tuple
+    - *id057
+    - T0_S1
+  - &id079 !!python/tuple
+    - *id058
+    - T0_S1
+  - &id228 !!python/tuple
+    - *id024
+    - T0_S1
+  - &id221 !!python/tuple
+    - *id025
+    - T0_S1
+  - &id139 !!python/tuple
+    - *id059
+    - T0_S1
+  - &id165 !!python/tuple
+    - *id060
+    - T0_S1
+  - &id074 !!python/tuple
+    - *id061
+    - T0_S1
+  - &id170 !!python/tuple
+    - *id062
+    - T0_S1
+  - &id099 !!python/tuple
+    - *id063
+    - T0_S1
+  - &id078 !!python/tuple
+    - *id064
+    - T0_S1
+  - &id159 !!python/tuple
+    - *id026
+    - T0_S1
+  - &id070 !!python/tuple
+    - *id065
+    - T0_S1
+  - &id213 !!python/tuple
+    - *id001
+    - T0_S1
+  - &id178 !!python/tuple
+    - *id065
+    - T0_S3
+  - &id115 !!python/tuple
+    - *id022
+    - T0_S3
+  - &id072 !!python/tuple
+    - *id021
+    - T0_S3
+  - &id179 !!python/tuple
+    - *id020
+    - T0_S3
+  - &id106 !!python/tuple
+    - *id017
+    - T0_S3
+  - &id081 !!python/tuple
+    - *id018
+    - T0_S3
+  - &id090 !!python/tuple
+    - *id019
+    - T0_S3
+  - &id103 !!python/tuple
+    - *id016
+    - T0_S3
+  - &id130 !!python/tuple
+    - *id009
+    - T0_S3
+  - &id113 !!python/tuple
+    - *id007
+    - T0_S3
+  - &id155 !!python/tuple
+    - *id005
+    - T0_S3
+  - &id226 !!python/tuple
+    - *id006
+    - T0_S3
+  - &id189 !!python/tuple
+    - *id003
+    - T0_S3
+  - &id202 !!python/tuple
+    - *id004
+    - T0_S3
+  - &id193 !!python/tuple
+    - *id008
+    - T0_S3
+  - &id116 !!python/tuple
+    - *id034
+    - T0_S3
+  - &id211 !!python/tuple
+    - *id036
+    - T0_S3
+  - &id249 !!python/tuple
+    - *id037
+    - T0_S3
+  - &id219 !!python/tuple
+    - *id038
+    - T0_S3
+  - &id245 !!python/tuple
+    - *id035
+    - T0_S3
+  - &id088 !!python/tuple
+    - *id010
+    - T0_S3
+  - &id076 !!python/tuple
+    - *id011
+    - T0_S3
+  - &id246 !!python/tuple
+    - *id012
+    - T0_S3
+  - &id149 !!python/tuple
+    - *id013
+    - T0_S3
+  - &id167 !!python/tuple
+    - *id014
+    - T0_S3
+  - &id243 !!python/tuple
+    - *id015
+    - T0_S3
+  - &id223 !!python/tuple
+    - *id002
+    - T0_S3
+  - &id069 !!python/tuple
+    - *id051
+    - T0_S3
+  - &id097 !!python/tuple
+    - *id053
+    - T0_S3
+  - &id184 !!python/tuple
+    - *id057
+    - T0_S3
+  - &id190 !!python/tuple
+    - *id058
+    - T0_S3
+  - &id235 !!python/tuple
+    - *id054
+    - T0_S3
+  - &id182 !!python/tuple
+    - *id055
+    - T0_S3
+  - &id212 !!python/tuple
+    - *id056
+    - T0_S3
+  - &id080 !!python/tuple
+    - *id052
+    - T0_S3
+  - &id171 !!python/tuple
+    - *id066
+    - T0_S3
+  - &id206 !!python/tuple
+    - *id039
+    - T0_S3
+  - &id138 !!python/tuple
+    - *id041
+    - T0_S3
+  - &id092 !!python/tuple
+    - *id042
+    - T0_S3
+  - &id236 !!python/tuple
+    - *id040
+    - T0_S3
+  - &id141 !!python/tuple
+    - *id043
+    - T0_S3
+  - &id140 !!python/tuple
+    - *id048
+    - T0_S3
+  - &id232 !!python/tuple
+    - *id050
+    - T0_S3
+  - &id164 !!python/tuple
+    - *id049
+    - T0_S3
+  - &id071 !!python/tuple
+    - *id044
+    - T0_S3
+  - &id207 !!python/tuple
+    - *id046
+    - T0_S3
+  - &id161 !!python/tuple
+    - *id047
+    - T0_S3
+  - &id150 !!python/tuple
+    - *id067
+    - T0_S3
+  - &id220 !!python/tuple
+    - *id045
+    - T0_S3
+  - &id136 !!python/tuple
+    - *id033
+    - T0_S3
+  - &id234 !!python/tuple
+    - *id031
+    - T0_S3
+  - &id102 !!python/tuple
+    - *id032
+    - T0_S3
+  - &id157 !!python/tuple
+    - *id059
+    - T0_S3
+  - &id241 !!python/tuple
+    - *id060
+    - T0_S3
+  - &id180 !!python/tuple
+    - *id061
+    - T0_S3
+  - &id125 !!python/tuple
+    - *id062
+    - T0_S3
+  - &id209 !!python/tuple
+    - *id063
+    - T0_S3
+  - &id143 !!python/tuple
+    - *id064
+    - T0_S3
+  - &id204 !!python/tuple
+    - *id059
+    - T0_S2
+  - &id109 !!python/tuple
+    - *id060
+    - T0_S2
+  - &id238 !!python/tuple
+    - *id061
+    - T0_S2
+  - &id128 !!python/tuple
+    - *id062
+    - T0_S2
+  - &id087 !!python/tuple
+    - *id063
+    - T0_S2
+  - &id198 !!python/tuple
+    - *id064
+    - T0_S2
+  - &id195 !!python/tuple
+    - *id027
+    - T0_S2
+  - &id205 !!python/tuple
+    - *id028
+    - T0_S2
+  - &id120 !!python/tuple
+    - *id065
+    - T0_S2
+  - &id084 !!python/tuple
+    - *id029
+    - T0_S2
+  - &id100 !!python/tuple
+    - *id030
+    - T0_S2
+  - &id248 !!python/tuple
+    - *id001
+    - T0_S2
+  - &id177 !!python/tuple
+    - *id031
+    - T0_S2
+  - &id186 !!python/tuple
+    - *id032
+    - T0_S2
+  - &id188 !!python/tuple
+    - *id033
+    - T0_S2
+  - &id264 !!python/tuple
+    - *id002
+    - T0_S2
+  - &id154 !!python/tuple
+    - *id039
+    - T0_S2
+  - &id086 !!python/tuple
+    - *id041
+    - T0_S2
+  - &id218 !!python/tuple
+    - *id042
+    - T0_S2
+  - &id089 !!python/tuple
+    - *id043
+    - T0_S2
+  - &id121 !!python/tuple
+    - *id044
+    - T0_S2
+  - &id093 !!python/tuple
+    - *id067
+    - T0_S2
+  - &id085 !!python/tuple
+    - *id046
+    - T0_S2
+  - &id077 !!python/tuple
+    - *id047
+    - T0_S2
+  - &id166 !!python/tuple
+    - *id045
+    - T0_S2
+  - &id227 !!python/tuple
+    - *id048
+    - T0_S2
+  - &id225 !!python/tuple
+    - *id049
+    - T0_S2
+  - &id176 !!python/tuple
+    - *id050
+    - T0_S2
+  - &id107 !!python/tuple
+    - *id040
+    - T0_S2
+  - &id271 !!python/tuple
+    - *id051
+    - T0_S2
+  - &id262 !!python/tuple
+    - *id066
+    - T0_S2
+  - &id240 !!python/tuple
+    - *id053
+    - T0_S2
+  - &id105 !!python/tuple
+    - *id054
+    - T0_S2
+  - &id123 !!python/tuple
+    - *id055
+    - T0_S2
+  - &id156 !!python/tuple
+    - *id056
+    - T0_S2
+  - &id244 !!python/tuple
+    - *id057
+    - T0_S2
+  - &id129 !!python/tuple
+    - *id058
+    - T0_S2
+  - &id132 !!python/tuple
+    - *id052
+    - T0_S2
+  - &id175 !!python/tuple
+    - *id034
+    - T0_S2
+  - &id073 !!python/tuple
+    - *id035
+    - T0_S2
+  - &id247 !!python/tuple
+    - *id036
+    - T0_S2
+  - &id114 !!python/tuple
+    - *id037
+    - T0_S2
+  - &id104 !!python/tuple
+    - *id038
+    - T0_S2
+states:
+- !!python/tuple
+  - *id068
+  - {}
+- !!python/tuple
+  - *id069
+  - {}
+- !!python/tuple
+  - *id070
+  - {}
+- !!python/tuple
+  - *id071
+  - {}
+- !!python/tuple
+  - *id072
+  - {}
+- !!python/tuple
+  - *id073
+  - {}
+- !!python/tuple
+  - &id251 !!python/tuple
+    - *id020
+    - T0_S1
+  - {}
+- !!python/tuple
+  - *id074
+  - {}
+- !!python/tuple
+  - *id075
+  - {}
+- !!python/tuple
+  - *id076
+  - {}
+- !!python/tuple
+  - &id254 !!python/tuple
+    - *id030
+    - T0_S1
+  - {}
+- !!python/tuple
+  - *id077
+  - {}
+- !!python/tuple
+  - *id078
+  - {}
+- !!python/tuple
+  - *id079
+  - {}
+- !!python/tuple
+  - &id256 !!python/tuple
+    - *id009
+    - T0_S2
+  - {}
+- !!python/tuple
+  - *id080
+  - {}
+- !!python/tuple
+  - *id081
+  - {}
+- !!python/tuple
+  - *id082
+  - {}
+- !!python/tuple
+  - *id083
+  - {}
+- !!python/tuple
+  - *id084
+  - {}
+- !!python/tuple
+  - *id085
+  - {}
+- !!python/tuple
+  - *id086
+  - {}
+- !!python/tuple
+  - *id087
+  - {}
+- !!python/tuple
+  - *id088
+  - {}
+- !!python/tuple
+  - *id089
+  - {}
+- !!python/tuple
+  - *id090
+  - {}
+- !!python/tuple
+  - *id091
+  - {}
+- !!python/tuple
+  - *id092
+  - {}
+- !!python/tuple
+  - *id093
+  - {}
+- !!python/tuple
+  - *id094
+  - {}
+- !!python/tuple
+  - *id095
+  - {}
+- !!python/tuple
+  - *id096
+  - {}
+- !!python/tuple
+  - *id097
+  - {}
+- !!python/tuple
+  - *id098
+  - {}
+- !!python/tuple
+  - *id099
+  - {}
+- !!python/tuple
+  - *id100
+  - {}
+- !!python/tuple
+  - *id101
+  - {}
+- !!python/tuple
+  - *id102
+  - {}
+- !!python/tuple
+  - *id103
+  - {}
+- !!python/tuple
+  - *id104
+  - {}
+- !!python/tuple
+  - *id105
+  - {}
+- !!python/tuple
+  - *id106
+  - {}
+- !!python/tuple
+  - *id107
+  - {}
+- !!python/tuple
+  - *id108
+  - {}
+- !!python/tuple
+  - *id109
+  - {}
+- !!python/tuple
+  - *id110
+  - {}
+- !!python/tuple
+  - *id111
+  - {}
+- !!python/tuple
+  - *id112
+  - {}
+- !!python/tuple
+  - *id113
+  - {}
+- !!python/tuple
+  - &id259 !!python/tuple
+    - *id066
+    - T0_S2
+  - {}
+- !!python/tuple
+  - *id114
+  - {}
+- !!python/tuple
+  - *id115
+  - {}
+- !!python/tuple
+  - *id116
+  - {}
+- !!python/tuple
+  - *id117
+  - {}
+- !!python/tuple
+  - *id118
+  - {}
+- !!python/tuple
+  - *id119
+  - {}
+- !!python/tuple
+  - &id260 !!python/tuple
+    - *id051
+    - T0_S2
+  - {}
+- !!python/tuple
+  - *id120
+  - {}
+- !!python/tuple
+  - *id121
+  - {}
+- !!python/tuple
+  - &id263 !!python/tuple
+    - *id020
+    - T0_S2
+  - {}
+- !!python/tuple
+  - *id122
+  - {}
+- !!python/tuple
+  - *id123
+  - {}
+- !!python/tuple
+  - *id124
+  - {}
+- !!python/tuple
+  - *id125
+  - {}
+- !!python/tuple
+  - *id126
+  - {}
+- !!python/tuple
+  - *id127
+  - {}
+- !!python/tuple
+  - *id128
+  - {}
+- !!python/tuple
+  - *id129
+  - {}
+- !!python/tuple
+  - *id130
+  - {}
+- !!python/tuple
+  - *id131
+  - {}
+- !!python/tuple
+  - *id132
+  - {}
+- !!python/tuple
+  - *id133
+  - {}
+- !!python/tuple
+  - *id134
+  - {}
+- !!python/tuple
+  - &id252 !!python/tuple
+    - *id021
+    - T0_S1
+  - {}
+- !!python/tuple
+  - *id135
+  - {}
+- !!python/tuple
+  - *id136
+  - {}
+- !!python/tuple
+  - *id137
+  - {}
+- !!python/tuple
+  - *id138
+  - {}
+- !!python/tuple
+  - *id139
+  - {}
+- !!python/tuple
+  - *id140
+  - {}
+- !!python/tuple
+  - *id141
+  - {}
+- !!python/tuple
+  - *id142
+  - {}
+- !!python/tuple
+  - *id143
+  - {}
+- !!python/tuple
+  - *id144
+  - {}
+- !!python/tuple
+  - *id145
+  - {}
+- !!python/tuple
+  - *id146
+  - {}
+- !!python/tuple
+  - *id147
+  - {}
+- !!python/tuple
+  - *id148
+  - {}
+- !!python/tuple
+  - *id149
+  - {}
+- !!python/tuple
+  - *id150
+  - {}
+- !!python/tuple
+  - *id151
+  - {}
+- !!python/tuple
+  - *id152
+  - {}
+- !!python/tuple
+  - &id268 !!python/tuple
+    - *id028
+    - T0_S1
+  - {}
+- !!python/tuple
+  - *id153
+  - {}
+- !!python/tuple
+  - *id154
+  - {}
+- !!python/tuple
+  - *id155
+  - {}
+- !!python/tuple
+  - *id156
+  - {}
+- !!python/tuple
+  - *id157
+  - {}
+- !!python/tuple
+  - *id158
+  - {}
+- !!python/tuple
+  - *id159
+  - {}
+- !!python/tuple
+  - *id160
+  - {}
+- !!python/tuple
+  - *id161
+  - {}
+- !!python/tuple
+  - *id162
+  - {}
+- !!python/tuple
+  - &id261 !!python/tuple
+    - *id002
+    - T0_S2
+  - {}
+- !!python/tuple
+  - *id163
+  - {}
+- !!python/tuple
+  - *id164
+  - {}
+- !!python/tuple
+  - *id165
+  - {}
+- !!python/tuple
+  - *id166
+  - {}
+- !!python/tuple
+  - *id167
+  - {}
+- !!python/tuple
+  - *id168
+  - {}
+- !!python/tuple
+  - *id169
+  - {}
+- !!python/tuple
+  - *id170
+  - {}
+- !!python/tuple
+  - *id171
+  - {}
+- !!python/tuple
+  - *id172
+  - {}
+- !!python/tuple
+  - *id173
+  - {}
+- !!python/tuple
+  - *id174
+  - {}
+- !!python/tuple
+  - *id175
+  - {}
+- !!python/tuple
+  - *id176
+  - {}
+- !!python/tuple
+  - *id177
+  - {}
+- !!python/tuple
+  - *id178
+  - {}
+- !!python/tuple
+  - *id179
+  - {}
+- !!python/tuple
+  - *id180
+  - {}
+- !!python/tuple
+  - *id181
+  - {}
+- !!python/tuple
+  - *id182
+  - {}
+- !!python/tuple
+  - *id183
+  - {}
+- !!python/tuple
+  - *id184
+  - {}
+- !!python/tuple
+  - *id185
+  - {}
+- !!python/tuple
+  - &id272 !!python/tuple
+    - *id005
+    - T0_S2
+  - {}
+- !!python/tuple
+  - *id186
+  - {}
+- !!python/tuple
+  - &id267 !!python/tuple
+    - *id022
+    - T0_S1
+  - {}
+- !!python/tuple
+  - *id187
+  - {}
+- !!python/tuple
+  - *id188
+  - {}
+- !!python/tuple
+  - *id189
+  - {}
+- !!python/tuple
+  - *id190
+  - {}
+- !!python/tuple
+  - *id191
+  - {}
+- !!python/tuple
+  - *id192
+  - {}
+- !!python/tuple
+  - *id193
+  - {}
+- !!python/tuple
+  - *id194
+  - {}
+- !!python/tuple
+  - *id195
+  - {}
+- !!python/tuple
+  - *id196
+  - {}
+- !!python/tuple
+  - *id197
+  - {}
+- !!python/tuple
+  - *id198
+  - {}
+- !!python/tuple
+  - *id199
+  - {}
+- !!python/tuple
+  - *id200
+  - {}
+- !!python/tuple
+  - *id201
+  - {}
+- !!python/tuple
+  - &id275 !!python/tuple
+    - *id023
+    - T0_S1
+  - {}
+- !!python/tuple
+  - *id202
+  - {}
+- !!python/tuple
+  - *id203
+  - {}
+- !!python/tuple
+  - *id204
+  - {}
+- !!python/tuple
+  - *id205
+  - {}
+- !!python/tuple
+  - *id206
+  - {}
+- !!python/tuple
+  - *id207
+  - {}
+- !!python/tuple
+  - *id208
+  - {}
+- !!python/tuple
+  - *id209
+  - {}
+- !!python/tuple
+  - *id210
+  - {}
+- !!python/tuple
+  - *id211
+  - {}
+- !!python/tuple
+  - *id212
+  - {}
+- !!python/tuple
+  - *id213
+  - {}
+- !!python/tuple
+  - *id214
+  - {}
+- !!python/tuple
+  - *id215
+  - {}
+- !!python/tuple
+  - *id216
+  - {}
+- !!python/tuple
+  - *id217
+  - {}
+- !!python/tuple
+  - *id218
+  - {}
+- !!python/tuple
+  - *id219
+  - {}
+- !!python/tuple
+  - *id220
+  - {}
+- !!python/tuple
+  - *id221
+  - {}
+- !!python/tuple
+  - *id222
+  - {}
+- !!python/tuple
+  - *id223
+  - {}
+- !!python/tuple
+  - *id224
+  - {}
+- !!python/tuple
+  - *id225
+  - {}
+- !!python/tuple
+  - *id226
+  - {}
+- !!python/tuple
+  - *id227
+  - {}
+- !!python/tuple
+  - *id228
+  - {}
+- !!python/tuple
+  - *id229
+  - {}
+- !!python/tuple
+  - *id230
+  - {}
+- !!python/tuple
+  - &id277 !!python/tuple
+    - *id016
+    - T0_S2
+  - {}
+- !!python/tuple
+  - *id231
+  - {}
+- !!python/tuple
+  - *id232
+  - {}
+- !!python/tuple
+  - *id233
+  - {}
+- !!python/tuple
+  - *id234
+  - {}
+- !!python/tuple
+  - *id235
+  - {}
+- !!python/tuple
+  - &id265 !!python/tuple
+    - *id017
+    - T0_S2
+  - {}
+- !!python/tuple
+  - *id236
+  - {}
+- !!python/tuple
+  - *id237
+  - {}
+- !!python/tuple
+  - *id238
+  - {}
+- !!python/tuple
+  - *id239
+  - {}
+- !!python/tuple
+  - *id240
+  - {}
+- !!python/tuple
+  - *id241
+  - {}
+- !!python/tuple
+  - *id242
+  - {}
+- !!python/tuple
+  - *id243
+  - {}
+- !!python/tuple
+  - *id244
+  - {}
+- !!python/tuple
+  - &id257 !!python/tuple
+    - *id007
+    - T0_S2
+  - {}
+- !!python/tuple
+  - *id245
+  - {}
+- !!python/tuple
+  - *id246
+  - {}
+- !!python/tuple
+  - *id247
+  - {}
+- !!python/tuple
+  - *id248
+  - {}
+- !!python/tuple
+  - *id249
+  - {}
+transitions:
+- !!python/tuple
+  - *id068
+  - *id250
+  - {weight: 1}
+- !!python/tuple
+  - *id068
+  - *id082
+  - {weight: 1}
+- !!python/tuple
+  - *id069
+  - !!python/tuple
+    - *id002
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id069
+  - *id171
+  - {weight: 1}
+- !!python/tuple
+  - *id069
+  - *id080
+  - {weight: 1}
+- !!python/tuple
+  - *id069
+  - *id097
+  - {weight: 1}
+- !!python/tuple
+  - *id070
+  - !!python/tuple
+    - *id028
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id071
+  - *id220
+  - {weight: 1}
+- !!python/tuple
+  - *id071
+  - !!python/tuple
+    - *id043
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id071
+  - *id150
+  - {weight: 1}
+- !!python/tuple
+  - *id071
+  - *id207
+  - {weight: 1}
+- !!python/tuple
+  - *id072
+  - !!python/tuple
+    - *id022
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id072
+  - *id136
+  - {weight: 1}
+- !!python/tuple
+  - *id072
+  - *id179
+  - {weight: 1}
+- !!python/tuple
+  - *id073
+  - !!python/tuple
+    - *id034
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id251
+  - *id252
+  - {weight: 1}
+- !!python/tuple
+  - *id251
+  - *id253
+  - {weight: 1}
+- !!python/tuple
+  - *id251
+  - *id222
+  - {weight: 1}
+- !!python/tuple
+  - *id074
+  - !!python/tuple
+    - *id060
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id074
+  - *id170
+  - {weight: 1}
+- !!python/tuple
+  - *id075
+  - !!python/tuple
+    - *id024
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id076
+  - !!python/tuple
+    - *id010
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id076
+  - *id246
+  - {weight: 1}
+- !!python/tuple
+  - *id254
+  - *id213
+  - {weight: 1}
+- !!python/tuple
+  - *id254
+  - *id255
+  - {weight: 1}
+- !!python/tuple
+  - *id077
+  - !!python/tuple
+    - *id046
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id078
+  - !!python/tuple
+    - *id063
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id079
+  - !!python/tuple
+    - *id057
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id256
+  - *id175
+  - {weight: 1}
+- !!python/tuple
+  - *id256
+  - *id257
+  - {weight: 1}
+- !!python/tuple
+  - *id256
+  - *id258
+  - {weight: 1}
+- !!python/tuple
+  - *id256
+  - *id210
+  - {weight: 1}
+- !!python/tuple
+  - *id080
+  - !!python/tuple
+    - *id051
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id081
+  - !!python/tuple
+    - *id017
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id081
+  - *id090
+  - {weight: 1}
+- !!python/tuple
+  - *id082
+  - !!python/tuple
+    - *id003
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id083
+  - !!python/tuple
+    - *id023
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id083
+  - *id178
+  - {weight: 1}
+- !!python/tuple
+  - *id083
+  - *id230
+  - {weight: 1}
+- !!python/tuple
+  - *id083
+  - *id237
+  - {weight: 1}
+- !!python/tuple
+  - *id084
+  - !!python/tuple
+    - *id028
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id085
+  - *id077
+  - {weight: 1}
+- !!python/tuple
+  - *id085
+  - !!python/tuple
+    - *id044
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id086
+  - *id218
+  - {weight: 1}
+- !!python/tuple
+  - *id086
+  - !!python/tuple
+    - *id039
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id087
+  - !!python/tuple
+    - *id062
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id087
+  - *id198
+  - {weight: 1}
+- !!python/tuple
+  - *id088
+  - !!python/tuple
+    - *id009
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id088
+  - *id149
+  - {weight: 1}
+- !!python/tuple
+  - *id088
+  - *id076
+  - {weight: 1}
+- !!python/tuple
+  - *id089
+  - *id227
+  - {weight: 1}
+- !!python/tuple
+  - *id089
+  - *id121
+  - {weight: 1}
+- !!python/tuple
+  - *id089
+  - !!python/tuple
+    - *id039
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id090
+  - !!python/tuple
+    - *id018
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id091
+  - !!python/tuple
+    - *id034
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id091
+  - *id172
+  - {weight: 1}
+- !!python/tuple
+  - *id092
+  - !!python/tuple
+    - *id041
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id093
+  - !!python/tuple
+    - *id044
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id094
+  - *id115
+  - {weight: 1}
+- !!python/tuple
+  - *id094
+  - !!python/tuple
+    - *id024
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id094
+  - *id083
+  - {weight: 1}
+- !!python/tuple
+  - *id095
+  - !!python/tuple
+    - *id003
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id096
+  - !!python/tuple
+    - *id005
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id097
+  - *id235
+  - {weight: 1}
+- !!python/tuple
+  - *id097
+  - *id184
+  - {weight: 1}
+- !!python/tuple
+  - *id097
+  - !!python/tuple
+    - *id051
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id098
+  - *id195
+  - {weight: 1}
+- !!python/tuple
+  - *id098
+  - *id200
+  - {weight: 1}
+- !!python/tuple
+  - *id098
+  - !!python/tuple
+    - *id023
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id099
+  - *id078
+  - {weight: 1}
+- !!python/tuple
+  - *id099
+  - !!python/tuple
+    - *id062
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id100
+  - !!python/tuple
+    - *id028
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id100
+  - *id248
+  - {weight: 1}
+- !!python/tuple
+  - *id101
+  - !!python/tuple
+    - *id055
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id102
+  - !!python/tuple
+    - *id031
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id103
+  - *id130
+  - {weight: 1}
+- !!python/tuple
+  - *id103
+  - !!python/tuple
+    - *id017
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id104
+  - !!python/tuple
+    - *id037
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id105
+  - !!python/tuple
+    - *id053
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id105
+  - *id123
+  - {weight: 1}
+- !!python/tuple
+  - *id106
+  - *id103
+  - {weight: 1}
+- !!python/tuple
+  - *id106
+  - *id081
+  - {weight: 1}
+- !!python/tuple
+  - *id106
+  - !!python/tuple
+    - *id020
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id107
+  - !!python/tuple
+    - *id039
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id108
+  - *id101
+  - {weight: 1}
+- !!python/tuple
+  - *id108
+  - !!python/tuple
+    - *id054
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id109
+  - !!python/tuple
+    - *id025
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id109
+  - *id238
+  - {weight: 1}
+- !!python/tuple
+  - *id110
+  - !!python/tuple
+    - *id028
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id111
+  - !!python/tuple
+    - *id014
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id112
+  - !!python/tuple
+    - *id053
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id112
+  - *id079
+  - {weight: 1}
+- !!python/tuple
+  - *id113
+  - *id193
+  - {weight: 1}
+- !!python/tuple
+  - *id113
+  - !!python/tuple
+    - *id009
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id113
+  - *id155
+  - {weight: 1}
+- !!python/tuple
+  - *id259
+  - *id260
+  - {weight: 1}
+- !!python/tuple
+  - *id114
+  - !!python/tuple
+    - *id036
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id114
+  - *id104
+  - {weight: 1}
+- !!python/tuple
+  - *id115
+  - !!python/tuple
+    - *id023
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id115
+  - *id234
+  - {weight: 1}
+- !!python/tuple
+  - *id115
+  - *id072
+  - {weight: 1}
+- !!python/tuple
+  - *id116
+  - !!python/tuple
+    - *id009
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id116
+  - *id245
+  - {weight: 1}
+- !!python/tuple
+  - *id116
+  - *id211
+  - {weight: 1}
+- !!python/tuple
+  - *id117
+  - !!python/tuple
+    - *id048
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id118
+  - *id095
+  - {weight: 1}
+- !!python/tuple
+  - *id118
+  - !!python/tuple
+    - *id005
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id119
+  - !!python/tuple
+    - *id053
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id119
+  - *id108
+  - {weight: 1}
+- !!python/tuple
+  - *id260
+  - *id132
+  - {weight: 1}
+- !!python/tuple
+  - *id260
+  - *id261
+  - {weight: 1}
+- !!python/tuple
+  - *id260
+  - *id240
+  - {weight: 1}
+- !!python/tuple
+  - *id260
+  - *id262
+  - {weight: 1}
+- !!python/tuple
+  - *id120
+  - !!python/tuple
+    - *id028
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id121
+  - *id166
+  - {weight: 1}
+- !!python/tuple
+  - *id121
+  - *id085
+  - {weight: 1}
+- !!python/tuple
+  - *id121
+  - !!python/tuple
+    - *id043
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id121
+  - *id093
+  - {weight: 1}
+- !!python/tuple
+  - *id263
+  - *id264
+  - {weight: 1}
+- !!python/tuple
+  - *id263
+  - *id192
+  - {weight: 1}
+- !!python/tuple
+  - *id263
+  - *id265
+  - {weight: 1}
+- !!python/tuple
+  - *id122
+  - !!python/tuple
+    - *id011
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id123
+  - *id156
+  - {weight: 1}
+- !!python/tuple
+  - *id123
+  - !!python/tuple
+    - *id054
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id124
+  - !!python/tuple
+    - *id031
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id125
+  - !!python/tuple
+    - *id061
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id125
+  - *id209
+  - {weight: 1}
+- !!python/tuple
+  - *id126
+  - !!python/tuple
+    - *id046
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id127
+  - !!python/tuple
+    - *id044
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id128
+  - *id087
+  - {weight: 1}
+- !!python/tuple
+  - *id128
+  - !!python/tuple
+    - *id061
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id129
+  - !!python/tuple
+    - *id057
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id130
+  - !!python/tuple
+    - *id016
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id130
+  - *id088
+  - {weight: 1}
+- !!python/tuple
+  - *id130
+  - *id116
+  - {weight: 1}
+- !!python/tuple
+  - *id130
+  - *id113
+  - {weight: 1}
+- !!python/tuple
+  - *id131
+  - *id203
+  - {weight: 1}
+- !!python/tuple
+  - *id131
+  - !!python/tuple
+    - *id002
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id131
+  - *id259
+  - {weight: 1}
+- !!python/tuple
+  - *id131
+  - *id191
+  - {weight: 1}
+- !!python/tuple
+  - *id132
+  - !!python/tuple
+    - *id051
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id133
+  - *id142
+  - {weight: 1}
+- !!python/tuple
+  - *id133
+  - !!python/tuple
+    - *id017
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id134
+  - !!python/tuple
+    - *id043
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id134
+  - *id137
+  - {weight: 1}
+- !!python/tuple
+  - *id134
+  - *id127
+  - {weight: 1}
+- !!python/tuple
+  - *id134
+  - !!python/tuple
+    - *id067
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id252
+  - *id266
+  - {weight: 1}
+- !!python/tuple
+  - *id252
+  - *id242
+  - {weight: 1}
+- !!python/tuple
+  - *id252
+  - *id267
+  - {weight: 1}
+- !!python/tuple
+  - *id135
+  - *id214
+  - {weight: 1}
+- !!python/tuple
+  - *id135
+  - *id208
+  - {weight: 1}
+- !!python/tuple
+  - *id135
+  - !!python/tuple
+    - *id002
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id135
+  - *id163
+  - {weight: 1}
+- !!python/tuple
+  - *id136
+  - !!python/tuple
+    - *id021
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id137
+  - *id126
+  - {weight: 1}
+- !!python/tuple
+  - *id137
+  - !!python/tuple
+    - *id044
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id138
+  - !!python/tuple
+    - *id039
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id138
+  - *id092
+  - {weight: 1}
+- !!python/tuple
+  - *id139
+  - !!python/tuple
+    - *id025
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id140
+  - *id164
+  - {weight: 1}
+- !!python/tuple
+  - *id140
+  - !!python/tuple
+    - *id043
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id140
+  - *id232
+  - {weight: 1}
+- !!python/tuple
+  - *id141
+  - *id071
+  - {weight: 1}
+- !!python/tuple
+  - *id141
+  - !!python/tuple
+    - *id039
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id141
+  - *id140
+  - {weight: 1}
+- !!python/tuple
+  - *id142
+  - !!python/tuple
+    - *id018
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id143
+  - !!python/tuple
+    - *id063
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id144
+  - !!python/tuple
+    - *id010
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id144
+  - *id122
+  - {weight: 1}
+- !!python/tuple
+  - *id145
+  - !!python/tuple
+    - *id037
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id146
+  - *id241
+  - {weight: 1}
+- !!python/tuple
+  - *id146
+  - *id157
+  - {weight: 1}
+- !!python/tuple
+  - *id146
+  - *id153
+  - {weight: 1}
+- !!python/tuple
+  - *id146
+  - !!python/tuple
+    - *id026
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id147
+  - !!python/tuple
+    - *id007
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id148
+  - *id131
+  - {weight: 1}
+- !!python/tuple
+  - *id148
+  - *id251
+  - {weight: 1}
+- !!python/tuple
+  - *id148
+  - *id135
+  - {weight: 1}
+- !!python/tuple
+  - *id149
+  - !!python/tuple
+    - *id010
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id149
+  - *id167
+  - {weight: 1}
+- !!python/tuple
+  - *id150
+  - !!python/tuple
+    - *id044
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id151
+  - *id196
+  - {weight: 1}
+- !!python/tuple
+  - *id151
+  - !!python/tuple
+    - *id017
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id152
+  - !!python/tuple
+    - *id005
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id268
+  - *id070
+  - {weight: 1}
+- !!python/tuple
+  - *id268
+  - *id269
+  - {weight: 1}
+- !!python/tuple
+  - *id268
+  - *id110
+  - {weight: 1}
+- !!python/tuple
+  - *id268
+  - *id254
+  - {weight: 1}
+- !!python/tuple
+  - *id153
+  - *id094
+  - {weight: 1}
+- !!python/tuple
+  - *id153
+  - *id075
+  - {weight: 1}
+- !!python/tuple
+  - *id153
+  - !!python/tuple
+    - *id025
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id154
+  - *id107
+  - {weight: 1}
+- !!python/tuple
+  - *id154
+  - !!python/tuple
+    - *id002
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id154
+  - *id089
+  - {weight: 1}
+- !!python/tuple
+  - *id154
+  - *id086
+  - {weight: 1}
+- !!python/tuple
+  - *id155
+  - *id189
+  - {weight: 1}
+- !!python/tuple
+  - *id155
+  - !!python/tuple
+    - *id007
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id155
+  - *id226
+  - {weight: 1}
+- !!python/tuple
+  - *id156
+  - !!python/tuple
+    - *id055
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id157
+  - !!python/tuple
+    - *id025
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id158
+  - *id181
+  - {weight: 1}
+- !!python/tuple
+  - *id158
+  - !!python/tuple
+    - *id010
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id159
+  - !!python/tuple
+    - *id025
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id160
+  - *id124
+  - {weight: 1}
+- !!python/tuple
+  - *id160
+  - !!python/tuple
+    - *id022
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id161
+  - !!python/tuple
+    - *id046
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id162
+  - *id270
+  - {weight: 1}
+- !!python/tuple
+  - *id261
+  - *id263
+  - {weight: 1}
+- !!python/tuple
+  - *id261
+  - *id271
+  - {weight: 1}
+- !!python/tuple
+  - *id261
+  - *id154
+  - {weight: 1}
+- !!python/tuple
+  - *id163
+  - !!python/tuple
+    - *id039
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id164
+  - !!python/tuple
+    - *id048
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id165
+  - !!python/tuple
+    - *id025
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id165
+  - *id074
+  - {weight: 1}
+- !!python/tuple
+  - *id166
+  - !!python/tuple
+    - *id044
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id167
+  - !!python/tuple
+    - *id013
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id167
+  - *id243
+  - {weight: 1}
+- !!python/tuple
+  - *id168
+  - !!python/tuple
+    - *id014
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id169
+  - !!python/tuple
+    - *id034
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id170
+  - *id099
+  - {weight: 1}
+- !!python/tuple
+  - *id170
+  - !!python/tuple
+    - *id061
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id171
+  - !!python/tuple
+    - *id051
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id172
+  - *id145
+  - {weight: 1}
+- !!python/tuple
+  - *id172
+  - !!python/tuple
+    - *id036
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id173
+  - *id177
+  - {weight: 1}
+- !!python/tuple
+  - *id173
+  - *id224
+  - {weight: 1}
+- !!python/tuple
+  - *id173
+  - !!python/tuple
+    - *id021
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id174
+  - !!python/tuple
+    - *id011
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id175
+  - *id247
+  - {weight: 1}
+- !!python/tuple
+  - *id175
+  - !!python/tuple
+    - *id009
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id175
+  - *id073
+  - {weight: 1}
+- !!python/tuple
+  - *id176
+  - !!python/tuple
+    - *id048
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id177
+  - *id186
+  - {weight: 1}
+- !!python/tuple
+  - *id177
+  - !!python/tuple
+    - *id022
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id178
+  - !!python/tuple
+    - *id028
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id179
+  - *id223
+  - {weight: 1}
+- !!python/tuple
+  - *id179
+  - !!python/tuple
+    - *id021
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id179
+  - *id106
+  - {weight: 1}
+- !!python/tuple
+  - *id180
+  - !!python/tuple
+    - *id060
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id180
+  - *id125
+  - {weight: 1}
+- !!python/tuple
+  - *id181
+  - *id168
+  - {weight: 1}
+- !!python/tuple
+  - *id181
+  - !!python/tuple
+    - *id013
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id182
+  - !!python/tuple
+    - *id054
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id182
+  - *id212
+  - {weight: 1}
+- !!python/tuple
+  - *id183
+  - !!python/tuple
+    - *id007
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id184
+  - *id190
+  - {weight: 1}
+- !!python/tuple
+  - *id184
+  - !!python/tuple
+    - *id053
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id185
+  - !!python/tuple
+    - *id009
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id185
+  - *id215
+  - {weight: 1}
+- !!python/tuple
+  - *id185
+  - *id183
+  - {weight: 1}
+- !!python/tuple
+  - *id272
+  - *id068
+  - {weight: 1}
+- !!python/tuple
+  - *id272
+  - *id273
+  - {weight: 1}
+- !!python/tuple
+  - *id272
+  - *id096
+  - {weight: 1}
+- !!python/tuple
+  - *id186
+  - !!python/tuple
+    - *id031
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id267
+  - *id274
+  - {weight: 1}
+- !!python/tuple
+  - *id267
+  - *id275
+  - {weight: 1}
+- !!python/tuple
+  - *id267
+  - *id160
+  - {weight: 1}
+- !!python/tuple
+  - *id187
+  - !!python/tuple
+    - *id010
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id187
+  - *id217
+  - {weight: 1}
+- !!python/tuple
+  - *id188
+  - !!python/tuple
+    - *id021
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id189
+  - *id202
+  - {weight: 1}
+- !!python/tuple
+  - *id189
+  - !!python/tuple
+    - *id005
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id190
+  - !!python/tuple
+    - *id057
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id191
+  - !!python/tuple
+    - *id051
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id192
+  - *id188
+  - {weight: 1}
+- !!python/tuple
+  - *id192
+  - !!python/tuple
+    - *id020
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id192
+  - *id173
+  - {weight: 1}
+- !!python/tuple
+  - *id193
+  - !!python/tuple
+    - *id007
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id194
+  - !!python/tuple
+    - *id009
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id194
+  - *id144
+  - {weight: 1}
+- !!python/tuple
+  - *id194
+  - *id158
+  - {weight: 1}
+- !!python/tuple
+  - *id195
+  - !!python/tuple
+    - *id024
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id196
+  - !!python/tuple
+    - *id018
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id197
+  - !!python/tuple
+    - *id043
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id197
+  - *id117
+  - {weight: 1}
+- !!python/tuple
+  - *id197
+  - *id239
+  - {weight: 1}
+- !!python/tuple
+  - *id198
+  - !!python/tuple
+    - *id063
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id199
+  - !!python/tuple
+    - *id041
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id200
+  - *id109
+  - {weight: 1}
+- !!python/tuple
+  - *id200
+  - !!python/tuple
+    - *id024
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id200
+  - *id204
+  - {weight: 1}
+- !!python/tuple
+  - *id200
+  - *id233
+  - {weight: 1}
+- !!python/tuple
+  - *id201
+  - *id194
+  - {weight: 1}
+- !!python/tuple
+  - *id201
+  - !!python/tuple
+    - *id016
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id201
+  - *id185
+  - {weight: 1}
+- !!python/tuple
+  - *id201
+  - *id231
+  - {weight: 1}
+- !!python/tuple
+  - *id275
+  - *id228
+  - {weight: 1}
+- !!python/tuple
+  - *id275
+  - *id268
+  - {weight: 1}
+- !!python/tuple
+  - *id275
+  - *id276
+  - {weight: 1}
+- !!python/tuple
+  - *id202
+  - !!python/tuple
+    - *id003
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id203
+  - !!python/tuple
+    - *id051
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id203
+  - *id112
+  - {weight: 1}
+- !!python/tuple
+  - *id203
+  - *id119
+  - {weight: 1}
+- !!python/tuple
+  - *id204
+  - !!python/tuple
+    - *id025
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id205
+  - *id100
+  - {weight: 1}
+- !!python/tuple
+  - *id205
+  - *id084
+  - {weight: 1}
+- !!python/tuple
+  - *id205
+  - !!python/tuple
+    - *id023
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id205
+  - *id120
+  - {weight: 1}
+- !!python/tuple
+  - *id206
+  - !!python/tuple
+    - *id002
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id206
+  - *id141
+  - {weight: 1}
+- !!python/tuple
+  - *id206
+  - *id236
+  - {weight: 1}
+- !!python/tuple
+  - *id206
+  - *id138
+  - {weight: 1}
+- !!python/tuple
+  - *id207
+  - !!python/tuple
+    - *id044
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id207
+  - *id161
+  - {weight: 1}
+- !!python/tuple
+  - *id208
+  - *id199
+  - {weight: 1}
+- !!python/tuple
+  - *id208
+  - !!python/tuple
+    - *id039
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id209
+  - !!python/tuple
+    - *id062
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id209
+  - *id143
+  - {weight: 1}
+- !!python/tuple
+  - *id210
+  - *id187
+  - {weight: 1}
+- !!python/tuple
+  - *id210
+  - *id229
+  - {weight: 1}
+- !!python/tuple
+  - *id210
+  - !!python/tuple
+    - *id009
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id211
+  - !!python/tuple
+    - *id034
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id211
+  - *id249
+  - {weight: 1}
+- !!python/tuple
+  - *id212
+  - !!python/tuple
+    - *id055
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id213
+  - !!python/tuple
+    - *id030
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id214
+  - *id197
+  - {weight: 1}
+- !!python/tuple
+  - *id214
+  - !!python/tuple
+    - *id039
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id214
+  - *id134
+  - {weight: 1}
+- !!python/tuple
+  - *id215
+  - *id152
+  - {weight: 1}
+- !!python/tuple
+  - *id215
+  - !!python/tuple
+    - *id007
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id215
+  - *id118
+  - {weight: 1}
+- !!python/tuple
+  - *id216
+  - *id201
+  - {weight: 1}
+- !!python/tuple
+  - *id216
+  - !!python/tuple
+    - *id017
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id217
+  - !!python/tuple
+    - *id013
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id217
+  - *id111
+  - {weight: 1}
+- !!python/tuple
+  - *id218
+  - !!python/tuple
+    - *id041
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id219
+  - !!python/tuple
+    - *id037
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id220
+  - !!python/tuple
+    - *id044
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id221
+  - *id159
+  - {weight: 1}
+- !!python/tuple
+  - *id221
+  - !!python/tuple
+    - *id024
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id221
+  - *id165
+  - {weight: 1}
+- !!python/tuple
+  - *id221
+  - *id139
+  - {weight: 1}
+- !!python/tuple
+  - *id222
+  - *id216
+  - {weight: 1}
+- !!python/tuple
+  - *id222
+  - !!python/tuple
+    - *id020
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id222
+  - *id151
+  - {weight: 1}
+- !!python/tuple
+  - *id223
+  - *id206
+  - {weight: 1}
+- !!python/tuple
+  - *id223
+  - *id069
+  - {weight: 1}
+- !!python/tuple
+  - *id223
+  - !!python/tuple
+    - *id020
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id224
+  - *id205
+  - {weight: 1}
+- !!python/tuple
+  - *id224
+  - !!python/tuple
+    - *id022
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id224
+  - *id098
+  - {weight: 1}
+- !!python/tuple
+  - *id225
+  - !!python/tuple
+    - *id048
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id226
+  - !!python/tuple
+    - *id005
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id227
+  - *id176
+  - {weight: 1}
+- !!python/tuple
+  - *id227
+  - !!python/tuple
+    - *id043
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id227
+  - *id225
+  - {weight: 1}
+- !!python/tuple
+  - *id228
+  - !!python/tuple
+    - *id027
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id228
+  - !!python/tuple
+    - *id023
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id228
+  - *id221
+  - {weight: 1}
+- !!python/tuple
+  - *id229
+  - *id174
+  - {weight: 1}
+- !!python/tuple
+  - *id229
+  - !!python/tuple
+    - *id010
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id230
+  - *id162
+  - {weight: 1}
+- !!python/tuple
+  - *id230
+  - !!python/tuple
+    - *id028
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id277
+  - *id256
+  - {weight: 1}
+- !!python/tuple
+  - *id277
+  - *id278
+  - {weight: 1}
+- !!python/tuple
+  - *id231
+  - !!python/tuple
+    - *id009
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id231
+  - *id091
+  - {weight: 1}
+- !!python/tuple
+  - *id231
+  - *id169
+  - {weight: 1}
+- !!python/tuple
+  - *id232
+  - !!python/tuple
+    - *id048
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id233
+  - *id146
+  - {weight: 1}
+- !!python/tuple
+  - *id234
+  - !!python/tuple
+    - *id022
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id234
+  - *id102
+  - {weight: 1}
+- !!python/tuple
+  - *id235
+  - *id182
+  - {weight: 1}
+- !!python/tuple
+  - *id235
+  - !!python/tuple
+    - *id053
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id265
+  - *id279
+  - {weight: 1}
+- !!python/tuple
+  - *id265
+  - *id277
+  - {weight: 1}
+- !!python/tuple
+  - *id265
+  - *id133
+  - {weight: 1}
+- !!python/tuple
+  - *id236
+  - !!python/tuple
+    - *id039
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id237
+  - !!python/tuple
+    - *id028
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id238
+  - !!python/tuple
+    - *id060
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id238
+  - *id128
+  - {weight: 1}
+- !!python/tuple
+  - *id239
+  - !!python/tuple
+    - *id048
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id240
+  - *id244
+  - {weight: 1}
+- !!python/tuple
+  - *id240
+  - !!python/tuple
+    - *id051
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id240
+  - *id105
+  - {weight: 1}
+- !!python/tuple
+  - *id241
+  - *id180
+  - {weight: 1}
+- !!python/tuple
+  - *id241
+  - !!python/tuple
+    - *id025
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id242
+  - !!python/tuple
+    - *id021
+    - T0_S1
+  - {weight: 1}
+- !!python/tuple
+  - *id243
+  - !!python/tuple
+    - *id014
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id244
+  - *id129
+  - {weight: 1}
+- !!python/tuple
+  - *id244
+  - !!python/tuple
+    - *id053
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id257
+  - *id272
+  - {weight: 1}
+- !!python/tuple
+  - *id257
+  - *id280
+  - {weight: 1}
+- !!python/tuple
+  - *id257
+  - *id147
+  - {weight: 1}
+- !!python/tuple
+  - *id245
+  - !!python/tuple
+    - *id034
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id246
+  - !!python/tuple
+    - *id011
+    - T0_S3
+  - {weight: 1}
+- !!python/tuple
+  - *id247
+  - !!python/tuple
+    - *id034
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id247
+  - *id114
+  - {weight: 1}
+- !!python/tuple
+  - *id248
+  - !!python/tuple
+    - *id030
+    - T0_S2
+  - {weight: 1}
+- !!python/tuple
+  - *id249
+  - *id219
+  - {weight: 1}
+- !!python/tuple
+  - *id249
+  - !!python/tuple
+    - *id036
+    - T0_S3
+  - {weight: 1}

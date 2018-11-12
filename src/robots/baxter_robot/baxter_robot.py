@@ -55,7 +55,8 @@ class BaxterRobot(Robot):
     def sensor_update(self):
         '''Remove/inactivate serviced requests'''
         #print(self.getSymbols(self.currentConf, local=True))
-        if 'interactive' in self.getSymbols(self.currentConf, local=True):
+        if 'reactive_region' in self.getSymbols(self.currentConf, local=True):
+            print("Sensor Update!!!!")
             self.event_active = False
 
     def sensor_reset(self):
@@ -80,13 +81,14 @@ class BaxterRobot(Robot):
                    and table_pos[0] - 0.3 <= object_position[0] <= table_pos[0] + 0.3
                    and table_pos[1] - 0.3 <= object_position[1] <= table_pos[1] + 0.3)
 
-        if visible:
+        print(self.event_active)
+        if visible and self.event_active:
             return [self.request], []
         return [], []
 
     def get_interactive_object_position(self):
         for k, v in viewitems(self.env):
-            if v['marker_type'] == "interactive":
+            if v['marker_type'] == "interactive" or v['child_frame_id'] == "/Reactive":
                 object_pose = self.tf_buffer.lookup_transform(
                     v['parent_frame_id'][1:], v['child_frame_id'][1:],
                     rospy.Time())
@@ -174,7 +176,7 @@ class BaxterRobot(Robot):
                 rospy.Time())
             object_pose = np.array([object_pose.transform.translation.x,
                                     object_pose.transform.translation.y,
-                                    object_pose.transform.translation.z])
+                                    object_pose.transform.translation.z + 0.05]) # HACK
 
             if object_name == "table":
                 symbols[object_name] = gripper_position[2] > object_pose[2] + 0.03 and \

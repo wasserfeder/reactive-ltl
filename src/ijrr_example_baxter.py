@@ -111,7 +111,7 @@ def define_problem(logger, outputdir='.'):
     logger.info('"Local obstacle label": "%s"', robot.localObst)
 
     # local  requests
-    requests = [BallRegion([0, 0, 0], 0.3, ['reactive_region'])]
+    requests = [BallRegion([0, 0, 0], 0.2, ['reactive_region'])]
 
     # define local specification as a priority function
     localSpec = {'reactive_region': 0}
@@ -217,7 +217,7 @@ def plan_online(logger, localSpec, offline, robot, iterations=2):
 
     # initialize local on-line RRT planner
     online = LocalPlanner(offline.checker, offline.ts, robot, localSpec,
-                          eta=robot.controlspace)
+                          eta=robot.controlspace, relax_global_connection=50)
     online.PointCls = Point
     online.detailed_logging = True
 
@@ -257,4 +257,4 @@ def caseStudy(outputdir, logfilename, iterations):
 if __name__ == '__main__':
     np.random.seed(1001)
     outputdir=os.path.abspath('../data_ijrr/example3')
-    caseStudy(outputdir, logfilename='ijrr_example_3.log', iterations=2)
+    caseStudy(outputdir, logfilename='ijrr_example_3.log', iterations=1)

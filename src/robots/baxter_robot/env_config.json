@@ -4,7 +4,7 @@
     "parent_frame_id": "/world",
     "child_frame_id": "/Robot_a",
     "init_pose": [0.72256, -0.519, -0.06255, 0, 0, 0, 1],
-    "scale": [0.76, 1.22, 0.03],
+    "scale": [0.76, 1.22, 0.003],
     "rgba": [0.1, 0.1, 0.1, 1],
     "marker_type": "cube",
     "apply_transform": "T_motive2baxter"
@@ -46,7 +46,7 @@
     "init_pose": [0.725, 0.3789, 0.15, 0, 0, 0, 1],
     "scale": [0.2, 0.2, 0.2],
     "rgba": [1.0, 1.0, 0.1, 0.6],
-    "marker_type": "interactive",
+    "marker_type": "sphere",
     "apply_transform": "T_motive2baxter"
   }
 }
