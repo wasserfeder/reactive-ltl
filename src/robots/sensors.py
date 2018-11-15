@@ -89,8 +89,14 @@ class SimulatedSensor(Sensor):
                                             if not r.region.intersects(conf)]
         # move requests on their paths
         for r in self.requests:
-            v = next(r.region.path)
-            r.region.translate(v)
+            if hasattr(r.region, 'path'):
+                v = next(r.region.path)
+                r.region.translate(v)
+        # move obstacles on their paths
+        for o in self.obstacles:
+            if hasattr(o, 'path'):
+                v = next(o.path)
+                o.translate(v)
 
     def reset(self):
         '''Resets requests and local obstacles.'''
