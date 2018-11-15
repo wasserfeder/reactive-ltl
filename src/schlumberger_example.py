@@ -68,7 +68,7 @@ def define_problem(outputdir='.'):
     '''Define case study setup (robot parameters, workspace, etc.).'''
 
     # define robot diameter (used to compute the expanded workspace)
-    robotDiameter = 0.36
+    robotDiameter = 0.5
 
     # define boundary
     boundary = BoxBoundary2D([[0, 30], [0, 30]])
@@ -85,7 +85,7 @@ def define_problem(outputdir='.'):
 
     # create robot object
     robot = FullyActuatedRobot('Drone', init=Point2D((2, 2)), wspace=ewspace,
-                               stepsize=3.999)
+                               stepsize=5.999)
     robot.diameter = robotDiameter
     robot.localObst = 'local_obstacle'
 
@@ -106,27 +106,33 @@ def define_problem(outputdir='.'):
 
     regions = []
     #### add trucks ####
-    L = 8
-    W = 2.5
-    for i in range(5):
+    L = 8.0
+    W = 2.0
+    box = np.array([[-L/2, L/2], [-W/2, W/2]])
+    ntrucks = 5
+    for i in range(ntrucks):
         # left array of trucks
-        lc = [7, 8.75 + i * 3.]
-        regions.append((BoxRegion2D([[lc[0]-L/2, lc[0]+L/2], [lc[1]-W/2, lc[1]+W/2]], ['tl'+str(i)]), 'brown'))
+        lc = np.array([[7, 8.75 + i * 3.]]).T
+        regions.append((BoxRegion2D(lc + box, ['tl{}'.format(i)]), 'brown'))
         # right array of trucks
-        rc = [23, 8.75 + i * 3.]
-        regions.append((BoxRegion2D([[rc[0]-L/2, rc[0]+L/2], [rc[1]-W/2, rc[1]+W/2]], ['tr'+str(i)]), 'brown'))
-        
+        rc = np.array([[23, 8.75 + i * 3.]]).T
+        regions.append((BoxRegion2D(rc + box, ['tr{}'.format(i)]), 'brown'))
+
     #### add missiles ####
-    mc = [15, 15]
-    mL = 16
-    mW = 2.5
-    regions.append((BoxRegion2D([[mc[0]-mW/2, mc[0]+mW/2], [mc[1]-mL/2, mc[1]+mL/2]], ['missile']), 'red'))
-        
+    mc = np.array([[15.0, 15.0]]).T
+    mL = 2.5
+    mW = 16
+    box = np.array([[-mL/2, mL/2], [-mW/2, mW/2]])
+    regions.append((BoxRegion2D(mc + box, ['missile']), 'red'))
+
     #### add charging stations ####
-    cs_size = 0.4
-    regions.append((BoxRegion2D([[10-cs_size/2, 10+cs_size/2], [2-cs_size/2, 2+cs_size/2]], ['cs1']), 'blue'))
-    regions.append((BoxRegion2D([[20-cs_size/2, 20+cs_size/2], [2-cs_size/2, 2+cs_size/2]], ['cs2']), 'blue'))
-    
+    cs_size = 1.0
+    box = np.array([[-cs_size/2, cs_size/2], [-cs_size/2, cs_size/2]])
+    cs_center = np.array([[10, 2]]).T
+    regions.append((BoxRegion2D(cs_center + box, ['cs1']), 'blue'))
+    cs_center = np.array([[20, 2]]).T
+    regions.append((BoxRegion2D(cs_center + box, ['cs2']), 'blue'))
+
     # add regions to workspace
     for k, (r, c) in enumerate(regions):
         # add styles to region
@@ -142,26 +148,29 @@ def define_problem(outputdir='.'):
 
         logging.info('("Global region", %d): (%s, %s)', k, r, r.style)
 
-    # local  requests
-    F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']),
-          ([[3.24, 1.98], [2.54, 2.28], [3.5, 3], [4.02, 2.28]], 0.05),
-          ('orange', 0.5))
-    F2 = (BallRegion2D([1.26, 0.48], 0.18, ['fire']),
-          ([[1.26, 0.48], [1.1, 1.1], [1.74, 0.92], [0.6, 0.6]], 0.05),
-          ('orange', 0.5))
-    S2 = (BallRegion2D([4.32, 1.48], 0.27, ['survivor']),
-          ([[4.32, 1.48], [3.6, 1.2], [4, 2]], 0.05),
-          ('yellow', 0.5))
-    requests = [F1, F2, S2]
+#     # local  requests
+#     F1 = (BallRegion2D([3.24, 1.98], 0.3, ['fire']),
+#           ([[3.24, 1.98], [2.54, 2.28], [3.5, 3], [4.02, 2.28]], 0.05),
+#           ('orange', 0.5))
+#     F2 = (BallRegion2D([1.26, 0.48], 0.18, ['fire']),
+#           ([[1.26, 0.48], [1.1, 1.1], [1.74, 0.92], [0.6, 0.6]], 0.05),
+#           ('orange', 0.5))
+#     S2 = (BallRegion2D([4.32, 1.48], 0.27, ['survivor']),
+#           ([[4.32, 1.48], [3.6, 1.2], [4, 2]], 0.05),
+#           ('yellow', 0.5))
+#     requests = [F1, F2, S2]
+    requests = []
     # define local specification as a priority function
     localSpec = {'survivor': 0, 'fire': 1}
     logging.info('"Local specification": %s', localSpec)
     # local obstacles #FIXME: defined in expanded workspace not workspace
-    obstacles = [(BoxRegion2D([[3, 3.5], [2, 2.5]], ['LO']), None,
+    obstacles = [(BoxRegion2D([[6.5, 7.5], [8, 9]], ['LO']),
+                  ([[7.0, 8.5], [23.0, 8.5], [23.0, 20.5], [7.0, 20.5]], 0.25),
                   ('gray', 0.8)),
-                 (PolygonRegion2D([[3.2, 1.4], [3, 0.8], [3.4, 0.7]], ['LO']),
-                  None, ('gray', 0.8)),
-                 (BallRegion2D([1.6, 2.1], 0.15, ['LO']), None, ('gray', 0.8))]
+#                  (PolygonRegion2D([[3.2, 1.4], [3, 0.8], [3.4, 0.7]], ['LO']),
+#                   None, ('gray', 0.8)),
+#                  (BallRegion2D([1.6, 2.1], 0.15, ['LO']), None, ('gray', 0.8))
+                ]
 
     # add style to local requests and obstacles
     for k, (r, path, c) in enumerate(requests + obstacles):
@@ -177,7 +186,7 @@ def define_problem(outputdir='.'):
                 r.path += line_translate(a, b, step)
             r_path = map(list, r.path)
             r.path = it.cycle(r.path)
-
+ 
         logging.info('("Local region", %d): (%s, %s, %s, %d)', k, r, r.style,
                      r_path, k < len(requests))
 
@@ -205,16 +214,19 @@ def define_problem(outputdir='.'):
 
     # globalSpec = ('[] ( (<> r1) && (<> r2) && (<> r3) && (<> r4)'
     #               + ' && !(o1 || o2 || o3 || o4 ))')
-    globalSpec = ('[] ( (<> tr0) && (<> tr1) && (<> tr2) && (<> tr3)  && (<> tr4)' +
-                  ' && (<> tl0) && (<> tl1) && (<> tl2) && (<> tl3)  && (<> tl4)' +
-                  ' && (<> missle) )')
-  
+#     globalSpec = ('[] ( (<> tr0) && (<> tr1) && (<> tr2) && (<> tr3)  && (<> tr4)'
+#                   ' && (<> tl0) && (<> tl1) && (<> tl2) && (<> tl3)  && (<> tl4)'
+#                   ' && (<> missle) )')
+    spec_tr = ' && '.join(['(<> tr{})'.format(i) for i in range(ntrucks)])
+    spec_tl = ' && '.join(['(<> tl{})'.format(i) for i in range(ntrucks)])
+    globalSpec = '[] ( {} && {} && {})'.format(spec_tr, spec_tl, '(<> missile)')
+
     logging.info('"Global specification": "%s"', globalSpec)
 
 
     return robot, sim, globalSpec, localSpec
 
-def generate_global_ts(globalSpec, sim, robot, eta=(2.5, 4.0),
+def generate_global_ts(globalSpec, sim, robot, eta=(1.5, 6.0),
                        ts_file='ts.yaml', outputdir='.', show=True):
     '''Generate global transition system and off-line control policy.'''
 
@@ -224,7 +236,7 @@ def generate_global_ts(globalSpec, sim, robot, eta=(2.5, 4.0),
                                            checker.buchi.g.number_of_edges())
 
     # initialize global off-line RRG planner
-    sim.offline = RRGPlanner(robot, checker, iterations=5000)
+    sim.offline = RRGPlanner(robot, checker, iterations=1000)
     sim.offline.eta = eta
 
     logging.info('"Start global planning": True')
@@ -291,30 +303,15 @@ def plan_online(localSpec, sim, robot, iterations=2):
 
     logging.info('"Local online planning finished": True')
 
-def global_performance(outputdir, logfilename, trials=20):
-    setup(outputdir, logfilename)
-    robot, sim, globalSpec, _ = define_problem(outputdir)
-    for k in range(trials):
-        np.random.seed(1001 + 100 * k)
-        generate_global_ts(globalSpec, sim, robot, eta=(0.3, 1.0), ts_file=None,
-                           show=False)
-
 def caseStudy(outputdir, logfilename, iterations):
     setup(outputdir, logfilename)
     robot, sim, globalSpec, localSpec = define_problem(outputdir)
     if not generate_global_ts(globalSpec, sim, robot, outputdir=outputdir):
         return
-    # plan_online(localSpec, sim, robot, iterations)
+    plan_online(localSpec, sim, robot, iterations)
 
 if __name__ == '__main__':
     outputdir = os.path.abspath('../data_ijrr/schlumberger')
-
-    # global_performance(outputdir, logfilename='ijrr_example_1_global.log',
-    #                   trials=100)
-
     np.random.seed(1001)
     caseStudy(outputdir, logfilename='ijrr_schlumberger.log', iterations=2)
-
-    # np.random.seed(1001)
-    # caseStudy(outputdir, logfilename='ijrr_example_1_long.log', iterations=100)
 
