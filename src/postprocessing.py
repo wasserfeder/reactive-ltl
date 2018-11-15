@@ -586,17 +586,13 @@ def workspace_plot(outfile='highdim_workspace.png'):
     O1 = (BoxRegion2D([[.20,  .30], [.30,  .35]], ['o1']), 'gray')
     O2 = (BoxRegion2D([[.15,  .20], [.40,  .60]], ['o2']), 'gray')
     O3 = (BoxRegion2D([[.50,  .55], [.30,  .80]], ['o3']), 'gray')
-    # requests
-    F1 = (BallRegion2D([0.25, 0.10], 0.30, ['event1']), to_rgba('orange', .5))
-    F2 = (BallRegion2D([0.10, 0.60], 0.25, ['event1']), to_rgba('orange', .5))
-    S2 = (BallRegion2D([0.50, 0.90], 0.27, ['event2']), to_rgba('yellow', .5))
     # local obstacles
     L1 = (BoxRegion2D([[.45,  .50], [.75,  .80]], ['LO']), to_rgba('gray', .6))
     L2 = (BoxRegion2D([[.90, 1.00], [.50,  .55]], ['LO']), to_rgba('gray', .6))
     L3 = (BoxRegion2D([[.75,  .80], [.20,  .25]], ['LO']), to_rgba('gray', .6))
 
     # add all regions
-    regions = [R1, R2, R3, R4, O1, O2, O3, F1, F2, S2, L1, L2, L3]
+    regions = [R1, R2, R3, R4, O1, O2, O3, L1, L2, L3]
 
     # add regions to workspace
     for r, c in regions:
@@ -607,7 +603,7 @@ def workspace_plot(outfile='highdim_workspace.png'):
         sim.workspace.addRegion(r)
 
     # set the robot's sensor
-    sensingShape = BallBoundary([0, 0], 0.25)
+    sensingShape = BallBoundary([0, 0], 0.001)
     robot.sensor = BoundingBoxSimulatedSensor(robot, sensingShape, [], [])
 
     # display workspace

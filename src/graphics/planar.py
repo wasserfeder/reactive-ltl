@@ -34,6 +34,7 @@ from numpy import mean
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 from matplotlib.colors import ColorConverter
+from matplotlib.collections import LineCollection
 
 from spaces.maps2d import BallRegion2D, BoxRegion2D, PolygonRegion2D, \
                           BallBoundary2D, BoxBoundary2D, PolygonBoundary2D, \
@@ -167,13 +168,12 @@ def drawRobot2D(viewport, robot, size, text='', textStyle=None,
 
 def drawGraph(viewport, g, node_color='blue', edge_color='black', zorder=2):
     '''Plots the given graph in the viewport.'''
-    for u in g.nodes_iter():
-        plt.plot(u.x, u.y, 'o', color=node_color, zorder=zorder+1)
+    x, y = zip(*[(u.x, u.y) for u in g.nodes_iter()])
+    viewport.scatter(x, y, c=node_color, zorder=zorder+1)
 
-    for u, v in g.edges_iter():
-        x = (u.x, v.x)
-        y = (u.y, v.y)
-        plt.plot(x, y, color=edge_color, zorder=zorder)
+    lines = [[(u.x, u.y), (v.x, v.y)] for u, v in g.edges_iter()]
+    artist = LineCollection(lines, colors=edge_color, zorder=zorder)
+    viewport.add_collection(artist)
 
 def drawPolicy(viewport, solution, color='black', alpha_min=1.0, zorder=2):
     '''Draws the solution path with a fading effect.'''
