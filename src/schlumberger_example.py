@@ -165,11 +165,15 @@ def define_problem(outputdir='.'):
     logging.info('"Local specification": %s', localSpec)
     # local obstacles #FIXME: defined in expanded workspace not workspace
     obstacles = [(BoxRegion2D([[6.5, 7.5], [8, 9]], ['LO']),
-                  ([[7.0, 8.5], [23.0, 8.5], [23.0, 20.5], [7.0, 20.5]], 0.25),
-                  ('gray', 0.8)),
-#                  (PolygonRegion2D([[3.2, 1.4], [3, 0.8], [3.4, 0.7]], ['LO']),
-#                   None, ('gray', 0.8)),
-#                  (BallRegion2D([1.6, 2.1], 0.15, ['LO']), None, ('gray', 0.8))
+                  ([[7.0, 8.5], [23.0, 8.5], [23.0, 20.5], [7.0, 20.5]], 0.03),
+                  ('darkgray', 0.8)),
+                 (PolygonRegion2D([[15.0 + np.cos(phi), 5.0 + np.sin(phi)]
+                            for phi in np.arange(0, 2*np.pi, np.pi/3)], ['LO']),
+                  ([[15.0, 5.0], [15.0, 25.0]], 0.03), ('gray', 0.8)),
+                 (BallRegion2D([25, 22], 0.5, ['LO']),
+                  ([[25.0, 22.0], [25.0, 8.0], [15.0, 5.0], [5.0, 8.0],
+                    [5.0, 22.0], [15.0, 25.0]], 0.03),
+                  ('darkgray', 0.8))
                 ]
 
     # add style to local requests and obstacles
