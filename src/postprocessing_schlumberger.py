@@ -61,7 +61,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
                 data.update(eval(line_data))
                 if line_data.lower().find('start global planning') >= 0:
                     break
-        print 'general data:', len(data)
+        print('general data:', len(data))
 
         # second process data on global planner
         rrg_data = []
@@ -77,7 +77,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
                         rrg_data.append(iteration_data)
                     iteration_data = dict()
                 iteration_data.update(eval(line_data))
-        print 'rrg data:', len(rrg_data)
+        print('rrg data:', len(rrg_data))
 
         rrg_stat_data = eval(line_data)
         for line in logfile:
@@ -86,7 +86,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
                 if line_data.lower().find('end global planning') >= 0:
                     break
                 rrg_stat_data.update(eval(line_data))
-        print 'rrg_stat_data', len(rrg_stat_data)
+        print('rrg_stat_data', len(rrg_stat_data))
 
         assert rrg_stat_data['Iterations'] == len(rrg_data)
 
@@ -98,7 +98,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
                 if line_data.lower().find('initialize local planner') >= 0:
                     break
                 rrt_stat_data.update(eval(line_data))
-        print 'rrt_stat_data:', len(rrt_stat_data)
+        print('rrt_stat_data:', len(rrt_stat_data))
 
         rrt_data = []
         execution_data = dict()
@@ -114,7 +114,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
                     rrt_data.append(execution_data)
                     execution_data = dict()
                 execution_data.update(eval(line_data))
-        print 'rrt data:', len(rrt_data)
+        print('rrt data:', len(rrt_data))
 
     # save useful information
     with open(os.path.join(outdir, 'general_data.txt'), 'w') as f:
@@ -192,7 +192,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
     sim.offline = RRGPlanner(robot, None, 1)
     prefix, suffix = rrg_stat_data['global policy']
     sim.solution = (prefix, suffix[1:])
-    print 'Global policy size:', len(prefix), len(suffix)
+    print('Global policy size:', len(prefix), len(suffix))
 
     if any(option in generate for option in
                 ('workspace', 'expanded workspace', 'global solution')):
@@ -245,7 +245,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
 
     # set to global and to save animation
     sim.offline.ts = Ts.load(ts_filename)
-    print 'TS size', sim.offline.ts.size()
+    print('TS size', sim.offline.ts.size())
     if 'offline plan' in generate:
         sim.config['video-interval'] = 30
         sim.config['sim-step'] = 0.5
@@ -261,7 +261,7 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
     local_plans = [d['local plan'] for d in rrt_data] + [[]]
     potential = [d['potential'] for d in rrt_data] + [0]
     requests = [d['requests'] for d in rrt_data] + [[]]
-    print len(trajectory), len(local_plans)
+    print(len(trajectory), len(local_plans))
 
     if 'trajectory' in generate:
         # set larger font for saving figures
@@ -325,8 +325,8 @@ def postprocessing(logfilename, ts_filename, outdir, lts_index,
     if any(option in generate for option in
                                         ('LTS iterations', 'LTS construction')):
         idx = lts_index
-        print rrt_data[idx]['tree size']
-        print 'current state:', rrt_data[idx-1]['new configuration']
+        print(rrt_data[idx]['tree size'])
+        print('current state:', rrt_data[idx-1]['new configuration'])
 
         lts_data = sorted([v for k, v in rrt_data[idx].items()
                                 if str(k).startswith('lts iteration')],

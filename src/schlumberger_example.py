@@ -109,13 +109,13 @@ def define_problem(outputdir='.'):
     L = 8.0
     W = 2.0
     box = np.array([[-L/2, L/2], [-W/2, W/2]])
-    ntrucks = 5
+    ntrucks = 4
     for i in range(ntrucks):
         # left array of trucks
-        lc = np.array([[7, 8.75 + i * 3.]]).T
+        lc = np.array([[7, 8.75 + i * 4.]]).T
         regions.append((BoxRegion2D(lc + box, ['tl{}'.format(i)]), 'brown'))
         # right array of trucks
-        rc = np.array([[23, 8.75 + i * 3.]]).T
+        rc = np.array([[23, 8.75 + i * 4.]]).T
         regions.append((BoxRegion2D(rc + box, ['tr{}'.format(i)]), 'brown'))
 
     #### add missiles ####
@@ -221,10 +221,13 @@ def define_problem(outputdir='.'):
 #     globalSpec = ('[] ( (<> tr0) && (<> tr1) && (<> tr2) && (<> tr3)  && (<> tr4)'
 #                   ' && (<> tl0) && (<> tl1) && (<> tl2) && (<> tl3)  && (<> tl4)'
 #                   ' && (<> missle) )')
-    spec_tr = ' && '.join(['(<> tr{})'.format(i) for i in range(ntrucks)])
-    spec_tl = ' && '.join(['(<> tl{})'.format(i) for i in range(ntrucks)])
-    globalSpec = '[] ( {} && {} && {})'.format(spec_tr, spec_tl, '(<> missile)')
+    # spec_tr = ' && '.join(['(<> tr{})'.format(i) for i in range(ntrucks)])
+    # spec_tl = ' && '.join(['(<> tl{})'.format(i) for i in range(ntrucks)])
+    # globalSpec = '[] ( {} && {} && {})'.format(spec_tr, spec_tl, '(<> missile)')
 
+    #globalSpec = '[] (<> (tl0 && <> (tl1 && <> (tl2 && <> ( tl3 && <> (tl4 && <> ( tr4 && <> ( tr4 && <> ( tr3 && <> (tr2 && <> ( tr1 && <> ( t0))))))))))))'
+    globalSpec = '[] (<> (tl0 && <> (tl1 && <> (tl2 && <> ( tl3 && <>  (  tr3 && <> (tr2 && <> ( tr1 && <> ( tr0)))))))))'
+    
     logging.info('"Global specification": "%s"', globalSpec)
 
 
