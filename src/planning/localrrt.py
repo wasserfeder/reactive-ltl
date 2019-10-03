@@ -8,7 +8,7 @@
 
 '''
     Local planner generating a random tree within the sensing area of the robot.
-    Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
+    Copyright (C) 2014-2019  Cristian Ioan Vasile <cvasile@bu.edu>
     Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
     Boston University
 
@@ -241,7 +241,7 @@ class LocalPlanner(object):
         where the decreasing potential constraint is not enforced. The global
         target state is the local minimizer of potential, and then distance,
         among the states within the search radius that can be connected to by a
-        collision free path. 
+        collision free path.
         '''
         if state is None or not B:
             return None

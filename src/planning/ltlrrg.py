@@ -1,8 +1,8 @@
 '''
 .. module:: ltlrrg
-   :synopsis: The module implements the RRG based path planner with LTL constraints.
-    The algorithm represents the (off-line) global component of the proposed
-    framework.
+   :synopsis: The module implements the RRG based path planner with LTL
+    constraints. The algorithm represents the (off-line) global component of the
+    proposed framework.
 
 .. moduleauthor:: Cristian Ioan Vasile <cvasile@bu.edu>
 '''
@@ -11,7 +11,7 @@
     The module implements the RRG based path planner with LTL constraints.
     The algorithm represents the (off-line) global component of the proposed
     framework.
-    Copyright (C) 2014-2018  Cristian Ioan Vasile <cvasile@bu.edu>
+    Copyright (C) 2014-2019  Cristian Ioan Vasile <cvasile@bu.edu>
     Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
     Boston University
 
@@ -104,8 +104,8 @@ class RRGPlanner(object):
                 if self.robot.isSimpleSegment(state, newConf):
                     with Timer(op_name='PA check forward',
                                template='"%s runtime": %f'):
-                        Ep = self.checker.check(self.ts, state, newConf, newProp,
-                                                forward=True)
+                        Ep = self.checker.check(self.ts, state, newConf,
+                                                newProp, forward=True)
                     if Ep:
                         newState = newConf
                         Delta.add((state, newConf))

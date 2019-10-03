@@ -7,7 +7,7 @@
 
 '''
     The module defines a robot sensors.
-    Copyright (C) 2014-2016  Cristian Ioan Vasile <cvasile@bu.edu>
+    Copyright (C) 2014-2019  Cristian Ioan Vasile <cvasile@bu.edu>
     Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
     Boston University
 

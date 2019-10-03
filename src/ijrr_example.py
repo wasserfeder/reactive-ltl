@@ -8,7 +8,7 @@
 
 '''
     Defines the case study presented in the IJRR journal paper.
-    Copyright (C) 2014-2018  Cristian Ioan Vasile <cvasile@bu.edu>
+    Copyright (C) 2014-2019  Cristian Ioan Vasile <cvasile@bu.edu>
     Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
     Boston University
 
@@ -306,4 +306,3 @@ if __name__ == '__main__':
 
     np.random.seed(1001)
     caseStudy(outputdir, logfilename='ijrr_example_1_long.log', iterations=100)
-

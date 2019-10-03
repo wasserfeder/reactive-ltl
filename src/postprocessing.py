@@ -7,7 +7,7 @@
 
 license_text='''
     Post-processing module of logged data.
-    Copyright (C) 2018  Cristian Ioan Vasile <cvasile@bu.edu>
+    Copyright (C) 2018-2019  Cristian Ioan Vasile <cvasile@bu.edu>
     Hybrid and Networked Systems (HyNeSs) Group, BU Robotics Laboratory,
     Boston University
 
