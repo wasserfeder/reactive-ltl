@@ -1,0 +1,22 @@
+{
+  "table":{
+    "topic": "/Robot_a/pose",
+    "parent_frame_id": "/world",
+    "child_frame_id": "/Robot_a",
+    "init_pose": [0.72256911754608133, -0.51908547163009644, -0.062552694320678892, 0, 0, 0, 1],
+    "scale": [0.76, 1.22, 0.05],
+     "rgba": [0.1,0.1,0.1,1],
+    "marker_type": "cube",
+    "apply_transform": "T_motive2baxter"
+  },
+  "regon_1": {
+    "topic": "/Robot_b/pose",
+    "parent_frame_id": "/world",
+    "child_frame_id": "/Robot_b",
+    "init_pose": [0.92256911754608133, -0.51908547163009644, -0.032552694320678892, 0, 0, 0, 1],
+    "scale": [0.2, 0.2, 0.001],
+    "rgba": [1.0,0.1,0.3,1],
+    "marker_type": "sphere",
+    "apply_transform": "T_motive2baxter"
+  }
+}
